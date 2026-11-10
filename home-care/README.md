@@ -1,4 +1,16 @@
-# Home care: Pepper Care Companion (v4.1.1)
+<h1 align="center">Home care: Pepper Care Companion (v4.1.1)</h1>
+
+<p align="center">
+  <img src="media/exercise-animation.gif" alt="Pepper tablet: guided exercise with a countdown" width="720">
+</p>
+
+<p align="center">
+  <img src="media/breathing-animation.gif" alt="Pepper tablet: calm breathing" width="355">
+  <img src="media/snakes-and-ladders-animation.gif" alt="Pepper tablet: snakes and ladders" width="355">
+</p>
+
+<p align="center"><sub>The Pepper tablet in action: guided exercise, calm breathing and snakes and ladders.</sub></p>
+
 
 An activity companion for care homes, built for the IEEE Malta Digital Health Hackathon 2026. Health care professionals interact with Pepper by voice or by touching the tablet. Everything runs on the robot, with no cloud service. The only optional network link is a read-only laptop dashboard, which is off by default.
 
