@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Care Dashboard</title>
+<style>
+:root {
+  --bg: #edf4f6; --card: #ffffff; --ink: #10243a; --mute: #5a6b7d; --line: #d5e0e6;
+  --teal: #0f766e; --teal-soft: #d8efec; --amber: #b54708; --amber-soft: #fdf0e0; --red: #b42318; --red-soft: #fde8e6; --ok: #1f7a5e;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d1b26; --card: #15293a; --ink: #e6eef3; --mute: #9db1c0; --line: #27435a;
+    --teal: #4fc3b6; --teal-soft: #17403f; --amber: #f2a65a; --amber-soft: #43301a; --red: #ff8a80; --red-soft: #4a1f1c; --ok: #6fd2a8;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d1b26; --card: #15293a; --ink: #e6eef3; --mute: #9db1c0; --line: #27435a;
+  --teal: #4fc3b6; --teal-soft: #17403f; --amber: #f2a65a; --amber-soft: #43301a; --red: #ff8a80; --red-soft: #4a1f1c; --ok: #6fd2a8;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; }
+header { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding: 14px 16px; max-width: 1200px; margin: 0 auto; }
+header h1 { margin: 0; font-size: 20px; flex: 1 1 auto; }
+header h1 small { display: block; font-size: 12px; font-weight: 400; color: var(--mute); }
+.pill { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; font-size: 14px; font-weight: 600; background: var(--card); border: 1px solid var(--line); }
+.pill i { width: 10px; height: 10px; border-radius: 50%; background: var(--mute); display: inline-block; }
+.pill.ok i { background: var(--ok); } .pill.bad { background: var(--red-soft); border-color: var(--red); color: var(--red); } .pill.bad i { background: var(--red); }
+.pill.warn { background: var(--amber-soft); border-color: var(--amber); color: var(--amber); }
+button { font: inherit; cursor: pointer; border: 1px solid var(--line); background: var(--card); color: var(--ink); border-radius: 10px; padding: 6px 12px; }
+button:focus-visible { outline: 3px solid var(--teal); outline-offset: 2px; }
+button[aria-pressed="true"] { background: var(--teal-soft); border-color: var(--teal); }
+main { display: grid; gap: 14px; padding: 0 16px 24px; grid-template-columns: 1fr; max-width: 1200px; margin: 0 auto; }
+@media (min-width: 900px) { main { grid-template-columns: 1.15fr 1fr; align-items: start; } }
+section { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
+section h2 { margin: 0 0 8px; font-size: 13px; letter-spacing: .06em; text-transform: uppercase; color: var(--mute); }
+.alert { border-radius: 12px; padding: 12px 14px; margin: 0 0 8px; background: var(--red-soft); border: 2px solid var(--red); }
+.alert b { display: block; font-size: 20px; color: var(--red); }
+.alert span { color: var(--ink); }
+.alert.fresh { animation: flash 1s ease-in-out 3; }
+@keyframes flash { 50% { background: var(--red); } }
+@media (prefers-reduced-motion: reduce) { .alert.fresh { animation: none; } }
+.none { color: var(--mute); margin: 0; }
+.big { font-size: 26px; font-weight: 700; margin: 0; }
+.sub { color: var(--mute); margin: 2px 0 10px; }
+.doing { background: var(--teal-soft); border-radius: 10px; padding: 10px 12px; margin: 0 0 10px; }
+.doing b { display: block; }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.tag { font-size: 13px; background: var(--bg); border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; }
+.tag.bad, .tag.alert { background: var(--red-soft); border-color: var(--red); color: var(--red); }
+ul { list-style: none; margin: 0; padding: 0; }
+li { padding: 8px 0; border-top: 1px solid var(--line); }
+li:first-child { border-top: 0; }
+li.due { color: var(--amber); font-weight: 600; }
+li.seen { color: var(--mute); }
+.n { font-weight: 700; margin-right: 8px; }
+footer { max-width: 1200px; margin: 0 auto; padding: 0 16px 24px; color: var(--mute); font-size: 13px; }
+.hidden { display: none; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Care Dashboard<small>Watches the Pepper Care Companion. Read only.</small></h1>
+  <span id="conn" class="pill"><i></i><span id="conn-text">Connecting to the dashboard...</span></span>
+  <span id="busy" class="pill warn hidden"><i></i>Pepper is busy: tracking paused</span>
+  <button id="b-sound" type="button" aria-pressed="false">Alert sound: off</button>
+</header>
+<main>
+  <div>
+    <section aria-live="polite" style="margin-bottom:14px">
+      <h2>Carer alerts <span id="alert-count"></span></h2>
+      <div id="alerts-open"></div>
+      <p id="alerts-none" class="none">No open alerts.</p>
+      <ul id="alerts-seen"></ul>
+    </section>
+    <section>
+      <h2>With Pepper now</h2>
+      <p id="who" class="big">Nobody</p>
+      <p id="since" class="sub"></p>
+      <div id="doing" class="doing"><b id="doing-title"></b><span id="doing-detail"></span></div>
+      <div id="tags" class="tags"></div>
+    </section>
+  </div>
+  <div>
+    <section style="margin-bottom:14px">
+      <h2>Waiting <span id="queue-count"></span></h2>
+      <ul id="queue"></ul>
+    </section>
+    <section style="margin-bottom:14px">
+      <h2>Medicine reminders</h2>
+      <ul id="reminders"></ul>
+    </section>
+    <section>
+      <h2>Seen today <span id="seen-count"></span></h2>
+      <ul id="history"></ul>
+    </section>
+  </div>
+</main>
+<footer>
+  <div id="heard"></div>
+  <div id="foot"></div>
+  <div>This page only watches. Use the Staff view on Pepper's tablet to mark an alert as seen. Residents' names are shown here, so keep this page on a private network.</div>
+</footer>
+<script>
+(function () {
+  'use strict';
+  var EXERCISES = ['Neck turns', 'Neck up and down', 'Arms up', 'One arm at a time', 'Arms from the sides', 'Side pulses', 'Open and close', 'Stretch left', 'Stretch right'];
+  var ITEMS = { song1: 'My World Is Not My Home', song2: 'Mama Liked the Roses', song3: 'Falling in Love', sax: 'the Saxophone', dance: 'a dance' };
+  var snapshot = null, failures = 0, soundOn = false, audio = null, knownAlerts = {}, firstRender = true, lastBeep = 0, flashOn = false;
+
+  function $(id) { return document.getElementById(id); }
+  // every piece of text from the robot goes in with textContent, never as markup: a name typed or spoken is data
+  function el(tag, cls, text) { var e = document.createElement(tag); if (cls) { e.className = cls; } if (text !== undefined && text !== null) { e.textContent = String(text); } return e; }
+  function fill(node, children) { while (node.firstChild) { node.removeChild(node.firstChild); } for (var i = 0; i < children.length; i++) { node.appendChild(children[i]); } }
+
+  function tags(p) {
+    var t = [];
+    function add(text, cls) { t.push(el('span', 'tag' + (cls ? ' ' + cls : ''), text)); }
+    if (p.exercises) { add('Exercises: ' + p.exercises); }
+    if (p.breathing) { add('Breathing: ' + p.breathing); }
+    if (p.music) { add('Music: ' + p.music); }
+    if (p.performances) { add('Shows: ' + p.performances); }
+    if (p.quizzes) { add('Quiz: ' + p.quizzes + (p.quizLast ? ' (last ' + p.quizLast + ')' : '')); }
+    if (p.snlGames) { add('Snakes and Ladders: ' + p.snlGames + ' played' + (p.snlWins ? ', won ' + p.snlWins : '')); }
+    if (p.med) { add('Medicine: ' + p.med, p.med === 'taken' ? '' : 'bad'); }
+    if (p.memCards) { add('Memories: ' + p.memCards + (p.memLikes && p.memLikes.length ? ' (liked: ' + p.memLikes.join(', ') + ')' : '')); }
+    if (p.memAnswers && p.memAnswers.length) { add('Said: ' + p.memAnswers.join('; ')); }
+    if (p.moodLow) { add('Feels unwell', 'bad'); }
+    if (p.alert) { add('Caregiver alerted', 'alert'); }
+    return t;
+  }
+
+  function doing(s) {
+    var m = s.mode;
+    if (m === 'exercise') {
+      var e = s.exercise || {};
+      return ['Exercise', (e.n ? 'Exercise ' + e.n + ' of 9: ' + (EXERCISES[e.n - 1] || '') : 'Starting') + (e.total ? ', ' + Math.max(0, Math.round(e.total - (e.elapsed || 0))) + ' seconds left' : '')];
+    }
+    if (m === 'breathing') { var b = s.breathing || {}; return ['Breathing together', b.phase ? 'Breath ' + (b.i || 0) + ' of ' + (b.n || 0) + ', ' + b.phase : '']; }
+    if (m === 'music') { return ['Music', ITEMS[s.item] || s.item || '']; }
+    if (m === 'show') { return ['Performance', ITEMS[s.item] || s.item || '']; }
+    if (m === 'quiz') {
+      var q = s.quiz || {};
+      return ['Quiz', q.phase === 'done' ? 'Finished: ' + q.score + ' out of ' + q.total : 'Question ' + (q.n || 1) + ' of ' + (q.total || 5) + ', score so far ' + (q.score || 0)];
+    }
+    if (m === 'memories') {
+      var c = s.mem || {};
+      if (c.phase === 'end') { return ['Relive Malta', 'Finished: ' + (c.total || '') + ' memories']; }
+      var ans = (c.ans >= 0 && c.opts && c.opts[c.ans]) ? '. Chose: ' + c.opts[c.ans] : '';
+      return ['Relive Malta', 'Memory ' + (c.n || 1) + ' of ' + (c.total || 10) + (c.title ? ': ' + c.title : '') + ans];
+    }
+    if (m === 'snl') {
+      var g = s.snl || {};
+      var pos = g.pos || [0, 0];
+      return ['Snakes and Ladders', g.phase === 'over' ? (g.winner === 0 ? 'Finished: the resident won' : 'Finished: Pepper won') : 'Resident on ' + pos[0] + ', Pepper on ' + pos[1]];
+    }
+    if (s.pick) { return ['Choosing', s.pick.which === 'music' ? 'The resident is choosing a song' : 'The resident is choosing an activity']; }
+    return ['Waiting', s.current ? 'Nothing is running. The resident can choose.' : 'Nobody is with Pepper.'];
+  }
+
+  function beep() {
+    if (!soundOn) { return; }
+    try {
+      if (!audio) { audio = new (window.AudioContext || window.webkitAudioContext)(); }
+      var t = audio.currentTime;
+      for (var i = 0; i < 3; i++) {
+        var o = audio.createOscillator(), g = audio.createGain();
+        o.type = 'sine'; o.frequency.value = i % 2 ? 660 : 880;
+        g.gain.setValueAtTime(0.0001, t + i * 0.25); g.gain.exponentialRampToValueAtTime(0.4, t + i * 0.25 + 0.03); g.gain.exponentialRampToValueAtTime(0.0001, t + i * 0.25 + 0.22);
+        o.connect(g); g.connect(audio.destination); o.start(t + i * 0.25); o.stop(t + i * 0.25 + 0.24);
+      }
+    } catch (e) { /* no sound available: the red cards still show */ }
+  }
+
+  function render() {
+    var d = snapshot, s = d && d.state;
+    var conn = $('conn'), text = $('conn-text');
+    if (failures >= 2) { conn.className = 'pill bad'; text.textContent = 'The dashboard program is not reachable'; }
+    else if (!d) { conn.className = 'pill'; text.textContent = 'Connecting to the dashboard...'; }
+    else if (!s) { conn.className = 'pill warn'; text.textContent = 'Waiting for Pepper to send its first update'; }
+    else if (!d.connected) { conn.className = 'pill bad'; text.textContent = 'Pepper is not sending (last update ' + Math.round(d.age) + ' s ago)'; }
+    else { conn.className = 'pill ok'; text.textContent = 'Pepper connected'; }
+    if (!s) { document.title = 'Care Dashboard'; return; }
+
+    $('busy').className = 'pill warn' + (s.lag ? '' : ' hidden');
+
+    // alerts
+    var alerts = s.alerts || [], open = [], seen = [], i, a;
+    for (i = alerts.length - 1; i >= 0; i--) { (alerts[i].seen ? seen : open).push(alerts[i]); }
+    var fresh = false, openNodes = [];
+    for (i = 0; i < open.length; i++) {
+      a = open[i];
+      var key = (s.run || '') + ':' + a.id;
+      var isNew = !knownAlerts[key];
+      knownAlerts[key] = true;
+      if (isNew && !firstRender) { fresh = true; }
+      var card = el('div', 'alert' + (isNew && !firstRender ? ' fresh' : ''));
+      card.appendChild(el('b', null, a.name || 'A patient'));
+      card.appendChild(el('span', null, (a.reason ? a.reason : 'needs help') + ', ' + (a.time || '')));
+      openNodes.push(card);
+    }
+    for (i = 0; i < seen.length; i++) { knownAlerts[(s.run || '') + ':' + seen[i].id] = true; }
+    fill($('alerts-open'), openNodes);
+    $('alerts-none').className = 'none' + (open.length ? ' hidden' : '');
+    var seenNodes = [];
+    for (i = 0; i < seen.length; i++) { seenNodes.push(el('li', 'seen', (seen[i].time || '') + ' ' + (seen[i].name || '') + ', ' + (seen[i].reason || 'needs help') + ', seen')); }
+    fill($('alerts-seen'), seenNodes);
+    $('alert-count').textContent = open.length ? '(' + open.length + ' open)' : '';
+    document.title = (open.length ? '(' + open.length + ') ' : '') + 'Care Dashboard';
+    var nowMs = (new Date()).getTime();
+    if (open.length && (fresh || nowMs - lastBeep > 30000)) { lastBeep = nowMs; beep(); }
+    if (!open.length) { lastBeep = 0; }
+    firstRender = false;
+
+    // who and what
+    var c = s.current;
+    $('who').textContent = c ? c.name : (s.calling ? 'Calling ' + s.calling : 'Nobody');
+    $('since').textContent = c ? 'Since ' + c.start : '';
+    var dg = doing(s);
+    $('doing-title').textContent = dg[0];
+    $('doing-detail').textContent = dg[1];
+    fill($('tags'), c ? tags(c) : []);
+
+    // queue
+    var q = s.queue || [], qn = [];
+    for (i = 0; i < q.length; i++) { qn.push(el('li', null, q[i])); }
+    if (!qn.length) { qn.push(el('li', 'none', 'Nobody waiting.')); }
+    fill($('queue'), qn);
+    $('queue-count').textContent = q.length ? '(' + q.length + ')' : '';
+
+    // reminders
+    var r = s.reminders || [], rn = [];
+    for (i = 0; i < r.length; i++) { rn.push(el('li', r[i].status === 'due' ? 'due' : null, String(r[i].label || '').replace(' a m', ' am').replace(' p m', ' pm') + ' ' + (r[i].name || '') + (r[i].status === 'due' ? ', now' : ''))); }
+    if (!rn.length) { rn.push(el('li', 'none', 'No reminders yet.')); }
+    fill($('reminders'), rn);
+
+    // history
+    var h = s.history || [], hn = [];
+    for (i = h.length - 1; i >= 0; i--) {
+      var li = el('li'), top = el('div');
+      top.appendChild(el('span', 'n', h[i].name || ''));
+      top.appendChild(document.createTextNode((h[i].start || '') + ' to ' + (h[i].end || '')));
+      li.appendChild(top);
+      var tg = el('div', 'tags'); fill(tg, tags(h[i])); li.appendChild(tg);
+      hn.push(li);
+    }
+    if (!hn.length) { hn.push(el('li', 'none', 'Nobody yet.')); }
+    fill($('history'), hn);
+    $('seen-count').textContent = s.seenTotal ? '(' + s.seenTotal + ')' : '';
+
+    $('heard').textContent = s.heard ? 'Pepper last heard: "' + s.heard + '"' : '';
+    $('foot').textContent = 'Care Companion v' + (s.v || '?') + ', dashboard v' + (d.serverVersion || '?') + (d.robot ? ', robot ' + d.robot : '');
+  }
+
+  function poll() {
+    var x = new XMLHttpRequest();
+    x.open('GET', '/api/care/state', true);
+    x.timeout = 4000;
+    x.onload = function () {
+      try { snapshot = JSON.parse(x.responseText); failures = 0; } catch (e) { failures += 1; }
+      render();
+    };
+    x.onerror = x.ontimeout = function () { failures += 1; render(); };
+    x.send();
+  }
+
+  $('b-sound').onclick = function () {
+    soundOn = !soundOn;
+    this.setAttribute('aria-pressed', soundOn ? 'true' : 'false');
+    this.textContent = 'Alert sound: ' + (soundOn ? 'on' : 'off');
+    if (soundOn) { beep(); }                      // this click is the user gesture browsers need before they allow sound
+  };
+
+  poll();
+  window.setInterval(poll, 1000);
+}());
+</script>
+</body>
+</html>

@@ -1,0 +1,712 @@
+topic: ~Activity()
+language: enu
+
+# Pepper Care Companion v4.0 (IEEE Malta Digital Health Hackathon 2026). Any number of patients, one at a time.
+# ASCII only. Keep robot lines short.
+
+concept:(yes) [yes yeah yep sure okay ok please "of course" "go ahead"]
+concept:(no) [no nope "no thanks" "not yet" forgot "i forgot" "i did not" "i didn't"]
+concept:(notSure) ["not sure" "don't know" "do not know" maybe]
+concept:(happy) [good fine great happy "not bad" "very good" "pretty good"]
+concept:(sad) [sad bad tired sick unwell lonely pain "not good" "not well" "not great"]
+concept:(how) ["how are you" "and you"]
+concept:(repeat) [repeat again "say again" pardon]
+concept:(thx) [thanks "thank you"]
+concept:(hello) [hello hi hey "good morning" "good afternoon" "good evening"]
+concept:(bye) [bye goodbye "see you"]
+concept:(exercise) [exercise exercises workout]
+concept:(next) [next skip]
+concept:(back) [back previous "go back"]
+concept:(done) [done finished]
+concept:(stop) [stop enough halt "stop pepper"]
+concept:(dance) [dance dancing]
+concept:(activities) [activities activity "an activity" "some activities"]
+concept:(snl) [snakes ladders "snakes and ladders" "snake and ladder" "snakes and ladder" "snakes ladders" "board game" game games "a game" "play a game"]
+concept:(rollDice) [roll "roll the dice" "roll dice" "throw the dice" "throw dice" dice throw]
+concept:(skipTurn) [skip "skip turn" "skip my turn"]
+concept:(newGame) ["new game" "start over" "play again" restart "another game"]
+concept:(quiz) [quiz quizzes trivia "play a quiz" "ask me questions"]
+concept:(ansOne) [one first "number one" "option one" "the first one" "the first"]
+concept:(ansTwo) [two second "number two" "option two" "the second one" "the second"]
+concept:(ansThree) [three third "number three" "option three" "the third one" "the third"]
+concept:(memW1) [band bands "on a boat" aboard sailed inside indoors ricotta irkotta walls fortress stone tomato tomatoes "olive oil" crib nativity costumes costume swimming swim balcony balconies]
+concept:(memW2) [fireworks firework shore watched "from the shore" deck outside outdoors peas pizelli boats ships butter food sweets dinner floats float parade walk strolling street played]
+concept:(relive) [memories memory "malta memories" "relive malta" "remember malta" reminisce]
+concept:(music) [music song songs]
+concept:(chat) [chat talk conversation]
+concept:(breathe) [breathe breathing "deep breath" "deep breathing" relax calm]
+concept:(medTime) ["when is my medicine" "when is my medication" "medicine time" "medication time"]
+concept:(medication) [medication medicine medicines pills]
+concept:(reminder) [reminder remind]
+concept:(help) [help emergency nurse "i need help"]
+concept:(suggest) ["surprise me" "something fun" "something nice" "i am bored" bored "you choose" "you decide" "what do you suggest" "what do you recommend" suggest suggestion "any idea" "any ideas" "i do not know" "i don't know" "not sure"]
+concept:(nextPatient) ["next patient" "next person"]
+concept:(group) ["all of us" "we are two" "we are three" "we are four" "we are many" "our group"]
+concept:(hourWord) [one two three four five six seven eight nine ten eleven twelve]
+concept:(minWord) [one two three five ten fifteen twenty thirty]
+concept:(am) [morning "a m" am]
+concept:(pm) [afternoon evening night "p m" pm]
+concept:(names) [Anna Ben Carl David Emma Frank Grace Hannah Ian Julia Karl Laura Mark Nina Oscar Paul Rachel Sarah Tom Vera Adam Alice Amy Andrew Anne Benjamin Charlotte Chris Daniel Elena Emily Erik Eva George Helen Henry Isabel Jack James Jan Jennifer John Joseph Katherine Kevin Lisa Lucy Maria Mary Michael Natalie Nora Olivia Patrick Peter Robert Ruth Sofia Sophie Stephen Susan Thomas Victoria William Zoe Ali Amir Fatima Hassan Priya Raj Ankit Ravi Sunita Wei Mei Yuki Ola Lars Ingrid Kari Magnus Silje Sondre Sven Tone Astrid Joe Jane Jean Carmen Charles Mario Miriam Paolo Lorna Doreen Carmel Carmela Rita Rose Josephine Antoinette Frances Francis Anthony Tony Salvu Salvatore Emanuel Lawrence Censu Nazzareno Giuseppe Giovanni Pawlu Pauline Marthese Mariella Marija Doris Joanna Christine Claire Conrad Duncan Edward Albert Alfred Arthur Barbara Betty Brian Catherine Clara Diana Dorothy Eleanor Elizabeth Ellen Eric Ethel Evelyn Florence Frederick Gerald Gloria Gordon Harold Harry Irene Jacob Joan Joyce Judith Kenneth Leonard Lily Louis Louise Margaret Martha Martin Maureen Mildred Nancy Norman Pamela Patricia Philip Ralph Raymond Richard Roger Ronald Rosa Samuel Shirley Simon Stanley Teresa Theresa Vincent Walter Wendy Agnes Alan Bernard Beatrice Colin Dennis Derek Edith Edna Geoffrey Gwen Hilda Ivy Jessie Kathleen Keith Leslie Malcolm Marion Maud Muriel Neil Nellie Olive Percy Phyllis Reginald Sidney Sylvia Trevor Una Violet Winifred Bjorn Knut Liv Solveig Gunnar Arne Odd Randi Berit Hilde Eirik Torstein Kristin Marit Anders Per Nils Petter Hans Sigrid Tove Aksel Emil Jonas Ida Ingeborg Oda Maja Sara Leah Noah Liam Mia Ella Ava Chloe]
+dynamic:extraNames
+
+# ----- sent by the Care Controller (ALDialog.forceInput) ---------------------------
+u:("robotcmd crowd") Hello everyone! One at a time, please. You can add your name on my tablet. ^stayInScope
+u:("robotcmd registered") ^gotoReactivate(nameKnown)
+u:("robotcmd registeredfirst") ^gotoReactivate(nameFirst)
+u:("robotcmd askname") ^gotoReactivate(askName)
+u:("robotcmd callnext") ^gotoReactivate(callNext)
+u:("robotcmd closed") Thank you. Goodbye!
+u:("robotcmd meddue") ^gotoReactivate(medDue)
+u:("robotcmd breathdone") ^gotoReactivate(breatheEnd)
+u:("robotcmd exdone1") Well done! ^gotoReactivate(exercise2)
+u:("robotcmd exdone2") Well done! ^gotoReactivate(exercise3)
+u:("robotcmd exdone3") Well done! ^gotoReactivate(exercise4)
+u:("robotcmd exdone4") Well done! ^gotoReactivate(exercise5)
+u:("robotcmd exdone5") Well done! ^gotoReactivate(exercise6)
+u:("robotcmd exdone6") Well done! ^gotoReactivate(exercise7)
+u:("robotcmd exdone7") Well done! ^gotoReactivate(exercise8)
+u:("robotcmd exdone8") Well done! ^gotoReactivate(exercise9)
+u:("robotcmd exdone9") Well done! ^gotoReactivate(endExercise)
+u:("robotcmd tilea") ^gotoReactivate(exerciseIntro)
+u:("robotcmd tileb") ^gotoReactivate(chooseSong)
+u:("robotcmd tilec") ^gotoReactivate(chatQ1)
+u:("robotcmd tiled") ^gotoReactivate(medCheck)
+u:("robotcmd tilee") ^gotoReactivate(dancePlay)
+u:("robotcmd tilef") ^gotoReactivate(breatheIntro)
+u:("robotcmd tileg") ^gotoReactivate(reminderAsk)
+u:("robotcmd tileh") ^gotoReactivate(callHelp)
+u:("robotcmd tilei") ^gotoReactivate(memStart)
+u:("robotcmd tilek") ^gotoReactivate(quizStart)
+u:("robotcmd tilel") ^gotoReactivate(saxPlay)
+u:("robotcmd tilem") ^gotoReactivate(song1Play)
+u:("robotcmd tilen") ^gotoReactivate(song2Play)
+u:("robotcmd tileo") ^gotoReactivate(song3Play)
+u:("robotcmd tilep") ^gotoReactivate(chooseActivity)
+u:("robotcmd tileq") ^gotoReactivate(snlStart)
+u:("robotcmd quizask") ^gotoReactivate(quizAsk)
+u:("robotcmd quizend") ^gotoReactivate(quizEnd)
+u:("robotcmd quizidle") Okay, no more questions for now. ^gotoReactivate(anythingElse)
+u:("robotcmd memcard") ^gotoReactivate(memCard)
+u:("robotcmd memend") ^gotoReactivate(memEnd)
+u:("robotcmd memidle") Okay. ^gotoReactivate(anythingElse)
+u:("robotcmd snlsay") ^gotoReactivate(snlSay)
+u:("robotcmd snlend") ^gotoReactivate(snlEnd)
+u:("robotcmd snlidle") Okay. ^gotoReactivate(anythingElse)
+u:("robotcmd welcome") ^start(animations/Stand/Gestures/Hey_1) Hello! ^wait(animations/Stand/Gestures/Hey_1) ^gotoReactivate(welcome)
+u:("robotcmd ping") $dlgPong=ok4
+u:("robotcmd hellosame") Hello again, $name! ^gotoReactivate(anythingElse)
+u:("robotcmd grouphere") One at a time, please. Who is first? ^gotoReactivate(askName)
+u:("robotcmd saytext") $sayText ^stayInScope
+u:("robotcmd later") Let us finish this first. ^stayInScope
+u:("robotcmd hintquiz") Say one, two, or three. Or touch the screen. ^stayInScope
+u:("robotcmd hintmem") Say the first or the second. Say next to see another picture. Or touch the screen. ^stayInScope
+u:("robotcmd hintsnl") Say roll to throw the dice. Or touch the dice. ^stayInScope
+u:("robotcmd hintex") Just follow my movements. Say next to skip, or stop to end. ^stayInScope
+u:("robotcmd hintbreath") Breathe in and out with me. Say stop when you want to end. ^stayInScope
+u:("robotcmd hintmusic") Enjoy the music. Say stop when you want something else. ^stayInScope
+u:("robotcmd hintidle") You can say exercise, breathing, music, activities, chat, memories, medicine, or reminder. You can also ask me the time, or for a joke. ^stayInScope
+u:("robotcmd suggestask") ^gotoReactivate(suggestAsk)
+u:("robotcmd suggestnone") That is all my ideas for now. Tell me what you would like. ^gotoReactivate(offerMenuAgain)
+u:("robotcmd didmean") ^gotoReactivate(didMean)
+u:("robotcmd nuplain") Sorry, I did not catch that. ^gotoReactivate(offerMenuAgain)
+u:("robotcmd nutouch") Sorry. You can also touch my screen. ^gotoReactivate(offerMenuAgain)
+
+
+# ----- things a person can say at any time ----------------------------------------
+u:(~hello) $pepperCmd=hello ^stayInScope
+u:(~nextPatient) Okay. Next person, please. $pepperCmd=next
+u:(~group) $pepperCmd=group ^stayInScope
+u:(~help) ^gotoReactivate(callHelp)
+u:(~stop) Okay, I stopped. $pepperCmd=stop
+u:(~medTime) Your reminder is at $medNext.
+u:(~reminder) ^gotoReactivate(reminderAsk)
+u:(~medication) ^gotoReactivate(medCheck)
+u:(what is your name) My name is Pepper.
+u:(~how) I am fine, thank you!
+u:(~thx) You are welcome!
+u:(~bye) Goodbye! Take care.
+u:([color colour]) My favourite colour is violet.
+u:(do you eat) No. I eat electricity!
+u:(e:LeftBumperPressed) My left foot bumped into something!
+u:(e:RightBumperPressed) My right foot bumped into something!
+u:(~repeat) ^sameProposal
+u:(["i fell" "i have fallen" "i fell down" "i have had a fall" "i had a fall" "i have fallen down"]) Please stay where you are. I am calling the care staff now. $pepperCmd=needfall ^stayInScope
+u:(["i am in pain" "i have a pain" "it hurts" "that hurts" "i am hurting" "i have chest pain" "my chest hurts" "i have pain"]) I am sorry. I am calling the care staff now. $pepperCmd=needpain ^stayInScope
+u:(["i feel dizzy" "i am dizzy" "i feel faint" "i feel sick" "i am going to faint"]) Please sit down. I am calling the care staff now. $pepperCmd=needdizzy ^stayInScope
+u:(["i cannot breathe" "i can not breathe" "i can't breathe" "i am short of breath" "i have trouble breathing"]) Stay calm. I am calling the care staff now. $pepperCmd=needbreath ^stayInScope
+u:(["i need the toilet" "i need to go to the toilet" "i need the bathroom" "i need the loo" "where is the toilet" "i want the toilet" "i need to use the toilet"]) Of course. I will tell the care staff. They will come soon. $pepperCmd=needtoilet ^stayInScope
+u:(["i am thirsty" "i want a drink" "i would like a drink" "i need a drink" "i want some water" "can i have some water" "a cup of tea please"]) I will ask the care staff for a drink. $pepperCmd=needdrink ^stayInScope
+u:(["i am hungry" "i want something to eat" "i would like something to eat"]) I will tell the care staff that you are hungry. $pepperCmd=needfood ^stayInScope
+u:(["i am cold" "i feel cold" "i am freezing"]) I will tell the care staff that you are cold. $pepperCmd=needcold ^stayInScope
+u:(["i am hot" "i feel hot" "i am too hot"]) I will tell the care staff that you are hot. $pepperCmd=needhot ^stayInScope
+u:(["i am lonely" "i feel lonely" "i am sad" "i feel sad" "i feel low" "i am unhappy"]) I am sorry you feel that way. I am here with you. Say chat or music, and I will do that. $pepperCmd=moodlow ^stayInScope
+u:(["what can you do" "what can i say" "what do i say" "how do i use you" "i do not understand" "i don't understand"]) $pepperCmd=helpme ^stayInScope
+u:(["what time is it" "what is the time" "tell me the time" "do you know the time" "what time is it now"]) It is $clockText. ^stayInScope
+u:(["what day is it" "what day is today" "what is the date" "what is today" "what is today's date"]) Today is $dayText. ^stayInScope
+u:(["tell me a joke" "do you know a joke" "make me laugh" "another joke" "say a joke"]) $pepperCmd=joke ^stayInScope
+u:(["tell me about malta" "tell me a fact" "tell me something" "something about malta" "a malta fact" "did you know"]) $pepperCmd=fact ^stayInScope
+u:(["surprise me" "i am bored" "something fun" "what do you suggest" "you choose"]) $pepperCmd=suggest ^stayInScope
+u:(["who are you" "what are you"]) I am Pepper, a robot. I am here to keep you company. ^stayInScope
+u:(["are you a robot" "are you real" "are you alive"]) Yes, I am a robot. I am not alive, but I am happy to be with you. ^stayInScope
+u:(["do you sleep"]) Robots do not sleep. I am always ready to talk. ^stayInScope
+u:(["where do you live" "where are you from"]) I live here with you. ^stayInScope
+u:(["you are nice" "you are kind" "i like you" "you are good" "you are funny" "you are clever"]) Thank you, that is kind of you! ^stayInScope
+
+# ----- 1. name --------------------------------------------------------------------------
+
+proposal: %autoStart $pepperCmd=autostart
+
+proposal: %welcome I am Pepper, your activity companion. I can help you exercise and breathe, play music and activities, chat, relive memories of Malta, and look after your medicine and reminders. ^gotoReactivate(askName)
+
+proposal: %askName What is your first name?
+    u1:("robotcmd crowd") Hello everyone! One at a time, please. You can add your name on my tablet. ^stayInScope
+    u1:("robotcmd registered") ^gotoReactivate(nameKnown)
+    u1:("robotcmd registeredfirst") ^gotoReactivate(nameFirst)
+    u1:("robotcmd askname") ^gotoReactivate(askName)
+    u1:("robotcmd callnext") ^gotoReactivate(callNext)
+    u1:("robotcmd closed") Thank you. Goodbye!
+    u1:("robotcmd meddue") ^gotoReactivate(medDue)
+    u1:("robotcmd breathdone") ^gotoReactivate(breatheEnd)
+    u1:("robotcmd exdone1") Well done! ^gotoReactivate(exercise2)
+    u1:("robotcmd exdone2") Well done! ^gotoReactivate(exercise3)
+    u1:("robotcmd exdone3") Well done! ^gotoReactivate(exercise4)
+    u1:("robotcmd exdone4") Well done! ^gotoReactivate(exercise5)
+    u1:("robotcmd exdone5") Well done! ^gotoReactivate(exercise6)
+    u1:("robotcmd exdone6") Well done! ^gotoReactivate(exercise7)
+    u1:("robotcmd exdone7") Well done! ^gotoReactivate(exercise8)
+    u1:("robotcmd exdone8") Well done! ^gotoReactivate(exercise9)
+    u1:("robotcmd exdone9") Well done! ^gotoReactivate(endExercise)
+    u1:("robotcmd tilea") ^gotoReactivate(exerciseIntro)
+    u1:("robotcmd tileb") ^gotoReactivate(chooseSong)
+    u1:("robotcmd tilec") ^gotoReactivate(chatQ1)
+    u1:("robotcmd tiled") ^gotoReactivate(medCheck)
+    u1:("robotcmd tilee") ^gotoReactivate(dancePlay)
+    u1:("robotcmd tilef") ^gotoReactivate(breatheIntro)
+    u1:("robotcmd tileg") ^gotoReactivate(reminderAsk)
+    u1:("robotcmd tileh") ^gotoReactivate(callHelp)
+    u1:("robotcmd tilei") ^gotoReactivate(memStart)
+    u1:("robotcmd tilek") ^gotoReactivate(quizStart)
+    u1:("robotcmd tilel") ^gotoReactivate(saxPlay)
+    u1:("robotcmd tilem") ^gotoReactivate(song1Play)
+    u1:("robotcmd tilen") ^gotoReactivate(song2Play)
+    u1:("robotcmd tileo") ^gotoReactivate(song3Play)
+    u1:("robotcmd tilep") ^gotoReactivate(chooseActivity)
+    u1:("robotcmd tileq") ^gotoReactivate(snlStart)
+    u1:("robotcmd quizask") ^gotoReactivate(quizAsk)
+    u1:("robotcmd quizend") ^gotoReactivate(quizEnd)
+    u1:("robotcmd quizidle") Okay, no more questions for now. ^gotoReactivate(anythingElse)
+    u1:("robotcmd memcard") ^gotoReactivate(memCard)
+    u1:("robotcmd memend") ^gotoReactivate(memEnd)
+    u1:("robotcmd memidle") Okay. ^gotoReactivate(anythingElse)
+    u1:("robotcmd snlsay") ^gotoReactivate(snlSay)
+    u1:("robotcmd snlend") ^gotoReactivate(snlEnd)
+    u1:("robotcmd snlidle") Okay. ^gotoReactivate(anythingElse)
+    u1:("robotcmd welcome") ^start(animations/Stand/Gestures/Hey_1) Hello! ^wait(animations/Stand/Gestures/Hey_1) ^gotoReactivate(welcome)
+    u1:("robotcmd hellosame") Hello again, $name! ^gotoReactivate(anythingElse)
+    u1:("robotcmd grouphere") One at a time, please. Who is first? ^gotoReactivate(askName)
+    u1:("robotcmd saytext") $sayText ^stayInScope
+    u1:("robotcmd later") Let us finish this first. ^stayInScope
+    u1:("robotcmd hintquiz") Say one, two, or three. Or touch the screen. ^stayInScope
+    u1:("robotcmd hintmem") Say the first or the second. Say next to see another picture. Or touch the screen. ^stayInScope
+    u1:("robotcmd hintsnl") Say roll to throw the dice. Or touch the dice. ^stayInScope
+    u1:("robotcmd hintex") Just follow my movements. Say next to skip, or stop to end. ^stayInScope
+    u1:("robotcmd hintbreath") Breathe in and out with me. Say stop when you want to end. ^stayInScope
+    u1:("robotcmd hintmusic") Enjoy the music. Say stop when you want something else. ^stayInScope
+    u1:("robotcmd hintidle") You can say exercise, breathing, music, activities, chat, memories, medicine, or reminder. You can also ask me the time, or for a joke. ^stayInScope
+    u1:("robotcmd suggestask") ^gotoReactivate(suggestAsk)
+    u1:("robotcmd suggestnone") That is all my ideas for now. Tell me what you would like. ^gotoReactivate(offerMenuAgain)
+    u1:("robotcmd didmean") ^gotoReactivate(didMean)
+    u1:("robotcmd nuplain") Sorry, I did not catch that. ^gotoReactivate(offerMenuAgain)
+    u1:("robotcmd nutouch") Sorry. You can also touch my screen. ^gotoReactivate(offerMenuAgain)
+    u1:(~repeat) ^sameProposal
+    u1:(~stop) Okay. Say hello when you are ready. $pepperCmd=stop
+    u1:([and ~group]) One at a time, please. ^sameProposal
+    u1:(~help) ^gotoReactivate(callHelp)
+    u1:(~hello) Hello! ^sameProposal
+    u1:(~relive) ^gotoReactivate(memStart)
+    u1:(~music) ^gotoReactivate(chooseSong)
+    u1:(~activities) ^gotoReactivate(chooseActivity)
+    u1:(~snl) ^gotoReactivate(snlStart)
+    u1:(~quiz) ^gotoReactivate(quizStart)
+    u1:(~exercise) ^gotoReactivate(exerciseIntro)
+    u1:(~breathe) ^gotoReactivate(breatheIntro)
+    u1:(~chat) ^gotoReactivate(chatQ1)
+    u1:(~dance) ^gotoReactivate(dancePlay)
+    u1:(["i fell" "i have fallen" "i fell down" "i have had a fall" "i had a fall" "i have fallen down"]) Please stay where you are. I am calling the care staff now. $pepperCmd=needfall ^stayInScope
+    u1:(["i am in pain" "i have a pain" "it hurts" "that hurts" "i am hurting" "i have chest pain" "my chest hurts" "i have pain"]) I am sorry. I am calling the care staff now. $pepperCmd=needpain ^stayInScope
+    u1:(["i feel dizzy" "i am dizzy" "i feel faint" "i feel sick" "i am going to faint"]) Please sit down. I am calling the care staff now. $pepperCmd=needdizzy ^stayInScope
+    u1:(["i cannot breathe" "i can not breathe" "i can't breathe" "i am short of breath" "i have trouble breathing"]) Stay calm. I am calling the care staff now. $pepperCmd=needbreath ^stayInScope
+    u1:(["i need the toilet" "i need to go to the toilet" "i need the bathroom" "i need the loo" "where is the toilet" "i want the toilet" "i need to use the toilet"]) Of course. I will tell the care staff. They will come soon. $pepperCmd=needtoilet ^stayInScope
+    u1:(["i am thirsty" "i want a drink" "i would like a drink" "i need a drink" "i want some water" "can i have some water" "a cup of tea please"]) I will ask the care staff for a drink. $pepperCmd=needdrink ^stayInScope
+    u1:(["i am hungry" "i want something to eat" "i would like something to eat"]) I will tell the care staff that you are hungry. $pepperCmd=needfood ^stayInScope
+    u1:(["i am cold" "i feel cold" "i am freezing"]) I will tell the care staff that you are cold. $pepperCmd=needcold ^stayInScope
+    u1:(["i am hot" "i feel hot" "i am too hot"]) I will tell the care staff that you are hot. $pepperCmd=needhot ^stayInScope
+    u1:(["i am lonely" "i feel lonely" "i am sad" "i feel sad" "i feel low" "i am unhappy"]) I am sorry you feel that way. I am here with you. Say chat or music, and I will do that. $pepperCmd=moodlow ^stayInScope
+    u1:(["what can you do" "what can i say" "what do i say" "how do i use you" "i do not understand" "i don't understand"]) $pepperCmd=helpme ^stayInScope
+    u1:(["what time is it" "what is the time" "tell me the time" "do you know the time" "what time is it now"]) It is $clockText. ^stayInScope
+    u1:(["what day is it" "what day is today" "what is the date" "what is today" "what is today's date"]) Today is $dayText. ^stayInScope
+    u1:(["tell me a joke" "do you know a joke" "make me laugh" "another joke" "say a joke"]) $pepperCmd=joke ^stayInScope
+    u1:(["tell me about malta" "tell me a fact" "tell me something" "something about malta" "a malta fact" "did you know"]) $pepperCmd=fact ^stayInScope
+    u1:(["surprise me" "i am bored" "something fun" "what do you suggest" "you choose"]) $pepperCmd=suggest ^stayInScope
+    u1:(_~names) $name=$1 $pepperName=$1 ^gotoReactivate(nameKnown)
+    u1:(_~extraNames) $name=$1 $pepperName=$1 ^gotoReactivate(nameKnown)
+    u1:(["my name is" "i am" "i'm" "call me"] _*) $name=$1 ^gotoReactivate(confirmName)
+    u1:(_*) $name=$1 ^gotoReactivate(confirmName)
+    u1:(e:Dialog/NotUnderstood) Sorry. Just your first name, please. ^sameProposal
+    u1:(e:Dialog/NotSpeaking15) ^gotoReactivate(askNameAgain)
+
+proposal: %askNameAgain Please say your first name. Or type it on my tablet.
+    u1:("robotcmd crowd") Hello everyone! One at a time, please. You can add your name on my tablet. ^stayInScope
+    u1:("robotcmd registered") ^gotoReactivate(nameKnown)
+    u1:("robotcmd registeredfirst") ^gotoReactivate(nameFirst)
+    u1:("robotcmd askname") ^gotoReactivate(askName)
+    u1:("robotcmd callnext") ^gotoReactivate(callNext)
+    u1:("robotcmd closed") Thank you. Goodbye!
+    u1:("robotcmd meddue") ^gotoReactivate(medDue)
+    u1:("robotcmd breathdone") ^gotoReactivate(breatheEnd)
+    u1:("robotcmd exdone1") Well done! ^gotoReactivate(exercise2)
+    u1:("robotcmd exdone2") Well done! ^gotoReactivate(exercise3)
+    u1:("robotcmd exdone3") Well done! ^gotoReactivate(exercise4)
+    u1:("robotcmd exdone4") Well done! ^gotoReactivate(exercise5)
+    u1:("robotcmd exdone5") Well done! ^gotoReactivate(exercise6)
+    u1:("robotcmd exdone6") Well done! ^gotoReactivate(exercise7)
+    u1:("robotcmd exdone7") Well done! ^gotoReactivate(exercise8)
+    u1:("robotcmd exdone8") Well done! ^gotoReactivate(exercise9)
+    u1:("robotcmd exdone9") Well done! ^gotoReactivate(endExercise)
+    u1:("robotcmd tilea") ^gotoReactivate(exerciseIntro)
+    u1:("robotcmd tileb") ^gotoReactivate(chooseSong)
+    u1:("robotcmd tilec") ^gotoReactivate(chatQ1)
+    u1:("robotcmd tiled") ^gotoReactivate(medCheck)
+    u1:("robotcmd tilee") ^gotoReactivate(dancePlay)
+    u1:("robotcmd tilef") ^gotoReactivate(breatheIntro)
+    u1:("robotcmd tileg") ^gotoReactivate(reminderAsk)
+    u1:("robotcmd tileh") ^gotoReactivate(callHelp)
+    u1:("robotcmd tilei") ^gotoReactivate(memStart)
+    u1:("robotcmd tilek") ^gotoReactivate(quizStart)
+    u1:("robotcmd tilel") ^gotoReactivate(saxPlay)
+    u1:("robotcmd tilem") ^gotoReactivate(song1Play)
+    u1:("robotcmd tilen") ^gotoReactivate(song2Play)
+    u1:("robotcmd tileo") ^gotoReactivate(song3Play)
+    u1:("robotcmd tilep") ^gotoReactivate(chooseActivity)
+    u1:("robotcmd tileq") ^gotoReactivate(snlStart)
+    u1:("robotcmd quizask") ^gotoReactivate(quizAsk)
+    u1:("robotcmd quizend") ^gotoReactivate(quizEnd)
+    u1:("robotcmd quizidle") Okay, no more questions for now. ^gotoReactivate(anythingElse)
+    u1:("robotcmd memcard") ^gotoReactivate(memCard)
+    u1:("robotcmd memend") ^gotoReactivate(memEnd)
+    u1:("robotcmd memidle") Okay. ^gotoReactivate(anythingElse)
+    u1:("robotcmd snlsay") ^gotoReactivate(snlSay)
+    u1:("robotcmd snlend") ^gotoReactivate(snlEnd)
+    u1:("robotcmd snlidle") Okay. ^gotoReactivate(anythingElse)
+    u1:("robotcmd welcome") ^start(animations/Stand/Gestures/Hey_1) Hello! ^wait(animations/Stand/Gestures/Hey_1) ^gotoReactivate(welcome)
+    u1:("robotcmd hellosame") Hello again, $name! ^gotoReactivate(anythingElse)
+    u1:("robotcmd grouphere") One at a time, please. Who is first? ^gotoReactivate(askName)
+    u1:("robotcmd saytext") $sayText ^stayInScope
+    u1:("robotcmd later") Let us finish this first. ^stayInScope
+    u1:("robotcmd hintquiz") Say one, two, or three. Or touch the screen. ^stayInScope
+    u1:("robotcmd hintmem") Say the first or the second. Say next to see another picture. Or touch the screen. ^stayInScope
+    u1:("robotcmd hintsnl") Say roll to throw the dice. Or touch the dice. ^stayInScope
+    u1:("robotcmd hintex") Just follow my movements. Say next to skip, or stop to end. ^stayInScope
+    u1:("robotcmd hintbreath") Breathe in and out with me. Say stop when you want to end. ^stayInScope
+    u1:("robotcmd hintmusic") Enjoy the music. Say stop when you want something else. ^stayInScope
+    u1:("robotcmd hintidle") You can say exercise, breathing, music, activities, chat, memories, medicine, or reminder. You can also ask me the time, or for a joke. ^stayInScope
+    u1:("robotcmd suggestask") ^gotoReactivate(suggestAsk)
+    u1:("robotcmd suggestnone") That is all my ideas for now. Tell me what you would like. ^gotoReactivate(offerMenuAgain)
+    u1:("robotcmd didmean") ^gotoReactivate(didMean)
+    u1:("robotcmd nuplain") Sorry, I did not catch that. ^gotoReactivate(offerMenuAgain)
+    u1:("robotcmd nutouch") Sorry. You can also touch my screen. ^gotoReactivate(offerMenuAgain)
+    u1:(~repeat) ^sameProposal
+    u1:(~stop) Okay. Say hello when you are ready. $pepperCmd=stop
+    u1:([and ~group]) One at a time, please. ^sameProposal
+    u1:(~help) ^gotoReactivate(callHelp)
+    u1:(~hello) Hello! ^sameProposal
+    u1:(~relive) ^gotoReactivate(memStart)
+    u1:(~music) ^gotoReactivate(chooseSong)
+    u1:(~activities) ^gotoReactivate(chooseActivity)
+    u1:(~snl) ^gotoReactivate(snlStart)
+    u1:(~quiz) ^gotoReactivate(quizStart)
+    u1:(~exercise) ^gotoReactivate(exerciseIntro)
+    u1:(~breathe) ^gotoReactivate(breatheIntro)
+    u1:(~chat) ^gotoReactivate(chatQ1)
+    u1:(~dance) ^gotoReactivate(dancePlay)
+    u1:(["i fell" "i have fallen" "i fell down" "i have had a fall" "i had a fall" "i have fallen down"]) Please stay where you are. I am calling the care staff now. $pepperCmd=needfall ^stayInScope
+    u1:(["i am in pain" "i have a pain" "it hurts" "that hurts" "i am hurting" "i have chest pain" "my chest hurts" "i have pain"]) I am sorry. I am calling the care staff now. $pepperCmd=needpain ^stayInScope
+    u1:(["i feel dizzy" "i am dizzy" "i feel faint" "i feel sick" "i am going to faint"]) Please sit down. I am calling the care staff now. $pepperCmd=needdizzy ^stayInScope
+    u1:(["i cannot breathe" "i can not breathe" "i can't breathe" "i am short of breath" "i have trouble breathing"]) Stay calm. I am calling the care staff now. $pepperCmd=needbreath ^stayInScope
+    u1:(["i need the toilet" "i need to go to the toilet" "i need the bathroom" "i need the loo" "where is the toilet" "i want the toilet" "i need to use the toilet"]) Of course. I will tell the care staff. They will come soon. $pepperCmd=needtoilet ^stayInScope
+    u1:(["i am thirsty" "i want a drink" "i would like a drink" "i need a drink" "i want some water" "can i have some water" "a cup of tea please"]) I will ask the care staff for a drink. $pepperCmd=needdrink ^stayInScope
+    u1:(["i am hungry" "i want something to eat" "i would like something to eat"]) I will tell the care staff that you are hungry. $pepperCmd=needfood ^stayInScope
+    u1:(["i am cold" "i feel cold" "i am freezing"]) I will tell the care staff that you are cold. $pepperCmd=needcold ^stayInScope
+    u1:(["i am hot" "i feel hot" "i am too hot"]) I will tell the care staff that you are hot. $pepperCmd=needhot ^stayInScope
+    u1:(["i am lonely" "i feel lonely" "i am sad" "i feel sad" "i feel low" "i am unhappy"]) I am sorry you feel that way. I am here with you. Say chat or music, and I will do that. $pepperCmd=moodlow ^stayInScope
+    u1:(["what can you do" "what can i say" "what do i say" "how do i use you" "i do not understand" "i don't understand"]) $pepperCmd=helpme ^stayInScope
+    u1:(["what time is it" "what is the time" "tell me the time" "do you know the time" "what time is it now"]) It is $clockText. ^stayInScope
+    u1:(["what day is it" "what day is today" "what is the date" "what is today" "what is today's date"]) Today is $dayText. ^stayInScope
+    u1:(["tell me a joke" "do you know a joke" "make me laugh" "another joke" "say a joke"]) $pepperCmd=joke ^stayInScope
+    u1:(["tell me about malta" "tell me a fact" "tell me something" "something about malta" "a malta fact" "did you know"]) $pepperCmd=fact ^stayInScope
+    u1:(["surprise me" "i am bored" "something fun" "what do you suggest" "you choose"]) $pepperCmd=suggest ^stayInScope
+    u1:(_~names) $name=$1 $pepperName=$1 ^gotoReactivate(nameKnown)
+    u1:(_~extraNames) $name=$1 $pepperName=$1 ^gotoReactivate(nameKnown)
+    u1:(["my name is" "i am" "i'm" "call me"] _*) $name=$1 ^gotoReactivate(confirmName)
+    u1:(_*) $name=$1 ^gotoReactivate(confirmName)
+    u1:(e:Dialog/NotUnderstood) Sorry. You can type your name on my tablet. ^sameProposal
+    u1:(e:Dialog/NotSpeaking15) ^gotoReactivate(waitQuietly)
+
+proposal: %waitQuietly Okay. Say hello when you are ready.
+
+proposal: %confirmName Is your name $name?
+    u1:(~yes) Lovely! $pepperCmd=confirmname ^gotoReactivate(nameKnown)
+    u1:(~no) Sorry! ^gotoReactivate(askNameAgain)
+    u1:(~repeat) ^sameProposal
+    u1:(e:Dialog/NotUnderstood) Please say yes or no. ^sameProposal
+    u1:(e:Dialog/NotSpeaking15) ^gotoReactivate(askNameAgain)
+
+proposal: %nameKnown Nice to meet you, $name! ^gotoReactivate(medCheck)
+
+proposal: %nameFirst Nice to meet you, $name! I am Pepper, your activity companion. I can help you exercise and breathe, play music and activities, chat, relive memories of Malta, and look after your medicine and reminders. ^gotoReactivate(medCheck)
+
+proposal: %callNext $nextName, it is your turn. Are you here?
+    u1:(~yes) Hello, $nextName! $pepperCmd=nexthere ^gotoReactivate(medCheck)
+    u1:(~no) Okay. $pepperCmd=nextabsent
+    u1:(~repeat) ^sameProposal
+    u1:(e:Dialog/NotUnderstood) Are you $nextName? Yes or no? ^sameProposal
+    u1:(e:Dialog/NotSpeaking15) Okay. $pepperCmd=nextabsent
+
+# ----- 2. medicine: check-in, caregiver, reminders (Pepper never states a dose) ------------
+proposal: %medCheck Did you take your medicine today?
+    u1:(~notSure) Okay. Please ask your nurse. $pepperCmd=medunsure ^gotoReactivate(offerReminder)
+    u1:(~no) Thank you for telling me. $pepperCmd=mednot ^gotoReactivate(offerCaregiver)
+    u1:(~yes) Well done! $pepperCmd=medtaken ^gotoReactivate(howAreYou)
+    u1:(~repeat) ^sameProposal
+    u1:(~stop) Okay. $pepperCmd=stop ^gotoReactivate(howAreYou)
+    u1:(e:Dialog/NotUnderstood) Please say yes, no, or not sure. ^sameProposal
+    u1:(e:Dialog/NotSpeaking15) ^gotoReactivate(howAreYou)
+
+proposal: %offerCaregiver Shall I call a caregiver?
+    u1:(~yes) ^gotoReactivate(callHelp)
+    u1:(~no) Okay. ^gotoReactivate(offerReminder)
+    u1:(~repeat) ^sameProposal
+    u1:(e:Dialog/NotUnderstood) Yes or no? ^sameProposal
+    u1:(e:Dialog/NotSpeaking15) ^gotoReactivate(offerReminder)
+
+proposal: %offerReminder Do you want a medicine reminder?
+    u1:(~yes) ^gotoReactivate(reminderAskC)
+    u1:(~no) Okay. ^gotoReactivate(howAreYou)
+    u1:(~repeat) ^sameProposal
+    u1:(e:Dialog/NotUnderstood) Yes or no? ^sameProposal
+    u1:(e:Dialog/NotSpeaking15) ^gotoReactivate(howAreYou)
+
+proposal: %reminderAsk When? Say a time, like three p m. Or say in five minutes.
+    u1:(in one minute) $medMin=one $pepperCmd=remindmin ^gotoReactivate(reminderSetOne)
+    u1:(in _~minWord [minute minutes]) $medMin=$1 $pepperCmd=remindmin ^gotoReactivate(reminderSetMin)
+    u1:(_~hourWord ~am) $medHour=$1 $medPart=am $pepperCmd=remindat ^gotoReactivate(reminderSetAt)
+    u1:(_~hourWord ~pm) $medHour=$1 $medPart=pm $pepperCmd=remindat ^gotoReactivate(reminderSetAt)
+    u1:(_~hourWord) $medHour=$1 $medPart=any $pepperCmd=remindat ^gotoReactivate(reminderSetAt)
+    u1:([~no ~stop]) Okay, no reminder. ^gotoReactivate(anythingElse)
+    u1:(~repeat) ^sameProposal
+    u1:(e:Dialog/NotUnderstood) Sorry. Say a time, like three p m. Or use my tablet. ^sameProposal
+    u1:(e:Dialog/NotSpeaking15) Okay, no reminder. ^gotoReactivate(anythingElse)
+
+proposal: %reminderSetOne Done. I will remind you in one minute. ^gotoReactivate(anythingElse)
+proposal: %reminderSetMin Done. I will remind you in $medMin minutes. ^gotoReactivate(anythingElse)
+proposal: %reminderSetAt Done. I will remind you at $medHour o'clock. ^gotoReactivate(anythingElse)
+
+proposal: %reminderAskC When? Say a time, like three p m. Or say in five minutes.
+    u1:(in one minute) $medMin=one $pepperCmd=remindmin ^gotoReactivate(reminderSetOneC)
+    u1:(in _~minWord [minute minutes]) $medMin=$1 $pepperCmd=remindmin ^gotoReactivate(reminderSetMinC)
+    u1:(_~hourWord ~am) $medHour=$1 $medPart=am $pepperCmd=remindat ^gotoReactivate(reminderSetAtC)
+    u1:(_~hourWord ~pm) $medHour=$1 $medPart=pm $pepperCmd=remindat ^gotoReactivate(reminderSetAtC)
+    u1:(_~hourWord) $medHour=$1 $medPart=any $pepperCmd=remindat ^gotoReactivate(reminderSetAtC)
+    u1:([~no ~stop]) Okay, no reminder. ^gotoReactivate(howAreYou)
+    u1:(~repeat) ^sameProposal
+    u1:(e:Dialog/NotUnderstood) Sorry. Say a time, like three p m. Or use my tablet. ^sameProposal
+    u1:(e:Dialog/NotSpeaking15) Okay, no reminder. ^gotoReactivate(howAreYou)
+
+proposal: %reminderSetOneC Done. I will remind you in one minute. ^gotoReactivate(howAreYou)
+proposal: %reminderSetMinC Done. I will remind you in $medMin minutes. ^gotoReactivate(howAreYou)
+proposal: %reminderSetAtC Done. I will remind you at $medHour o'clock. ^gotoReactivate(howAreYou)
+
+
+proposal: %medDue $medFor, it is time for your medicine. Please take it as your nurse said. Did you take it?
+    u1:(~yes) Well done! $pepperCmd=duetaken ^gotoReactivate(anythingElse)
+    u1:(~no) Okay. Please take it, or ask your nurse. $pepperCmd=duenot ^gotoReactivate(anythingElse)
+    u1:(~repeat) ^sameProposal
+    u1:(e:Dialog/NotUnderstood) Did you take your medicine? Yes or no? ^sameProposal
+    u1:(e:Dialog/NotSpeaking15) I will note that. $pepperCmd=duenot ^gotoReactivate(anythingElse)
+
+# ----- 3. how do you feel, and the menu --------------------------------------------------------------------
+proposal: %howAreYou How do you feel today?
+    u1:(~sad) I am sorry. Say help if you need a nurse. $pepperCmd=moodlow ^gotoReactivate(offerMenu)
+    u1:(~happy) Great! ^gotoReactivate(offerMenu)
+    u1:(~how) I am fine too! ^gotoReactivate(offerMenu)
+    u1:(~repeat) ^sameProposal
+    u1:(e:Dialog/NotUnderstood) Okay. ^gotoReactivate(offerMenu)
+    u1:(e:Dialog/NotSpeaking15) ^gotoReactivate(offerMenu)
+
+proposal: %offerMenu What would you like? Exercise, breathing, music, activities, chat, memories of Malta, medicine, or a reminder?
+    u1:(~medTime) Your reminder is at $medNext. ^sameProposal
+    u1:(~exercise) ^gotoReactivate(exerciseIntro)
+    u1:(~music) ^gotoReactivate(chooseSong)
+    u1:(~activities) ^gotoReactivate(chooseActivity)
+    u1:(~quiz) ^gotoReactivate(quizStart)
+    u1:(~snl) ^gotoReactivate(snlStart)
+    u1:(~relive) ^gotoReactivate(memStart)
+    u1:(~chat) ^gotoReactivate(chatQ1)
+    u1:(~dance) ^gotoReactivate(dancePlay)
+    u1:(~breathe) ^gotoReactivate(breatheIntro)
+    u1:(~reminder) ^gotoReactivate(reminderAsk)
+    u1:(~medication) ^gotoReactivate(medCheck)
+    u1:(~help) ^gotoReactivate(callHelp)
+    u1:([~stop ~no ~bye]) ^gotoReactivate(endSession)
+    u1:(~suggest) $pepperCmd=suggest ^stayInScope
+    u1:(~repeat) ^sameProposal
+    u1:(e:Dialog/NotUnderstood) $pepperCmd=nu ^stayInScope
+    u1:(e:Dialog/NotSpeaking15) ^gotoReactivate(offerMenuAgain)
+
+proposal: %offerMenuAgain I am still here. Say music, memories, or exercise.
+    u1:(~medTime) Your reminder is at $medNext. ^sameProposal
+    u1:(~exercise) ^gotoReactivate(exerciseIntro)
+    u1:(~music) ^gotoReactivate(chooseSong)
+    u1:(~activities) ^gotoReactivate(chooseActivity)
+    u1:(~quiz) ^gotoReactivate(quizStart)
+    u1:(~snl) ^gotoReactivate(snlStart)
+    u1:(~relive) ^gotoReactivate(memStart)
+    u1:(~chat) ^gotoReactivate(chatQ1)
+    u1:(~dance) ^gotoReactivate(dancePlay)
+    u1:(~breathe) ^gotoReactivate(breatheIntro)
+    u1:(~reminder) ^gotoReactivate(reminderAsk)
+    u1:(~medication) ^gotoReactivate(medCheck)
+    u1:(~help) ^gotoReactivate(callHelp)
+    u1:([~stop ~no ~bye]) ^gotoReactivate(endSession)
+    u1:(~suggest) $pepperCmd=suggest ^stayInScope
+    u1:(e:Dialog/NotUnderstood) $pepperCmd=nu ^stayInScope
+    u1:(e:Dialog/NotSpeaking15) ^gotoReactivate(endSession)
+
+proposal: %anythingElse Anything else, $name?
+    u1:(~yes) ^gotoReactivate(offerMenu)
+    u1:(~medTime) Your reminder is at $medNext. ^sameProposal
+    u1:(~exercise) ^gotoReactivate(exerciseIntro)
+    u1:(~music) ^gotoReactivate(chooseSong)
+    u1:(~activities) ^gotoReactivate(chooseActivity)
+    u1:(~quiz) ^gotoReactivate(quizStart)
+    u1:(~snl) ^gotoReactivate(snlStart)
+    u1:(~relive) ^gotoReactivate(memStart)
+    u1:(~chat) ^gotoReactivate(chatQ1)
+    u1:(~dance) ^gotoReactivate(dancePlay)
+    u1:(~breathe) ^gotoReactivate(breatheIntro)
+    u1:(~reminder) ^gotoReactivate(reminderAsk)
+    u1:(~medication) ^gotoReactivate(medCheck)
+    u1:(~help) ^gotoReactivate(callHelp)
+    u1:([~no ~stop ~bye ~done]) ^gotoReactivate(endSession)
+    u1:(~suggest) $pepperCmd=suggest ^stayInScope
+    u1:(~repeat) ^sameProposal
+    u1:(e:Dialog/NotUnderstood) $pepperCmd=nu ^stayInScope
+    u1:(e:Dialog/NotSpeaking15) ^gotoReactivate(endSession)
+
+proposal: %endSession Thank you, $name. Goodbye! $pepperCmd=end
+
+# ----- 4. a suggestion, and "did you mean" -------------------------------------------------------------------------------
+proposal: %suggestAsk $suggestText
+    u1:(~yes) $pepperCmd=suggestyes
+    u1:(~no) Okay. $pepperCmd=suggestno
+    u1:(~repeat) ^sameProposal
+    u1:(~stop) Okay. $pepperCmd=stop ^gotoReactivate(anythingElse)
+    u1:(e:Dialog/NotUnderstood) Yes or no? ^sameProposal
+    u1:(e:Dialog/NotSpeaking15) ^gotoReactivate(anythingElse)
+
+proposal: %didMean $didMeanText
+    u1:(~yes) $pepperCmd=dmyes
+    u1:(~no) Okay. $pepperCmd=dmno ^gotoReactivate(offerMenuAgain)
+    u1:(~repeat) ^sameProposal
+    u1:(e:Dialog/NotUnderstood) Yes or no? ^sameProposal
+    u1:(e:Dialog/NotSpeaking15) $pepperCmd=dmno ^gotoReactivate(anythingElse)
+
+proposal: %callHelp I am letting the care staff know. Please stay here. $pepperCmd=alert ^gotoReactivate(anythingElse)
+    u1:(~thx) You are welcome.
+    u1:(~stop) Okay. $pepperCmd=stop
+
+# ----- 4. exercises: 40 s each; then the controller sends "robotcmd exdoneN" ----------------
+proposal: %exerciseIntro Let's exercise! Say stop if anything hurts. Each one is forty seconds. Say next to skip. Ready?
+    u1:(~yes) Let's go! ^gotoReactivate(exercise1)
+    u1:([~no ~stop]) Okay. ^gotoReactivate(anythingElse)
+    u1:(~repeat) ^sameProposal
+    u1:(e:Dialog/NotUnderstood) Ready? Yes or no? ^sameProposal
+    u1:(e:Dialog/NotSpeaking15) ^gotoReactivate(anythingElse)
+
+# Exercise 1: Neck turns
+proposal: %exercise1 Exercise one. Turn your head slowly to the left, then to the right. Follow me! $pepperCmd=exercise1
+    u1:(~stop) Okay, we stop here. $pepperCmd=stop ^gotoReactivate(anythingElse)
+    u1:(~next) Okay, next one. ^gotoReactivate(exercise2)
+
+# Exercise 2: Neck up and down
+proposal: %exercise2 Exercise two. Look up slowly, then look down. Follow me! $pepperCmd=exercise2
+    u1:(~stop) Okay, we stop here. $pepperCmd=stop ^gotoReactivate(anythingElse)
+    u1:(~next) Okay, next one. ^gotoReactivate(exercise3)
+
+# Exercise 3: Arms up
+proposal: %exercise3 Exercise three. Raise both arms up, then lower them slowly. Follow me! $pepperCmd=exercise3
+    u1:(~stop) Okay, we stop here. $pepperCmd=stop ^gotoReactivate(anythingElse)
+    u1:(~next) Okay, next one. ^gotoReactivate(exercise4)
+
+# Exercise 4: One arm at a time
+proposal: %exercise4 Exercise four. Raise one arm up, then the other. Follow me! $pepperCmd=exercise4
+    u1:(~stop) Okay, we stop here. $pepperCmd=stop ^gotoReactivate(anythingElse)
+    u1:(~next) Okay, next one. ^gotoReactivate(exercise5)
+
+# Exercise 5: Arms from the sides
+proposal: %exercise5 Exercise five. Lift your arms out to the sides, then down. Follow me! $pepperCmd=exercise5
+    u1:(~stop) Okay, we stop here. $pepperCmd=stop ^gotoReactivate(anythingElse)
+    u1:(~next) Okay, next one. ^gotoReactivate(exercise6)
+
+# Exercise 6: Side pulses
+proposal: %exercise6 Exercise six. Arms out to the sides. Small pulses up and down. Follow me! $pepperCmd=exercise6
+    u1:(~stop) Okay, we stop here. $pepperCmd=stop ^gotoReactivate(anythingElse)
+    u1:(~next) Okay, next one. ^gotoReactivate(exercise7)
+
+# Exercise 7: Open and close
+proposal: %exercise7 Exercise seven. Arms in front. Open them wide, then close. Follow me! $pepperCmd=exercise7
+    u1:(~stop) Okay, we stop here. $pepperCmd=stop ^gotoReactivate(anythingElse)
+    u1:(~next) Okay, next one. ^gotoReactivate(exercise8)
+
+# Exercise 8: Stretch left
+proposal: %exercise8 Exercise eight. Right arm up. Lean gently to the left. Follow me! $pepperCmd=exercise8
+    u1:(~stop) Okay, we stop here. $pepperCmd=stop ^gotoReactivate(anythingElse)
+    u1:(~next) Okay, next one. ^gotoReactivate(exercise9)
+
+# Exercise 9: Stretch right
+proposal: %exercise9 Exercise nine. Left arm up. Lean gently to the right. Follow me! $pepperCmd=exercise9
+    u1:(~stop) Okay, we stop here. $pepperCmd=stop ^gotoReactivate(anythingElse)
+    u1:(~next) Okay, next one. ^gotoReactivate(endExercise)
+
+proposal: %endExercise Fantastic, $name! All nine done. $pepperCmd=exercisesdone ^gotoReactivate(anythingElse)
+
+# ----- 5. breathing: guided breathing, the controller speaks the breaths (not called the old name: it sounded like medication)
+proposal: %breatheIntro Let's relax. Sit comfortably. Breathe with me. $pepperCmd=breathe
+    u1:(~stop) Okay. $pepperCmd=stop ^gotoReactivate(anythingElse)
+
+proposal: %breatheEnd Well done. How do you feel now?
+    u1:(~sad) I am sorry. Say help if you need a nurse. $pepperCmd=moodlow ^gotoReactivate(anythingElse)
+    u1:(~happy) Lovely. ^gotoReactivate(anythingElse)
+    u1:(~repeat) ^sameProposal
+    u1:(e:Dialog/NotUnderstood) Okay. ^gotoReactivate(anythingElse)
+    u1:(e:Dialog/NotSpeaking15) ^gotoReactivate(anythingElse)
+
+# ----- 6. music and shows ---------------------------------------------------------------------------
+proposal: %chooseSong $pepperCmd=pickmusic Which one? Song one, My World Is Not My Home. Song two, Mama Liked the Roses. Song three, Falling in Love. Or the saxophone.
+    u1:([saxophone sax]) ^gotoReactivate(saxPlay)
+    u1:([one first world home]) ^gotoReactivate(song1Play)
+    u1:([two second mama roses]) ^gotoReactivate(song2Play)
+    u1:([three third falling love elvis]) ^gotoReactivate(song3Play)
+    u1:([~stop ~no]) Okay. $pepperCmd=pickoff ^gotoReactivate(anythingElse)
+    u1:(~repeat) ^sameProposal
+    u1:(e:Dialog/NotUnderstood) Say one, two, three, or saxophone. ^sameProposal
+    u1:(e:Dialog/NotSpeaking15) $pepperCmd=pickoff ^gotoReactivate(anythingElse)
+
+proposal: %chooseActivity $pepperCmd=pickact Dance, a quiz, or snakes and ladders?
+    u1:(~dance) ^gotoReactivate(dancePlay)
+    u1:(~quiz) ^gotoReactivate(quizStart)
+    u1:(~snl) ^gotoReactivate(snlStart)
+    u1:([~stop ~no]) Okay. $pepperCmd=pickoff ^gotoReactivate(anythingElse)
+    u1:(~repeat) ^sameProposal
+    u1:(e:Dialog/NotUnderstood) Say dance, quiz, or snakes. ^sameProposal
+    u1:(e:Dialog/NotSpeaking15) $pepperCmd=pickoff ^gotoReactivate(anythingElse)
+
+proposal: %song1Play Here is My World Is Not My Home. Say stop any time. $pepperCmd=song1
+    u1:(~stop) Okay. $pepperCmd=stop ^gotoReactivate(anythingElse)
+
+proposal: %song2Play Here is Mama Liked the Roses. Say stop any time. $pepperCmd=song2
+    u1:(~stop) Okay. $pepperCmd=stop ^gotoReactivate(anythingElse)
+
+proposal: %song3Play Here is Falling in Love. Say stop any time. $pepperCmd=song3
+    u1:(~stop) Okay. $pepperCmd=stop ^gotoReactivate(anythingElse)
+
+proposal: %dancePlay Watch me dance! $pepperCmd=dance
+    u1:(~stop) Okay. $pepperCmd=stop ^gotoReactivate(anythingElse)
+
+# The quiz. The Care Controller picks five questions, writes what Pepper says into $quizText (the question, then the
+# three options) and forces "robotcmd quizask". The answer comes back as $pepperCmd=qa1, qa2 or qa3, or from the tablet.
+proposal: %quizStart $pepperCmd=quiz
+    u1:(~stop) Okay. $pepperCmd=stop ^gotoReactivate(anythingElse)
+
+proposal: %quizAsk $quizText
+    u1:(~ansOne) $pepperCmd=qa1
+    u1:(~ansTwo) $pepperCmd=qa2
+    u1:(~ansThree) $pepperCmd=qa3
+    u1:(~stop) Okay. $pepperCmd=stop ^gotoReactivate(anythingElse)
+    u1:(~repeat) $pepperCmd=qrepeat
+    u1:(e:Dialog/NotUnderstood) Say one, two, or three. ^stayInScope
+    u1:(e:Dialog/NotSpeaking15) Take your time. Say one, two, or three. Or touch the screen. ^stayInScope
+
+proposal: %quizEnd $quizText Would you like another quiz?
+    u1:(~yes) ^gotoReactivate(quizStart)
+    u1:([~no ~stop ~done ~thx]) Okay. $pepperCmd=stop ^gotoReactivate(anythingElse)
+    u1:(~repeat) ^sameProposal
+    u1:(e:Dialog/NotUnderstood) Yes or no? ^sameProposal
+    u1:(e:Dialog/NotSpeaking15) ^gotoReactivate(anythingElse)
+
+proposal: %saxPlay Here is my saxophone! $pepperCmd=sax
+    u1:(~stop) Okay. $pepperCmd=stop ^gotoReactivate(anythingElse)
+
+# Relive Malta. The Care Controller picks the card, writes what Pepper says into $memText (title, one sentence, one prompt) and
+# forces "robotcmd memcard" once the tablet shows the card. Pepper then stays quiet: no hints, no timeouts that speak, because
+# someone may be talking about a memory. Only next, back, repeat and stop are heard here.
+proposal: %memStart $pepperCmd=relive
+    u1:(~stop) Okay. $pepperCmd=stop ^gotoReactivate(anythingElse)
+
+proposal: %memCard $memText
+    u1:(~next) $pepperCmd=mnext
+    u1:(~back) $pepperCmd=mback
+    u1:(~repeat) $pepperCmd=mrepeat
+    u1:([~ansOne ~memW1]) $pepperCmd=ma1
+    u1:([~ansTwo ~memW2]) $pepperCmd=ma2
+    u1:(~stop) Okay. $pepperCmd=stop ^gotoReactivate(anythingElse)
+
+proposal: %memEnd $memText
+    u1:(~yes) ^gotoReactivate(memStart)
+    u1:([~no ~stop ~thx]) Okay. $pepperCmd=stop ^gotoReactivate(anythingElse)
+    u1:(~repeat) ^sameProposal
+    u1:(e:Dialog/NotUnderstood) Yes or no? ^sameProposal
+    u1:(e:Dialog/NotSpeaking15) ^gotoReactivate(anythingElse)
+
+# Snakes and Ladders. The Care Controller plays it (fair dice, Pepper takes its turn straight after yours) and writes what Pepper
+# says into $snlText: the tablet shows the move first, then the controller forces "robotcmd snlsay". Pepper stays quiet in between:
+# no hints and no timeouts that speak. Only roll, skip, new game, repeat and stop are heard while a game runs.
+proposal: %snlStart $pepperCmd=snl
+    u1:(~stop) Okay. $pepperCmd=stop ^gotoReactivate(anythingElse)
+
+proposal: %snlSay $snlText
+    u1:(~rollDice) $pepperCmd=sroll
+    u1:(~skipTurn) $pepperCmd=sskip
+    u1:(~newGame) $pepperCmd=snew
+    u1:(~repeat) $pepperCmd=srepeat
+    u1:(~stop) Okay. $pepperCmd=stop ^gotoReactivate(anythingElse)
+
+proposal: %snlEnd $snlText
+    u1:([~yes ~newGame]) $pepperCmd=snew
+    u1:([~no ~stop ~thx]) Okay. $pepperCmd=stop ^gotoReactivate(anythingElse)
+    u1:(~repeat) $pepperCmd=srepeat
+    u1:(e:Dialog/NotUnderstood) Yes or no? ^sameProposal
+    u1:(e:Dialog/NotSpeaking15) ^gotoReactivate(anythingElse)
+
+# ----- 7. chat ----------------------------------------------------------------------------------------
+proposal: %chatQ1 Do family or friends visit you?
+    u1:(~stop) Okay. $pepperCmd=stop ^gotoReactivate(anythingElse)
+    u1:(~yes) Wonderful! ^gotoReactivate(chatQ2)
+    u1:(~no) I am sure they think of you. ^gotoReactivate(chatQ2)
+    u1:(~repeat) ^sameProposal
+    u1:(e:Dialog/NotUnderstood) That sounds nice. ^gotoReactivate(chatQ2)
+    u1:(e:Dialog/NotSpeaking15) ^gotoReactivate(chatQ2)
+
+proposal: %chatQ2 What do you like to do? Reading, gardening, or music?
+    u1:(~stop) Okay. $pepperCmd=stop ^gotoReactivate(anythingElse)
+    u1:(_[reading gardening cooking walking knitting painting television football music]) $1 sounds lovely! ^gotoReactivate(chatQ3)
+    u1:(~repeat) ^sameProposal
+    u1:(e:Dialog/NotUnderstood) That sounds lovely! ^gotoReactivate(chatQ3)
+    u1:(e:Dialog/NotSpeaking15) ^gotoReactivate(chatQ3)
+
+proposal: %chatQ3 Shall I play a song for you?
+    u1:(~yes) ^gotoReactivate(chooseSong)
+    u1:([~no ~stop]) Okay. ^gotoReactivate(anythingElse)
+    u1:(~repeat) ^sameProposal
+    u1:(e:Dialog/NotUnderstood) Yes or no? ^sameProposal
+    u1:(e:Dialog/NotSpeaking15) ^gotoReactivate(anythingElse)

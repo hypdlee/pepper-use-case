@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>How do you feel?</title>
+  <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+  <div class="backbar"><button class="btn secondary" type="button" onclick="location.href='index.html'">&larr; Back</button></div>
+  <div class="page">
+    <div class="card center">
+      <h1>How do you feel after the exercises?</h1>
+      <p id="who" class="note">Tap the face that fits best.</p>
+      <div class="faces" id="faces">
+        <button type="button" data-v="very sad"><img src="images/verysad.png" alt="Very sad"><span>Very sad</span></button>
+        <button type="button" data-v="sad"><img src="images/sad.png" alt="Sad"><span>Sad</span></button>
+        <button type="button" data-v="neutral"><img src="images/neutral.png" alt="Neutral"><span>Neutral</span></button>
+        <button type="button" data-v="happy"><img src="images/happy.png" alt="Happy"><span>Happy</span></button>
+        <button type="button" data-v="very happy"><img src="images/veryhappy.png" alt="Very happy"><span>Very happy</span></button>
+      </div>
+      <p id="thanks" class="note" style="font-size:26px"></p>
+    </div>
+  </div>
+  <script>
+  (function () {
+    var box = document.getElementById('faces'), thanks = document.getElementById('thanks');
+    function who() { try { return (window.localStorage.getItem('pepper.current') || '').toLowerCase(); } catch (e) { return ''; } }
+    box.onclick = function (e) {
+      var b = e.target; while (b && b !== box && b.tagName !== 'BUTTON') { b = b.parentNode; }
+      if (!b || b === box) { return; }
+      var kids = box.getElementsByTagName('button');
+      for (var i = 0; i < kids.length; i++) { kids[i].className = ''; }
+      b.className = 'chosen';
+      try {
+        var all = JSON.parse(window.localStorage.getItem('pepper.feel') || '{}');
+        all[who() || 'unnamed patient'] = b.getAttribute('data-v');
+        window.localStorage.setItem('pepper.feel', JSON.stringify(all));
+      } catch (err) { /* storage can be unavailable; the tap still counts visually */ }
+      thanks.textContent = 'Thank you! Noted: ' + b.getAttribute('data-v') + '.';
+    };
+  })();
+  </script>
+</body>
+</html>

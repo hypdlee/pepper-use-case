@@ -1,0 +1,22 @@
+window.MemCredits = {
+ "baker-1.jpg": "Photo: Wikimedia Commons",
+ "baker-2.jpg": "Photo: Wikimedia Commons",
+ "balconies-1.jpg": "Photo: Wikimedia Commons",
+ "balconies-2.jpg": "Photo: Wikimedia Commons",
+ "beach-1.jpg": "Photo: Wikimedia Commons",
+ "beach-2.jpg": "Photo: Wikimedia Commons",
+ "carnival-1.jpg": "Photo: Wikimedia Commons",
+ "crib-1.jpg": "Photo: Wikimedia Commons",
+ "ferry-1.jpg": "Photo: Wikimedia Commons",
+ "ferry-2.jpg": "Photo: Wikimedia Commons",
+ "festa-1.jpg": "Photo: Wikimedia Commons",
+ "festa-2.jpg": "Photo: Wikimedia Commons",
+ "festa-3.jpg": "Photo: Wikimedia Commons",
+ "harbour-1.jpg": "Photo: Wikimedia Commons",
+ "harbour-2.jpg": "Photo: Wikimedia Commons",
+ "luzzu-1.jpg": "Photo: Wikimedia Commons",
+ "luzzu-2.jpg": "Photo: Wikimedia Commons",
+ "luzzu-3.jpg": "Photo: Wikimedia Commons",
+ "pastizzi-1.jpg": "Photo: Wikimedia Commons",
+ "pastizzi-2.jpg": "Photo: Wikimedia Commons"
+};

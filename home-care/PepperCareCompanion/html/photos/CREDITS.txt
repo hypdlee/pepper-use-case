@@ -1,0 +1,26 @@
+Relive Malta photos
+These 20 pictures were supplied as a ready made set described as Wikimedia Commons images cropped to 800x500.
+The set did not say who took each picture or under which licence, so this file cannot either.
+Before the project is published or shown outside the hackathon, look each file up on Commons, then replace the caption in
+credits.js and the lines below with the real author and licence (CC BY and CC BY-SA need the author's name).
+
+festa-1.jpg  (supplied as festa/festa_band_01.jpg)  author: not recorded  licence: not recorded
+festa-2.jpg  (supplied as festa/festa_fireworks_01.jpg)  author: not recorded  licence: not recorded
+festa-3.jpg  (supplied as festa/festa_band_02.jpg)  author: not recorded  licence: not recorded
+luzzu-1.jpg  (supplied as luzzu/luzzu_boats_01.jpg)  author: not recorded  licence: not recorded
+luzzu-2.jpg  (supplied as luzzu/luzzu_eye_01.jpg)  author: not recorded  licence: not recorded
+luzzu-3.jpg  (supplied as luzzu/luzzu_boat_02.jpg)  author: not recorded  licence: not recorded
+ferry-1.jpg  (supplied as ferry/ferry_from_sea_01.jpg)  author: not recorded  licence: not recorded
+ferry-2.jpg  (supplied as ferry/ferry_mgarr_harbour_01.jpg)  author: not recorded  licence: not recorded
+pastizzi-1.jpg  (supplied as pastizzi/pastizzi_closeup_01.jpg)  author: not recorded  licence: not recorded
+pastizzi-2.jpg  (supplied as pastizzi/pastizzi_with_bag_01.jpg)  author: not recorded  licence: not recorded
+harbour-1.jpg  (supplied as harbour/harbour_upper_barrakka_01.jpg)  author: not recorded  licence: not recorded
+harbour-2.jpg  (supplied as harbour/harbour_panorama_01.jpg)  author: not recorded  licence: not recorded
+baker-1.jpg  (supplied as baker/baker_ftira_01.jpg)  author: not recorded  licence: not recorded
+baker-2.jpg  (supplied as baker/baker_bakery_counter_01.jpg)  author: not recorded  licence: not recorded
+crib-1.jpg  (supplied as crib/crib_presepju_01.jpg)  author: not recorded  licence: not recorded
+carnival-1.jpg  (supplied as carnival/carnival_float_01.jpg)  author: not recorded  licence: not recorded
+beach-1.jpg  (supplied as beach/beach_golden_bay_01.jpg)  author: not recorded  licence: not recorded
+beach-2.jpg  (supplied as beach/beach_ghajn_tuffieha_01.jpg)  author: not recorded  licence: not recorded
+balconies-1.jpg  (supplied as balconies/balconies_blue_01.jpg)  author: not recorded  licence: not recorded
+balconies-2.jpg  (supplied as balconies/balconies_green_01.jpg)  author: not recorded  licence: not recorded

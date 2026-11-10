@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Exercise and breathing videos</title>
+  <link rel="stylesheet" href="css/main.css">
+</head>
+<body class="home">
+  <header class="bar">
+    <button class="link-btn first" type="button" onclick="location.href='index.html'">Back</button>
+    <span class="status plain" id="vid-step">Exercise 1 of 9</span>
+  </header>
+  <main class="stage">
+    <section class="exview">
+      <h1 id="ex-title" class="ex-title">Neck turns</h1>
+      <p id="ex-text" class="ex-text"></p>
+      <div class="ex-media">
+        <figure class="ex-pepper"><canvas id="ex-canvas" width="460" height="400" aria-label="Pepper doing the exercise"></canvas><figcaption>Pepper</figcaption></figure>
+        <figure class="ex-you"><img id="ex-img" src="images/exercise1image.png" alt=""><div id="ex-breath" class="bwrap hidden"><div id="ex-circle" class="bcircle" style="-webkit-transition:none;transition:none"></div></div><figcaption>You</figcaption></figure>
+      </div>
+      <div class="ex-progress"><span id="ex-bar"></span></div>
+    </section>
+  </main>
+  <footer class="safety">
+    <button id="v-prev" class="btn quiet big-quiet" type="button">Previous</button>
+    <button id="v-again" class="btn quiet big-quiet" type="button">Play again</button>
+    <button id="v-next" class="btn primary big-quiet" type="button">Next exercise</button>
+  </footer>
+  <script src="js/motion-data.js"></script>
+  <script src="js/figure.js"></script>
+  <script>
+  (function () {
+    var SECONDS = 40, all = window.EXERCISE_MOTION, i = 0, $ = function (id) { return document.getElementById(id); };
+    var player = new window.PepperFigure.Player($('ex-canvas'));
+    player.ontick = function (t, dur) {
+      $('ex-bar').style.width = Math.min(100, 100 * t / dur) + '%';
+      var ex = all[i];
+      if (ex.kind === 'breathing') {               /* circle follows Pepper's arms: up = breathe in = big */
+        var k = (88 - player.cur.LShoulderPitch) / (88 - ex.in_deg), sc = 0.55 + 0.85 * Math.max(0, Math.min(1, k));
+        $('ex-circle').style.webkitTransform = $('ex-circle').style.transform = 'scale(' + sc.toFixed(3) + ')';
+      }
+      if (t > dur + 1.5) { player.start(all[i].n, 0, all[i].kind === 'breathing' ? 0 : SECONDS); }          /* loop the video */
+    };
+    function show(k) {
+      i = (k + all.length) % all.length;
+      var ex = all[i];
+      var breath = ex.kind === 'breathing';
+      $('vid-step').textContent = (breath ? 'Breathing, ' + ex.breaths + ' breaths (' + Math.round(ex.duration) + ' seconds)' : 'Exercise ' + ex.n + ' of ' + (all.length - 1) + ' (' + SECONDS + ' seconds)');
+      $('ex-title').textContent = ex.title; $('ex-text').textContent = ex.text;
+      $('ex-img').className = breath ? 'hidden' : ''; if (!breath) { $('ex-img').src = ex.image; }
+      $('ex-breath').className = 'bwrap' + (breath ? '' : ' hidden');
+      player.start(ex.n, 0, breath ? 0 : SECONDS);   /* exercises last 40 s on the robot: short ones repeat */
+    }
+    var m = /[?&]n=(\d+)/.exec(location.search);
+    $('v-prev').onclick = function () { show(i - 1); };
+    $('v-next').onclick = function () { show(i + 1); };
+    $('v-again').onclick = function () { show(i); };
+    show(m ? parseInt(m[1], 10) - 1 : 0);
+  })();
+  </script>
+</body>
+</html>

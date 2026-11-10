@@ -1,0 +1,22 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<package uuid="pepper-care-companion" version="4.1.1">
+ <names>
+  <name lang="en_US">Pepper Care Companion</name>
+ </names>
+ <supportedLanguages>
+  <language>en_US</language>
+ </supportedLanguages>
+ <descriptionLanguages>
+  <language>en_US</language>
+ </descriptionLanguages>
+ <contents>
+  <behaviorContent path="behavior_1">
+   <userRequestable/>
+   <nature>interactive</nature>
+   <permissions/>
+  </behaviorContent>
+  <dialogContent topicName="Activity" typeVersion="1.0">
+   <topic path="Activity/Activity_enu.top" language="en_US"/>
+  </dialogContent>
+ </contents>
+</package>
