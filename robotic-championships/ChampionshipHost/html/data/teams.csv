@@ -1,0 +1,4 @@
+# Teams for the Pepper host. One line per team. Lines starting with # are notes and are ignored.
+# category: arena or arm.  say_as (optional): how Pepper should pronounce the name, if it gets it wrong.
+# Example: Team Falcon,Croatia,arena,Team Fal-con
+name,country,category,say_as

@@ -1,0 +1,117 @@
+{
+  "version": "1.0.0",
+  "rulebook": "Rulebook v0.7 (final draft)",
+  "event": {
+    "name": "IEEE Robot Championships 2026",
+    "place": "Montekristo Estate Arena, Malta",
+    "dates": "28 and 29 November 2026",
+    "opening": "2026-11-28T14:00:00+01:00",
+    "awards": "2026-11-29T18:00:00+01:00",
+    "organisers": "IEEE Malta Section and IEEE Computer Society Malta Chapter",
+    "mission": "Advancing Technology for Humanity",
+    "stats": [
+      { "value": "40+", "label": "Participants" },
+      { "value": "15+", "label": "Teams" },
+      { "value": "10+", "label": "Countries" }
+    ],
+    "about": "University teams from IEEE Student Branches across Region 8 compete with robots they built themselves. There are two competitions: the Arena with four robot games, and the new Robot Arm AI Challenge. Every team also presents an AI pitch about how their idea helps people.",
+    "themes": ["Assistive healthcare and wellbeing", "Environmental sustainability and climate action", "Disaster response and humanitarian aid", "Smart cities and future infrastructure"],
+    "stem": "Visit the interactive STEM area for hands-on science, engineering and robotics activities.",
+    "info": [
+      { "q": "Toilets", "a": "Please ask a volunteer at the information desk." },
+      { "q": "Food and drinks", "a": "Please ask a volunteer at the information desk." },
+      { "q": "First aid", "a": "Please ask any volunteer. They will call first aid straight away." },
+      { "q": "Lost child or lost item", "a": "Please go to the information desk." }
+    ]
+  },
+  "categories": {
+    "arena": {
+      "title": "Arena: 4 Games",
+      "short": "Arena",
+      "intro": "Teams of up to three drive robots they built themselves, up to 20 kilograms and 80 by 80 centimetres, in a 6 by 6 metre arena.",
+      "structure": "Qualifying: Time of Fall, Climate CHAOS and Weight in Line. The best eight teams go to the knockout: Weight in Line for the quarter and semi finals, then Hanging Hazard for third place and the final.",
+      "say": "In the Arena, teams of up to three drive robots they built themselves, in a six by six metre arena. There are four games. The best eight teams go on to the knockout, and the final is Hanging Hazard."
+    },
+    "arm": {
+      "title": "Robot Arm AI Challenge",
+      "short": "Robot Arm AI",
+      "intro": "New for 2026. Teams of two build two robot arms and teach them with AI. During a scored run nobody may control them: the arms see and decide on their own.",
+      "structure": "Game 1, Pick and Place: Colour Sort, Shape Sort and Dynamic Sort. Game 2, Two-Arm Coordination: Pouring and Folding. The two best teams meet in the final, the Tower Construction Duel. Wrap-and-Pack is an optional extra, for recognition only.",
+      "say": "The Robot Arm AI Challenge is new this year. Teams of two teach two robot arms with artificial intelligence. During a run, nobody is allowed to control them. The arms look, decide and act on their own."
+    }
+  },
+  "games": [
+    {
+      "id": "tof", "cat": "arena", "n": "Game 1", "title": "Time of Fall", "clip": "arena-time-of-fall",
+      "tagline": "A robot tug of war over the pit.",
+      "facts": ["Two robots are joined by a chain, with a pit between them.", "Pull your opponent over the edge, in the shortest time.", "Up to 60 seconds. No add-ons allowed."],
+      "say": "Time of Fall is a robot tug of war. The two robots are joined by a chain, with a pit in the middle. The winner pulls the other robot over the edge, as fast as it can. A game lasts up to sixty seconds."
+    },
+    {
+      "id": "chaos", "cat": "arena", "n": "Game 2", "title": "Climate CHAOS", "clip": "arena-climate-chaos",
+      "tagline": "A rescue mission after a climate disaster.",
+      "facts": ["Drive through a maze with sinkholes, floods and a fire.", "Rescue survivors from three towers: 50, 100 or 150 points.", "Five minutes. A collapsed tower costs points."],
+      "say": "Climate CHAOS is a rescue mission. The robot drives through a maze with sinkholes, floods and a fire, and brings survivors back from three towers. The further the tower, the more points. But if a tower collapses, the team loses points."
+    },
+    {
+      "id": "wil", "cat": "arena", "n": "Game 3", "title": "Weight in Line", "clip": "arena-weight-in-line",
+      "tagline": "Place the coloured weights in your rings.",
+      "facts": ["Six weights, worth 5 to 30 points each.", "A weight sitting perfectly in its ring scores full points.", "Five minutes, or until a robot falls into a pit."],
+      "say": "In Weight in Line, each robot collects coloured weights and places them in its own rings. Heavier weights are worth more points. A weight sitting perfectly in its ring scores the full points. Watch out for the pits!"
+    },
+    {
+      "id": "hh", "cat": "arena", "n": "Game 4", "title": "Hanging Hazard", "clip": "arena-hanging-hazard",
+      "tagline": "Rugby balls, swinging weights, and the final.",
+      "facts": ["Score rugby balls in your opponent's pocket.", "Hanging weights come down as hazards.", "Eight minutes. Used for third place and the final."],
+      "say": "Hanging Hazard is the final game. The robots score rugby balls in the other team's pocket, while weights hang down as hazards. A robot that is knocked out loses. It decides third place and the champion."
+    },
+    {
+      "id": "colour", "cat": "arm", "n": "Game 1, Round 1", "title": "Colour Sort", "clip": "arm-colour-sort",
+      "tagline": "Every shape into the bin of the same colour.",
+      "facts": ["Cubes, cylinders and other printed shapes, in four colours.", "Bigger and harder shapes are worth more points.", "Five minutes. A wrong bin costs points."],
+      "say": "In Colour Sort, two arms pick up printed shapes and drop each one into the bin of the same colour. A camera helps them see. A shape in the wrong bin costs points."
+    },
+    {
+      "id": "shape", "cat": "arm", "n": "Game 1, Round 2", "title": "Shape Sort", "clip": "arm-shape-sort",
+      "tagline": "Now the shape decides the bin, not the colour.",
+      "facts": ["Cubes go to red, cylinders to blue.", "Dodecahedrons go to green, hexagonal prisms to yellow.", "Five minutes."],
+      "say": "In Shape Sort, colour no longer matters. Cubes go in the red bin, cylinders in blue, dodecahedrons in green and hexagonal prisms in yellow. The arms have to recognise every shape."
+    },
+    {
+      "id": "dynamic", "cat": "arm", "n": "Game 1, Round 3", "title": "Dynamic Sort", "clip": "arm-dynamic-sort",
+      "tagline": "The judges move things while the arms work.",
+      "facts": ["Same rules as Shape Sort.", "Judges move the bins and objects during the run.", "The arms must notice and plan again."],
+      "say": "Dynamic Sort is the tricky one. The judges move the bins and the objects while the arms are working. The arms have to notice the change and plan again, all on their own."
+    },
+    {
+      "id": "pour", "cat": "arm", "n": "Game 2, Round 1", "title": "Pouring", "clip": "arm-pouring",
+      "tagline": "Two arms, one cup of rice, no spilling.",
+      "facts": ["One arm holds the cup of 125 grams of rice, the other holds the bowl.", "Points for rice in the bowl, fewer for rice spilled.", "Two minutes per run. The best of three runs counts."],
+      "say": "In Pouring, one arm holds a cup with one hundred and twenty five grams of rice, and the other arm holds the bowl. They pour together. The more rice in the bowl, and the less on the table, the better."
+    },
+    {
+      "id": "fold", "cat": "arm", "n": "Game 2, Round 2", "title": "Folding", "clip": "arm-folding",
+      "tagline": "Fold four cloths, neatly, with two arms.",
+      "facts": ["Four square cloths, 30 centimetres wide.", "Each one is folded twice, to about 15 centimetres.", "Five minutes. The folds must stay for 5 seconds."],
+      "say": "In Folding, the two arms fold four soft cloths, each one twice, and place them neatly in the target zone. Cloth is floppy, so this is very hard for a robot."
+    },
+    {
+      "id": "tower", "cat": "arm", "n": "Final", "title": "Tower Construction Duel", "clip": "arm-tower-duel",
+      "tagline": "The two best teams build, and throw.",
+      "facts": ["Build the tallest stable tower: 5 points per block.", "Once a tower is 6 blocks high, red blocks may be thrown at the other tower.", "15 minutes. A team may give one spoken idea per 30 second window."],
+      "say": "The final is the Tower Construction Duel. The two best teams build the tallest tower they can. Once a tower is six blocks high, the arms may throw red blocks at the other tower. The people may only give a short idea when the judge blows the whistle."
+    }
+  ],
+  "quiz": [
+    { "q": "In Time of Fall, what do the robots try to do?", "a": ["Pull the other robot into the pit", "Build a tower", "Sort coloured shapes"], "ok": 0, "why": "It is a tug of war over the pit." },
+    { "q": "How long can a Time of Fall game last?", "a": ["60 seconds", "10 minutes", "One hour"], "ok": 0, "why": "Sixty seconds at most." },
+    { "q": "In Climate CHAOS, where are the survivors?", "a": ["On three towers", "On a boat", "Up a tree"], "ok": 0, "why": "Three towers, worth 50, 100 and 150 points." },
+    { "q": "How heavy can an Arena robot be?", "a": ["20 kilograms", "200 kilograms", "2 kilograms"], "ok": 0, "why": "Up to 20 kilograms." },
+    { "q": "What must every Arena robot have, for safety?", "a": ["A kill switch", "A horn", "A flag"], "ok": 0, "why": "A clearly marked kill switch turns the robot off." },
+    { "q": "Who controls the robot arms during a scored run?", "a": ["Nobody: they work on their own", "A joystick", "A phone app"], "ok": 0, "why": "The arms see and decide by themselves." },
+    { "q": "In Pouring, what do the arms pour?", "a": ["Rice", "Water", "Sand"], "ok": 0, "why": "125 grams of rice." },
+    { "q": "In the Tower Duel, which blocks may be thrown?", "a": ["Red blocks", "Blue blocks", "No blocks"], "ok": 0, "why": "Only red ones, once your tower is 6 blocks high." },
+    { "q": "What is the name of the championship mascot?", "a": ["3-e", "R2", "Bolt"], "ok": 0, "why": "Meet 3-e!" },
+    { "q": "How big is the Arena?", "a": ["6 by 6 metres", "1 by 1 metre", "100 by 100 metres"], "ok": 0, "why": "6 by 6 metres." }
+  ]
+}

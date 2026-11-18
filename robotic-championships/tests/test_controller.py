@@ -1,0 +1,440 @@
+# -*- coding: utf-8 -*-
+# Runs the Host Controller exactly as stored inside behavior.xar against a fake NAOqi. Works on Python 3 and 2.7:
+#   python3 tests/test_controller.py      (also starts the Python 2.7 run when PY27 exists)
+from __future__ import print_function
+import json, sys, os, io, shutil, tempfile, subprocess, calendar
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.dirname(HERE)
+PY27 = "/tmp/claude-0/-home-claude/b05a1f0c-dd7e-5d57-999d-12aa7eb13b58/scratchpad/py27/bin/python2.7"
+FAILS = []
+
+def check(cond, msg):
+    if not cond:
+        FAILS.append(msg)
+        print("FAIL:", msg)
+
+def load_script():
+    txt = io.open(os.path.join(ROOT, "ChampionshipHost", "behavior_1", "behavior.xar"), encoding="utf-8").read()
+    a = txt.index('<Box name="Host Controller"')
+    c0 = txt.index("<![CDATA[", a) + 9
+    return txt[c0:txt.index("]]></content>", c0)]
+
+def utc(y, mo, d, h, mi):
+    return calendar.timegm((y, mo, d, h, mi, 0, 0, 0, 0))
+
+class World(object):
+    def __init__(self, app):
+        self.t = utc(2026, 11, 28, 12, 0)          # Sat 13:00 Malta
+        self.mem = {}
+        self.calls, self.said, self.js, self.forced, self.concepts, self.events, self.logs = [], [], [], [], [], [], []
+        self.app = app
+        self.dialog_alive = True
+        self.loaded, self.active, self.subs = ["Host"], ["Host"], ["box"]
+        self.speech_end = 0
+        self.tablet_cb = None
+
+class Rec(object):
+    def __init__(self, name, w):
+        self._n, self._w = name, w
+    @property
+    def post(self):
+        return self
+    def __getattr__(self, m):
+        if m.startswith("__"):
+            raise AttributeError(m)
+        def f(*a):
+            self._w.calls.append((self._n, m, a))
+            return None
+        return f
+
+class Mem(Rec):
+    def getData(self, k):
+        if k not in self._w.mem:
+            raise RuntimeError("no key %s" % k)
+        return self._w.mem[k]
+    def getListData(self, ks):
+        return [self._w.mem.get(k) for k in ks]
+    def insertData(self, k, v):
+        assert isinstance(v, str), "ALMemory value must be str, got %r" % type(v)
+        self._w.mem[k] = v
+    def raiseEvent(self, k, v):
+        self._w.events.append(k)
+
+class Speech(Rec):
+    def say(self, text, conf=None):
+        assert isinstance(text, str), "speech must be str"
+        self._w.said.append(text)
+        self._w.speech_end = self._w.t + 3
+        return len(self._w.said)
+    def isRunning(self, i):
+        return self._w.t < self._w.speech_end
+    def stop(self, i):
+        self._w.calls.append(("ALAnimatedSpeech", "stop", (i,)))
+
+class TTS(Rec):
+    def stopAll(self):
+        self._w.calls.append(("ALTextToSpeech", "stopAll", ()))
+        self._w.speech_end = 0
+
+class Tablet(Rec):
+    def executeJS(self, code):
+        assert isinstance(code, str)
+        self._w.js.append(code)
+    @property
+    def onJSEvent(self):
+        w = self._w
+        class S(object):
+            def connect(self, cb):
+                w.tablet_cb = cb
+        return S()
+
+class Dialog(Rec):
+    def forceInput(self, t):
+        assert isinstance(t, str)
+        self._w.forced.append(t)
+        if t == "robotcmd ping" and self._w.dialog_alive and "Host" in self._w.active and self._w.subs:
+            self._w.mem["hostPong"] = "ok1"
+    def setConcept(self, name, lang, words):
+        assert all(isinstance(x, str) for x in words)
+        self._w.concepts.append((name, lang, list(words)))
+    def getAllLoadedTopics(self):
+        return list(self._w.loaded)
+    def getActivatedTopics(self):
+        return list(self._w.active)
+    def activateTopic(self, n):
+        self._w.calls.append(("ALDialog", "activateTopic", (n,)))
+        self._w.active.append("Host")
+    def subscribe(self, n):
+        self._w.calls.append(("ALDialog", "subscribe", (n,)))
+        self._w.subs.append(n)
+    def loadTopic(self, p):
+        self._w.calls.append(("ALDialog", "loadTopic", (p,)))
+        self._w.loaded.append("Host")
+        return "Host"
+
+class Aware(Rec):
+    def getTrackingMode(self):
+        return "BodyRotation"
+    def getEngagementMode(self):
+        return "Unengaged"
+
+class Frame(Rec):
+    def getBehaviorPath(self, bid):
+        return os.path.join(self._w.app, "behavior_1")
+
+class Logger(object):
+    def __init__(self, w):
+        self.w = w
+    def __getattr__(self, lvl):
+        return lambda m: self.w.logs.append((lvl, m))
+
+def make(w, params=None):
+    ns = {}
+    class Session(object):
+        def service(self, name):
+            return {"ALMemory": Mem, "ALAnimatedSpeech": Speech, "ALTextToSpeech": TTS, "ALTabletService": Tablet,
+                    "ALDialog": Dialog, "ALBasicAwareness": Aware, "ALFrameManager": Frame}.get(name, Rec)(name, w)
+    P = {"Staff PIN": "2468", "Match calls": True, "Greet visitors": True}
+    P.update(params or {})
+    class GeneratedClass(object):
+        behaviorId = "bid"
+        def __init__(self):
+            self.logger = Logger(w)
+        def session(self):
+            return Session()
+        def getParameter(self, n):
+            return P[n]
+        def onStopped(self):
+            w.calls.append(("box", "onStopped", ()))
+    ns["GeneratedClass"] = GeneratedClass
+    exec(compile(load_script(), "host_controller", "exec"), ns)
+    import threading as _th
+    class _NoThread(object):           # the tests drive tick() themselves: no background threads
+        def __init__(self, target=None, **k):
+            self.daemon = True
+        def start(self):
+            w.calls.append(("thread", "start", ()))
+    class _Th(object):
+        Lock = _th.Lock
+        Thread = _NoThread
+    ns["threading"] = _Th
+    box = ns["MyClass"]()
+    box.clock = lambda: w.t
+    box.sleep = lambda s: None
+    box.onLoad()
+    return box, ns
+
+def start(w, params=None, store=None):
+    box, ns = make(w, params)
+    if store:
+        ns["STORE_DIR"] = store
+    box.onInput_onStart()
+    assert w.calls.count(("thread", "start", ())) == 2, "worker and tablet sender should both start"
+    box.sender = None
+    box._flushJs()
+    return box, ns
+
+def tick(w, box, secs=0.1):
+    steps = max(1, int(round(secs / 0.1)))
+    for _ in range(steps):
+        w.t += 0.1
+        box.tick()
+        box._flushJs()
+
+_N = [0]
+def tab(w, box, msg):
+    _N[0] += 1
+    msg.setdefault("id", "m%d" % _N[0])
+    box.onTablet(json.dumps(msg))
+    box._flushJs()
+
+def dlg(w, box, cmd, **extra):
+    for k, v in extra.items():
+        w.mem[k] = v
+    w.mem["hostCmd"] = cmd
+    tick(w, box)
+
+def last_state(w):
+    for c in reversed(w.js):
+        if c.startswith("try{HostUI.update("):
+            return json.loads(c[len("try{HostUI.update("):-len(")}catch(e){}")])
+    return None
+
+def run():
+    tmp = tempfile.mkdtemp()
+    app = os.path.join(tmp, "app")
+    shutil.copytree(os.path.join(ROOT, "ChampionshipHost"), app)
+    store = os.path.join(tmp, "store")
+    io.open(os.path.join(app, "html", "data", "teams.csv"), "w", encoding="utf-8").write(
+        u"# note\nname,country,category,say_as\nTeam Falcon,Croatia,arena,\n\"Orion, The\",Greece,Arena,\nArmStrong,Portugal,arm,Arm Strong\n,ignored,arena,\n")
+    io.open(os.path.join(app, "html", "data", "schedule.csv"), "w", encoding="utf-8").write(
+        u"day,time,minutes,title,category,game,side_a,side_b,done\nsat,14:00,30,Opening Ceremony,stage,,,,\n"
+        u"sat,14:40,15,Time of Fall,arena,tof,Team Falcon,\"Orion, The\",\nsat,15:00,15,Colour Sort,arm,colour,ArmStrong,,\n"
+        u"sat,16:00,15,Shape Sort,arm,shape,ArmStrong,,yes\nsat,25:00,15,Bad time,arena,,,,\nfri,10:00,15,Bad day,arena,,,,\nsun,18:00,45,Awards Ceremony,stage,,,,\n")
+
+    # ---- start-up
+    w = World(app)
+    box, ns = start(w, store=store)
+    st = last_state(w)
+    check(st is not None and st["v"] == "1.0.0", "no first state pushed")
+    check([t["name"] for t in st["teams"]] == ["Team Falcon", "Orion, The", "ArmStrong"], "teams from CSV: %r" % [t["name"] for t in st["teams"]])
+    check([t["cat"] for t in st["teams"]] == ["arena", "arena", "arm"], "team categories")
+    check([x["title"] for x in st["schedule"]] == ["Opening Ceremony", "Time of Fall", "Colour Sort", "Shape Sort", "Awards Ceremony"], "schedule rows: %r" % [x["title"] for x in st["schedule"]])
+    check(w.concepts and w.concepts[-1][0] == "teamnames" and "team falcon" in w.concepts[-1][2] and "arm strong" in w.concepts[-1][2] and "orion the" in w.concepts[-1][2],
+          "team names not loaded into the dialog: %r" % (w.concepts[-1:],))
+    check(("ALBasicAwareness", "setTrackingMode", ("Head",)) in w.calls, "Pepper not set to head tracking")
+    check(w.mem.get("Host/ControllerToken") == box.token, "token not written")
+    check(w.tablet_cb is not None, "tablet events not connected")
+    check(box.content and len(box.content["games"]) == 10, "content.json not read")
+
+    # ---- dialog check: alive
+    tick(w, box, 4.5)
+    check(w.forced.count("robotcmd ping") == 1 and box.listen is True, "voice check: %r %r" % (w.forced, box.listen))
+
+    # ---- dialog commands
+    dlg(w, box, "game", hostGame="tof")
+    check(w.said[-1].startswith("Time of Fall is a robot tug of war"), "game explain: %r" % w.said[-1:])
+    check(any('HostUI.go("game","tof")' in j for j in w.js), "tablet not moved to the game")
+    dlg(w, box, "game", hostGame="nonsense")
+    check(w.said[-1].startswith("Time of Fall"), "unknown game made Pepper speak")
+    dlg(w, box, "team", hostTeam="team falcon")
+    check("Team Falcon from Croatia competes in the Arena. Their next match: Time of Fall, at 14:40." == w.said[-1], "team info: %r" % w.said[-1])
+    dlg(w, box, "team", hostTeam="arm strong")
+    check(w.said[-1].startswith("Arm Strong from Portugal competes in the Robot Arm AI Challenge"), "say-as for team: %r" % w.said[-1])
+    dlg(w, box, "team", hostTeam="unknown team")
+    check("could not find" in w.said[-1], "unknown team")
+    dlg(w, box, "next")
+    check("Next. At 14:00: Opening Ceremony." in w.said[-1], "next line: %r" % w.said[-1])
+    dlg(w, box, "scores")
+    check("There are no scores yet" in w.said[-1], "no scores line")
+    dlg(w, box, "teams")
+    check(w.said[-1].startswith("3 teams are taking part"), "teams line: %r" % w.said[-1])
+    dlg(w, box, "time")
+    check(w.said[-1] == "It is 13:00.", "time line (Malta): %r" % w.said[-1])
+    n = len(w.said)
+    dlg(w, box, "nu"); dlg(w, box, "nu")
+    check(len(w.said) == n, "not-understood spoke while Pepper was talking / too often")
+    tick(w, box, 16); dlg(w, box, "nu")
+    check(w.said[-1].startswith("Sorry, I did not catch that"), "not understood line")
+    dlg(w, box, "stop")
+    check(("ALTextToSpeech", "stopAll", ()) in w.calls, "stop did not stop speech")
+    dlg(w, box, "ans", hostAns="2")
+    check(w.js[-1].endswith("HostUI.answer(2)}catch(e){}") or any("HostUI.answer(2)" in j for j in w.js[-3:]), "voice answer not passed to the tablet")
+    dlg(w, box, "quiz")
+    check(any("HostUI.quizStart()" in j for j in w.js[-3:]), "voice quiz start")
+    for c in ("hello", "who", "about", "thanks", "bye", "arena", "arm", "games"):
+        k = len(w.said); dlg(w, box, c); check(len(w.said) == k + 1, "dialog command %s did not speak" % c)
+    dlg(w, box, "info", hostInfo="0")
+    check(w.said[-1] == "Please ask a volunteer at the information desk.", "info line")
+    check(all(w.mem.get(k) == "" for k in ("hostCmd", "hostGame", "hostTeam", "hostAns")), "dialog keys not cleared")
+
+    # ---- volunteer
+    dlg(w, box, "help")
+    st = last_state(w)
+    check(len(st["alerts"]) == 1 and not st["alerts"][0]["seen"], "volunteer alert not in the state")
+    check(w.said[-1] == "I have called a volunteer. Please wait here with me.", "volunteer line")
+    tab(w, box, {"cmd": "volunteer"})
+    check(len(last_state(w)["alerts"]) == 1 and "already on the way" in w.said[-1], "second call within 2 minutes made a second alert")
+
+    # ---- tablet commands
+    tab(w, box, {"cmd": "game", "game": "pour"})
+    check(w.said[-1].startswith("In Pouring"), "tablet game explain")
+    k = len(w.said)
+    tab(w, box, {"cmd": "game", "game": "pour", "id": "same"}); tab(w, box, {"cmd": "game", "game": "pour", "id": "same"})
+    check(len(w.said) == k + 1, "repeated tablet message not ignored")
+    w.speech_end = 0; box.speaking = False; box.lastView = 0
+    tab(w, box, {"cmd": "view", "view": "schedule"})
+    k = len(w.said); tab(w, box, {"cmd": "view", "view": "teams"})
+    check(len(w.said) == k, "view lines not rate limited")
+    tab(w, box, {"cmd": "quizq", "i": 0, "opts": [2, 0, 1]})
+    check(w.said[-1] == "In Time of Fall, what do the robots try to do? One: Sort coloured shapes. Two: Pull the other robot into the pit. Three: Build a tower.",
+          "quiz question: %r" % w.said[-1])
+    tab(w, box, {"cmd": "quiza", "i": 0, "ok": False})
+    check(w.said[-1] == "Not quite. It is a tug of war over the pit.", "quiz wrong")
+    tab(w, box, {"cmd": "quiza", "i": 0, "ok": True})
+    check(w.said[-1].endswith("It is a tug of war over the pit.") and not w.said[-1].startswith("Not"), "quiz right")
+    tab(w, box, {"cmd": "quizend", "score": 5, "total": 5})
+    check(w.said[-1].startswith("You got 5 out of 5. Brilliant"), "quiz end")
+    tab(w, box, {"cmd": "quizq", "i": 99})
+    tab(w, box, "not a dict" and {"cmd": "nothing"})
+    box.onTablet("{broken json")
+
+    # ---- staff
+    tab(w, box, {"cmd": "team-save", "team": {"name": "Sneaky"}, "token": "guess"})
+    check(not any(t["name"] == "Sneaky" for t in box.teams) and "HostUI.staffClosed()" in w.js[-1], "staff command without login accepted")
+    tab(w, box, {"cmd": "staff-login", "pin": "0000"})
+    check('"ok": false' in w.js[-1], "wrong PIN accepted")
+    tab(w, box, {"cmd": "staff-login", "pin": "2468"})
+    tok = json.loads(w.js[-1][len("try{HostUI.staff("):-len(")}catch(e){}")])["token"]
+    check(len(tok) == 16, "no staff token")
+    tab(w, box, {"cmd": "team-save", "team": {"name": "  Team <b>Kestrel</b>^start(x)  ", "country": "Malta", "cat": "arm"}, "token": tok})
+    t = [x for x in box.teams if "Kestrel" in x["name"]]
+    check(t and t[0]["name"] == "Team <b>Kestrel</b> start(x)" and t[0]["cat"] == "arm", "team add / cleaning: %r" % t)
+    check("team kestrel b start x" not in str(w.concepts[-1]) and any("kestrel" in x for x in w.concepts[-1][2]), "concept not refreshed after team add")
+    tab(w, box, {"cmd": "team-save", "team": {"name": "team falcon"}, "token": tok})
+    check(sum(1 for x in box.teams if x["name"].lower() == "team falcon") == 1, "duplicate team added")
+    fal = [x for x in box.teams if x["name"] == "Team Falcon"][0]
+    tab(w, box, {"cmd": "score-save", "teamId": fal["id"], "points": 120, "token": tok})
+    tab(w, box, {"cmd": "score-save", "teamId": fal["id"], "points": "130.5", "token": tok})
+    tab(w, box, {"cmd": "score-save", "teamId": "nope", "points": 5, "token": tok})
+    tab(w, box, {"cmd": "score-save", "teamId": fal["id"], "points": 1e9, "token": tok})
+    check(len(box.scores) == 1 and box.scores[0]["points"] == 130.5, "score save/upsert/validation: %r" % box.scores)
+    tab(w, box, {"cmd": "team-save", "team": {"id": fal["id"], "name": "Team Falcon X", "country": "Croatia", "cat": "arena"}, "token": tok})
+    tof = [x for x in box.schedule if x["title"] == "Time of Fall"][0]
+    check(tof["a"] == "Team Falcon X" and box.scores[0]["team"] == "Team Falcon X", "rename did not update schedule and scores")
+    dlg(w, box, "scores")
+    check("first, Team Falcon X with 130.5 points" in w.said[-1] and "provisional" in w.said[-1], "scores line: %r" % w.said[-1])
+    tab(w, box, {"cmd": "sched-save", "item": {"day": "sat", "time": "9:5", "title": "x"}, "token": tok})
+    check("Check the day" in w.js[-1], "bad time accepted")
+    tab(w, box, {"cmd": "sched-save", "item": {"day": "sun", "time": "9:30", "mins": 20, "title": "Hanging Hazard final", "cat": "arena", "game": "hh", "a": "Team Falcon X", "b": "Orion, The"}, "token": tok})
+    new = [x for x in box.schedule if x["title"] == "Hanging Hazard final"]
+    check(new and new[0]["time"] == "09:30" and new[0]["mins"] == 20, "schedule add: %r" % new)
+    tab(w, box, {"cmd": "sched-save", "item": dict(new[0], done=True), "token": tok})
+    check([x for x in box.schedule if x["title"] == "Hanging Hazard final"][0]["done"] is True, "mark done")
+    tab(w, box, {"cmd": "sched-del", "key": new[0]["id"], "token": tok})
+    check(not any(x["title"] == "Hanging Hazard final" for x in box.schedule), "schedule delete")
+    aid = box.alerts[0]["id"]
+    tab(w, box, {"cmd": "alert-seen", "key": aid, "token": tok})
+    check(box.alerts[0]["seen"] is True, "alert seen")
+    tab(w, box, {"cmd": "announce", "text": "Hello \\pau=500\\ everyone ^run(x) " + "x" * 400, "token": tok})
+    check(w.said[-1].startswith("Hello pau=500 everyone run(x) x") and len(w.said[-1]) <= 300, "announce cleaning: %r" % w.said[-1][:60])
+    kid = [x for x in box.teams if "Kestrel" in x["name"]][0]["id"]
+    tab(w, box, {"cmd": "team-del", "key": kid, "token": tok})
+    check(not any("Kestrel" in x["name"] for x in box.teams), "team delete")
+
+    # ---- persistence across a restart
+    w2 = World(app); w2.t = w.t
+    box2, _ = start(w2, store=store)
+    check([t["name"] for t in box2.teams] == [t["name"] for t in box.teams] and len(box2.scores) == 1 and box2.alerts[0]["seen"], "staff changes not kept after restart")
+    tab(w2, box2, {"cmd": "staff-login", "pin": "2468"})
+    tok2 = json.loads(w2.js[-1][len("try{HostUI.staff("):-len(")}catch(e){}")])["token"]
+    tab(w2, box2, {"cmd": "reload", "token": tok2})
+    check([t["name"] for t in box2.teams] == ["Team Falcon", "Orion, The", "ArmStrong"] and len(box2.scores) == 1, "reload from files")
+    tab(w2, box2, {"cmd": "calls", "on": False, "token": tok2})
+    check(box2.calls is False, "calls toggle")
+    w2.t += 400; tick(w2, box2, 5.1)
+    check("HostUI.staffClosed()" in "".join(w2.js[-5:]), "staff session did not expire")
+    tab(w2, box2, {"cmd": "calls", "on": True, "token": tok2})
+    check(box2.calls is False, "expired token accepted")
+
+    # ---- PIN rate limit
+    for i in range(6):
+        tab(w2, box2, {"cmd": "staff-login", "pin": "1111"})
+    tab(w2, box2, {"cmd": "staff-login", "pin": "2468"})
+    check('"wait": true' in w2.js[-1], "PIN tries not limited")
+
+    # ---- match calls (fresh store)
+    store3 = os.path.join(tmp, "store3")
+    w3 = World(app); w3.t = utc(2026, 11, 28, 13, 29)          # 14:29 Malta, TOF at 14:40
+    box3, ns3 = start(w3, store=store3)
+    w3.mem["hostPong"] = "ok1"
+    tick(w3, box3, 5.2)
+    check(not any("Attention teams" in s for s in w3.said), "called too early")
+    w3.t = utc(2026, 11, 28, 13, 30) + 1; tick(w3, box3, 5.2)
+    calls = [s for s in w3.said if "Attention teams" in s]
+    check(len(calls) == 1 and calls[0] == "Attention teams. In ten minutes, in the Arena: Time of Fall. Red corner: Team Falcon. Blue corner: Orion, The. Please get ready.",
+          "match call: %r" % calls)
+    tick(w3, box3, 20)
+    check(len([s for s in w3.said if "Attention teams" in s]) == 1, "match call repeated")
+    w3b = World(app); w3b.t = w3.t
+    box3b, _ = start(w3b, store=store3); w3b.mem["hostPong"] = "ok1"; tick(w3b, box3b, 6)
+    check(not any("Attention teams" in s for s in w3b.said), "match call repeated after a restart")
+    w3b.t = utc(2026, 11, 28, 13, 40) + 2; tick(w3b, box3b, 5.2)
+    check(any(s == "Starting now: Time of Fall! Red corner: Team Falcon. Blue corner: Orion, The. Good luck to both teams!" for s in w3b.said), "start announcement: %r" % w3b.said[-1:])
+    w3b.t = utc(2026, 11, 28, 13, 50) + 2; tick(w3b, box3b, 5.2)
+    check(any("Robot Arm AI Challenge: Colour Sort. With ArmStrong" in s or "Robot Arm AI Challenge: Colour Sort. With Arm Strong" in s for s in w3b.said), "arm call: %r" % w3b.said[-2:])
+    k = len(w3b.said); w3b.t = utc(2026, 11, 28, 14, 50) + 2; tick(w3b, box3b, 5.2); w3b.t = utc(2026, 11, 28, 15, 0) + 2; tick(w3b, box3b, 5.2)
+    check(len(w3b.said) == k, "a finished (done) match was called: %r" % w3b.said[k:])
+    w3b.t = utc(2026, 11, 29, 16, 50) + 2; tick(w3b, box3b, 5.2)
+    check(w3b.said[-1] == "Attention please. The Awards Ceremony starts in ten minutes.", "stage call: %r" % w3b.said[-1:])
+    store4 = os.path.join(tmp, "store4")
+    w4 = World(app); w4.t = utc(2026, 11, 28, 13, 35)            # restarted 5 minutes before: too late for the call
+    box4, _ = start(w4, store=store4); w4.mem["hostPong"] = "ok1"; tick(w4, box4, 6)
+    check(not any("Attention teams" in s for s in w4.said), "late call after a restart")
+    w5 = World(app); w5.t = utc(2026, 11, 28, 13, 30) + 1
+    box5, _ = start(w5, params={"Match calls": False}, store=os.path.join(tmp, "store5")); w5.mem["hostPong"] = "ok1"; tick(w5, box5, 6)
+    check(not any("Attention" in s for s in w5.said), "calls made while switched off")
+
+    # ---- dialog check: repair and failure
+    w6 = World(app); w6.active, w6.subs = [], []
+    box6, _ = start(w6, store=os.path.join(tmp, "s6")); tick(w6, box6, 12)
+    check(box6.listen is True and ("ALDialog", "activateTopic", ("Host",)) in w6.calls, "dialog repair: %r" % box6.listen)
+    w7 = World(app); w7.dialog_alive = False
+    box7, _ = start(w7, store=os.path.join(tmp, "s7")); tick(w7, box7, 12)
+    check(box7.listen is False and last_state(w7)["voice"] is False, "dead dialog not reported")
+    check(not any("voice" in s.lower() for s in w7.said), "Pepper spoke about the dead dialog")
+    dlg(w7, box7, "hello")
+    check(box7.listen is True, "listening not restored after the dialog spoke")
+
+    # ---- greeting
+    w8 = World(app); box8, _ = start(w8, store=os.path.join(tmp, "s8")); w8.mem["hostPong"] = "ok1"
+    w8.mem["ALBasicAwareness/HumanTracked"] = -1; tick(w8, box8, 25)
+    k = len(w8.said)
+    w8.mem["ALBasicAwareness/HumanTracked"] = 3; tick(w8, box8, 5.2)
+    check(len(w8.said) == k + 1, "no greeting for a new visitor")
+    w8.mem["ALBasicAwareness/HumanTracked"] = -1; tick(w8, box8, 25); w8.mem["ALBasicAwareness/HumanTracked"] = 4; tick(w8, box8, 5.2)
+    check(len(w8.said) == k + 1, "greeting not rate limited (45 s)")
+    w8.mem["ALBasicAwareness/HumanTracked"] = -1; tick(w8, box8, 20); w8.mem["ALBasicAwareness/HumanTracked"] = 5; tick(w8, box8, 5.2)
+    check(len(w8.said) == k + 2, "no greeting after the 45 s pause")
+
+    # ---- takeover and stop
+    w.mem["Host/ControllerToken"] = "someone-else"; box.running = True; tick(w, box)
+    check(box.running is False, "older controller did not step down")
+    box.running = True; box.onInput_onStop()
+    check(("box", "onStopped", ()) in w.calls and ("ALBasicAwareness", "setTrackingMode", ("BodyRotation",)) in w.calls, "stop did not restore tracking")
+
+    # ---- helpers
+    rows = ns["parse_csv"](u"﻿name,x\r\n\"a \"\"b\"\", c\",1\r\n# c\r\n\r\nd,2")
+    check(rows == [{"name": u'a "b", c', "x": u"1"}, {"name": u"d", "x": u"2"}], "csv parser: %r" % rows)
+    check(ns["clean_text"](u"a\nb\x00^c\\d", 99) == u"a b c d", "clean_text")
+    check(ns["malta_hhmm"](utc(2026, 11, 28, 23, 30)) == "00:30", "Malta clock")
+    shutil.rmtree(tmp)
+
+if __name__ == "__main__":
+    run()
+    print("%s: %s" % (sys.version.split()[0], "CONTROLLER OK" if not FAILS else "%d FAILURES" % len(FAILS)))
+    rc = 1 if FAILS else 0
+    if sys.version_info[0] == 3 and os.path.exists(PY27) and "--no27" not in sys.argv:
+        rc = rc or subprocess.call([PY27, os.path.abspath(__file__), "--no27"])
+    sys.exit(rc)

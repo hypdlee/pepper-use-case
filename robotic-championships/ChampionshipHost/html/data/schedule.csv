@@ -1,0 +1,9 @@
+# Programme for the Pepper host. Lines starting with # are notes and are ignored.
+# day: sat or sun.  time: HH:MM (Malta time).  minutes: how long it lasts (default 15).
+# category: arena, arm or stage.  game: tof, chaos, wil, hh, colour, shape, dynamic, pour, fold, tower (optional).
+# side_a / side_b: for the Arena, the red corner and the blue corner team; for the Robot Arm AI Challenge, the team(s) at the station. Leave empty if not known yet.
+# done: yes when it is finished (optional).
+# Example: sat,15:00,10,Time of Fall,arena,tof,Team Falcon,Team Orion,
+day,time,minutes,title,category,game,side_a,side_b,done
+sat,14:00,30,Opening Ceremony,stage,,,,
+sun,18:00,45,Awards Ceremony,stage,,,,

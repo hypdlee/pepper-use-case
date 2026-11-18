@@ -1,0 +1,1092 @@
+# Host Controller: Pepper as the neutral host of the IEEE Robot Championships 2026 (Choregraphe 2.5, NAOqi 2.5, Python 2.7).
+#
+# What it does
+#   - Speaks for Pepper (ALAnimatedSpeech, with gestures) and keeps the tablet up to date (ALTabletService.executeJS).
+#   - Reads what the dialog heard ($hostCmd and friends, written by Host_enu.top) and what was touched on the tablet.
+#   - Holds the teams, the programme, provisional scores and volunteer calls. Teams and programme start from
+#     html/data/teams.csv and schedule.csv; staff changes on the tablet are kept on the robot (~/.local/share/championship-host).
+#   - Calls the two teams 10 minutes before each scheduled match, and announces matches as they start (staff can turn this off).
+#   - Every team is treated the same way. Pepper never comments on a team and never states an official result.
+# Nothing here goes to the internet.
+import json, os, io, re, time, random, threading
+
+VERSION = "1.0.0"
+TOKEN_KEY = "Host/ControllerToken"
+KEYS = ["hostCmd", "hostTeam", "hostGame", "hostAns", "hostInfo", "Host/TabletCmd", TOKEN_KEY]
+STATE_KEY, STATE_EVT = "Host/State", "Host/Session"
+STORE_DIR = os.path.expanduser("~/.local/share/championship-host")
+DIALOG_NAME = "host"            # the topic in Host/Host_enu.top, compared in lower case
+DIALOG_SUB = "HostController"
+PONG = "ok1"
+CALL_BEFORE_S = 600             # match call 10 minutes before (rulebook 6.5: teams get 10 minutes' notice)
+CALL_WINDOW_S = 120             # a call is only made in the first 2 minutes of that window (no late calls after a restart)
+START_WINDOW_S = 90             # "starting now" only in the first 90 s
+VIEW_TALK_GAP_S = 8.0
+NU_GAP_S = 15.0
+GREET_GAP_S = 45.0
+STAFF_TTL_S = 300.0
+PIN_TRIES, PIN_WINDOW_S = 5, 60.0
+PUSH_BEAT_S = 4.0
+MALTA_UTC_OFFSET_S = 3600       # Malta is UTC+1 in November
+EVENT_DAY_UTC = {"sat": 1795824000, "sun": 1795910400}   # 28 and 29 November 2026, 00:00 UTC
+
+try:
+    unicode
+    def _s(x):
+        if isinstance(x, unicode):
+            return x.encode("utf-8")
+        return str(x)
+    def _u(x):
+        if isinstance(x, unicode):
+            return x
+        return str(x).decode("utf-8", "replace")
+except NameError:
+    def _s(x):
+        return x if isinstance(x, str) else str(x)
+    def _u(x):
+        return x.decode("utf-8", "replace") if isinstance(x, bytes) else str(x)
+
+
+def clean_text(x, n):
+    """Text from a person (staff, a CSV file) made safe to speak and to show: no control characters, no speech
+    annotations (^ and backslash tags), at most n characters."""
+    t = _u(x if x is not None else "")
+    t = re.sub(u"[\\x00-\\x1f\\x7f]", u" ", t)
+    t = t.replace(u"^", u" ").replace(u"\\", u" ")
+    t = re.sub(u"\\s+", u" ", t).strip()
+    return t[:n]
+
+
+def parse_csv(text):
+    """Header row, then one record per line. Lines starting with # are notes. Quotes allowed (same rules as the tablet)."""
+    text = _u(text)
+    if text[:1] == u"\ufeff":
+        text = text[1:]
+    rows, row, f, q, i = [], [], u"", False, 0
+    while i < len(text):
+        c = text[i]
+        if q:
+            if c == u'"':
+                if text[i + 1:i + 2] == u'"':
+                    f += u'"'; i += 1
+                else:
+                    q = False
+            else:
+                f += c
+        elif c == u'"':
+            q = True
+        elif c == u",":
+            row.append(f); f = u""
+        elif c in (u"\n", u"\r"):
+            if c == u"\r" and text[i + 1:i + 2] == u"\n":
+                i += 1
+            row.append(f); f = u""; rows.append(row); row = []
+        else:
+            f += c
+        i += 1
+    if f != u"" or row:
+        row.append(f); rows.append(row)
+    out, head = [], None
+    for r in rows:
+        first = (r[0] if r else u"").lstrip()
+        if first.startswith(u"#") or (len(r) == 1 and first == u""):
+            continue
+        if head is None:
+            head = [h.strip().lower() for h in r]
+            continue
+        out.append(dict((h, (r[k] if k < len(r) else u"").strip()) for k, h in enumerate(head)))
+    return out
+
+
+def norm_cat(c):
+    c = _u(c).lower()
+    if u"arm" in c:
+        return "arm"
+    if u"arena" in c:
+        return "arena"
+    return "stage"
+
+
+def teams_from_rows(rows):
+    out = []
+    for i, r in enumerate(rows):
+        name = clean_text(r.get(u"name", u""), 60)
+        if name:
+            out.append({"id": "f%d" % i, "name": name, "country": clean_text(r.get(u"country", u""), 40),
+                        "cat": norm_cat(r.get(u"category", u"")), "say": clean_text(r.get(u"say_as", u""), 60)})
+    return out
+
+
+TIME_RE = re.compile(r"^(\d{1,2}):(\d{2})$")
+
+
+def sched_item(r, i):
+    day = _u(r.get(u"day", u"")).strip().lower()
+    day = "sat" if day.startswith(u"sat") else ("sun" if day.startswith(u"sun") else "")
+    m = TIME_RE.match(_u(r.get(u"time", u"")).strip())
+    title = clean_text(r.get(u"title", u""), 60)
+    if not day or not m or not title or int(m.group(1)) > 23 or int(m.group(2)) > 59:
+        return None
+    try:
+        mins = int(_u(r.get(u"minutes", u"15")).strip() or 15)
+    except ValueError:
+        mins = 15
+    return {"id": "f%d" % i, "day": day, "time": "%02d:%s" % (int(m.group(1)), m.group(2)), "mins": max(1, min(240, mins)),
+            "title": title, "cat": norm_cat(r.get(u"category", u"")), "game": clean_text(r.get(u"game", u""), 20).lower(),
+            "a": clean_text(r.get(u"side_a", u""), 60), "b": clean_text(r.get(u"side_b", u""), 60),
+            "done": _u(r.get(u"done", u"")).strip().lower() in (u"y", u"yes", u"1", u"true", u"done")}
+
+
+def schedule_from_rows(rows):
+    out = []
+    for i, r in enumerate(rows):
+        it = sched_item(r, i)
+        if it:
+            out.append(it)
+    return out
+
+
+def start_epoch(it):
+    h, m = it["time"].split(":")
+    return EVENT_DAY_UTC[it["day"]] + int(h) * 3600 + int(m) * 60 - MALTA_UTC_OFFSET_S
+
+
+def malta_hhmm(t):
+    g = time.gmtime(t + MALTA_UTC_OFFSET_S)
+    return "%02d:%02d" % (g.tm_hour, g.tm_min)
+
+
+class MyClass(GeneratedClass):
+
+    def __init__(self):
+        GeneratedClass.__init__(self)
+        self.clock = time.time
+        self.sleep = time.sleep
+
+    def onLoad(self):
+        self.px = {}
+        self.running = False
+        self.worker = None
+        self.sender = None
+        self.lock = threading.Lock()
+        self.jsq = []
+        self.content = None
+        self.teams, self.schedule, self.scores, self.alerts = [], [], [], []
+        self.calls = True
+        self.edited = {"teams": False, "schedule": False}
+        self.announced = {}
+        self.seq = 0
+        self.lastSig = None
+        self.lastPush = 0.0
+        self.seen = []
+        self.token = None
+        self.staff = {}
+        self.pinFails = []
+        self.sayId = None
+        self.speaking = False
+        self.lastSpeak = 0.0
+        self.lastView = 0.0
+        self.lastNu = 0.0
+        self.lastGreet = 0.0
+        self.lastHuman = -1
+        self.quizOn = None
+        self.listen = None
+        self.dlgTry = 0
+        self.dlgAt = 0.0
+        self.dlgSub = False
+        self.startAt = None
+        self.tuned = None
+        self.appRoot = None
+        self.lastCallCheck = 0.0
+        self.lastSpeakCheck = 0.0
+
+    def onUnload(self):
+        self._halt()
+
+    def onInput_onStart(self):
+        if self.running:
+            return
+        self.running = True
+        self.token = "%08x" % random.randint(0, 0x7fffffff)
+        self._write(TOKEN_KEY, self.token)
+        for k in KEYS[:-1]:
+            self._write(k, "")
+        self.startAt = self.clock()
+        self.appRoot = self._appRoot()
+        self.content = self._loadContent()
+        self._loadData()
+        self.calls = self.calls and bool(self._param("Match calls", True))
+        self._log("info", "[Host] v%s running. %d teams, %d programme items, content %s" % (
+            VERSION, len(self.teams), len(self.schedule), "loaded" if self.content else "MISSING"))
+        self._setConcepts()
+        self._tune()
+        self._connectTablet()
+        self.sender = threading.Thread(target=self._sendLoop)
+        self.sender.daemon = True
+        self.sender.start()
+        self._push(True)
+        self.worker = threading.Thread(target=self._loop)
+        self.worker.daemon = True
+        self.worker.start()
+
+    def onInput_onStop(self):
+        self._halt()
+        self.onStopped()
+
+    def _halt(self):
+        if not getattr(self, "running", False):
+            return
+        self.running = False
+        self._stopTalk()
+        self._untune()
+        d = self.px.get("ALDialog")
+        if d is not None and self.dlgSub:
+            self.dlgSub = False
+            try:
+                d.unsubscribe(DIALOG_SUB)
+            except Exception:
+                pass
+
+    # ------------------------------------------------------------------ NAOqi access
+    def _p(self, name):
+        if name in self.px and self.px[name] is not None:
+            return self.px[name]
+        try:
+            self.px[name] = self.session().service(name)
+        except Exception:
+            self.px[name] = None
+        return self.px[name]
+
+    def _call(self, name, method, *args):
+        p = self._p(name)
+        if p is None:
+            return None
+        try:
+            return getattr(p, method)(*args)
+        except Exception as e:
+            self._log("warning", "[Host] %s.%s failed (%s)" % (name, method, e))
+            return None
+
+    def _read(self, key):
+        m = self._p("ALMemory")
+        if m is None:
+            return ""
+        try:
+            v = m.getData(key)
+            return "" if v is None else v
+        except Exception:
+            return ""
+
+    def _write(self, key, value):
+        m = self._p("ALMemory")
+        if m is not None:
+            try:
+                m.insertData(key, _s(value))
+            except Exception:
+                pass
+
+    def _log(self, level, msg):
+        try:
+            getattr(self.logger, level)(_s(msg))
+        except Exception:
+            pass
+
+    def _param(self, name, default):
+        try:
+            v = self.getParameter(name)
+            return default if v is None else v
+        except Exception:
+            return default
+
+    # ------------------------------------------------------------------ files
+    def _appRoot(self):
+        try:
+            fm = self._p("ALFrameManager")
+            base = fm.getBehaviorPath(self.behaviorId) if fm is not None else None
+            if base:
+                return os.path.normpath(os.path.join(_u(base), u"..")).replace(u"\\", u"/")
+        except Exception:
+            pass
+        return None
+
+    def _file(self, rel):
+        if not self.appRoot:
+            return None
+        p = os.path.join(self.appRoot, rel)
+        try:
+            with io.open(p, "r", encoding="utf-8") as f:
+                return f.read()
+        except Exception as e:
+            self._log("warning", "[Host] cannot read %s (%s)" % (rel, e))
+            return None
+
+    def _loadContent(self):
+        t = self._file(u"html/data/content.json")
+        if not t:
+            return None
+        try:
+            return json.loads(t)
+        except Exception as e:
+            self._log("error", "[Host] content.json is not valid JSON (%s)" % e)
+            return None
+
+    def _storePath(self):
+        return os.path.join(STORE_DIR, "state.json")
+
+    def _loadData(self):
+        st = {}
+        try:
+            with io.open(self._storePath(), "r", encoding="utf-8") as f:
+                st = json.loads(f.read())
+        except Exception:
+            st = {}
+        self.edited = st.get("edited") or {"teams": False, "schedule": False}
+        if self.edited.get("teams") and isinstance(st.get("teams"), list):
+            self.teams = st["teams"]
+        else:
+            self.teams = teams_from_rows(parse_csv(self._file(u"html/data/teams.csv") or u""))
+        if self.edited.get("schedule") and isinstance(st.get("schedule"), list):
+            self.schedule = st["schedule"]
+        else:
+            self.schedule = schedule_from_rows(parse_csv(self._file(u"html/data/schedule.csv") or u""))
+        self.scores = st.get("scores") if isinstance(st.get("scores"), list) else []
+        self.alerts = (st.get("alerts") if isinstance(st.get("alerts"), list) else [])[-50:]
+        self.calls = bool(st.get("calls", True))
+        self.announced = st.get("announced") if isinstance(st.get("announced"), dict) else {}
+
+    def _save(self):
+        data = {"teams": self.teams, "schedule": self.schedule, "scores": self.scores, "alerts": self.alerts[-50:],
+                "calls": self.calls, "edited": self.edited, "announced": self.announced, "saved": self.clock()}
+        try:
+            if not os.path.isdir(STORE_DIR):
+                os.makedirs(STORE_DIR)
+            tmp = self._storePath() + ".tmp"
+            with io.open(tmp, "w", encoding="utf-8") as f:
+                f.write(_u(json.dumps(data, ensure_ascii=True)))
+            os.rename(tmp, self._storePath()) if not os.path.exists(self._storePath()) else self._replace(tmp)
+        except Exception as e:
+            self._log("warning", "[Host] could not save staff changes (%s)" % e)
+
+    def _replace(self, tmp):
+        try:
+            os.replace(tmp, self._storePath())
+        except AttributeError:      # Python 2.7 has no os.replace
+            os.remove(self._storePath())
+            os.rename(tmp, self._storePath())
+
+    # ------------------------------------------------------------------ main loop
+    def _loop(self):
+        while self.running:
+            try:
+                self.tick()
+            except Exception as e:
+                self._log("error", "[Host] tick error (%s)" % e)
+            self.sleep(0.1)
+
+    def tick(self):
+        vals = self._readKeys()
+        owner = vals.get(TOKEN_KEY, "")
+        if self.token and owner and owner != self.token:
+            self._log("warning", "[Host] a newer Host Controller started: this one stops")
+            self.running = False
+            return
+        cmd = vals.get("hostCmd", "")
+        if cmd:
+            self._write("hostCmd", "")
+            if self.listen is False:
+                self.listen = True
+            self._onDialog(_u(cmd).strip().lower(), vals)
+        raw = vals.get("Host/TabletCmd", "")
+        if raw:
+            self._write("Host/TabletCmd", "")
+            self.onTablet(raw)
+        now = self.clock()
+        self._dialogStep(now)
+        if now - self.lastSpeakCheck >= 0.5:
+            self.lastSpeakCheck = now
+            self._checkSpeaking()
+        if now - self.lastCallCheck >= 5.0:
+            self.lastCallCheck = now
+            self._matchCalls(now)
+            self._expireStaff(now)
+            self._greetCheck(now)
+        self._push(False)
+
+    def _readKeys(self):
+        m = self._p("ALMemory")
+        out = {}
+        if m is None:
+            return out
+        try:
+            vals = m.getListData(KEYS)
+            for k, v in zip(KEYS, vals):
+                out[k] = "" if v is None else v
+        except Exception:
+            for k in KEYS:
+                out[k] = self._read(k)
+        return out
+
+    # ------------------------------------------------------------------ speech
+    def say(self, text, interrupt=True):
+        text = clean_text(text, 400)
+        if not text:
+            return
+        if interrupt:
+            self._stopTalk()
+        a = self._p("ALAnimatedSpeech")
+        try:
+            if a is not None:
+                self.sayId = a.post.say(_s(text), {"bodyLanguageMode": "contextual"})
+            else:
+                self.sayId = self._p("ALTextToSpeech").post.say(_s(text))
+        except Exception as e:
+            self._log("warning", "[Host] speech failed (%s)" % e)
+            self.sayId = None
+        self.lastSpeak = self.clock()
+        self.speaking = self.sayId is not None
+        self._log("info", "[Host] says: %s" % text)
+
+    def _stopTalk(self):
+        tts = self._p("ALTextToSpeech")
+        if tts is not None:
+            try:
+                tts.stopAll()
+            except Exception:
+                pass
+        if self.sayId is not None:
+            a = self._p("ALAnimatedSpeech")
+            try:
+                if a is not None:
+                    a.stop(self.sayId)
+            except Exception:
+                pass
+        self.sayId = None
+        self.speaking = False
+
+    def _checkSpeaking(self):
+        if self.sayId is None:
+            self.speaking = False
+            return
+        a = self._p("ALAnimatedSpeech")
+        try:
+            running = bool(a.isRunning(self.sayId)) if a is not None else False
+        except Exception:
+            running = self.clock() - self.lastSpeak < 8.0
+        if not running:
+            self.sayId = None
+        self.speaking = running
+
+    def _name(self, team_name):
+        """How Pepper pronounces a team: its say-as text if staff gave one."""
+        for t in self.teams:
+            if t["name"] == team_name and t.get("say"):
+                return t["say"]
+        return team_name
+
+    # ------------------------------------------------------------------ content helpers
+    def _game(self, gid):
+        for g in (self.content or {}).get("games", []):
+            if g.get("id") == gid:
+                return g
+        return None
+
+    def _sorted(self):
+        return sorted(self.schedule, key=start_epoch)
+
+    def _nowNext(self, t):
+        cur, nxt = None, None
+        for it in self._sorted():
+            if it.get("done"):
+                continue
+            s = start_epoch(it)
+            if cur is None and s <= t < s + it.get("mins", 15) * 60:
+                cur = it
+            if nxt is None and s > t:
+                nxt = it
+        return cur, nxt
+
+    def _sides(self, it):
+        a, b = it.get("a") or "", it.get("b") or ""
+        if it.get("cat") == "arena" and (a or b):
+            return "Red corner: %s. Blue corner: %s." % (self._name(a) if a else "to be confirmed", self._name(b) if b else "to be confirmed")
+        names = [self._name(x) for x in (a, b) if x]
+        return ("With %s." % " and ".join(names)) if names else ""
+
+    def _itemLine(self, it):
+        where = {"arena": " in the Arena", "arm": " at the Robot Arm AI Challenge"}.get(it.get("cat"), "")
+        return ("At %s: %s%s. %s" % (it["time"], it["title"], where, self._sides(it))).strip()
+
+    # ------------------------------------------------------------------ dialog commands
+    def _onDialog(self, cmd, vals):
+        self._log("info", "[Host] heard command %s" % cmd)
+        now = self.clock()
+        if cmd == "ping":
+            return
+        if cmd == "hello":
+            self.say(random.choice(["Hello! Welcome to the IEEE Robot Championships. Touch my screen, or ask me what is on next.",
+                                    "Hi! I am Pepper, your host. Would you like to see how the robot games work?"]))
+        elif cmd in ("games", "arena", "arm"):
+            cat = "arm" if cmd == "arm" else "arena"
+            self._go("games", cat)
+            self.say(((self.content or {}).get("categories", {}).get(cat, {}) or {}).get("say", "Here are the games."))
+        elif cmd == "game":
+            gid = _u(vals.get("hostGame", "")).strip().lower()
+            self._write("hostGame", "")
+            g = self._game(gid)
+            if g:
+                self._go("game", gid)
+                self.say(g.get("say", g.get("tagline", "")))
+        elif cmd == "teams":
+            self._go("teams", "")
+            self.say(self._teamsLine())
+        elif cmd == "team":
+            heard = _u(vals.get("hostTeam", "")).strip().lower()
+            self._write("hostTeam", "")
+            self._teamInfo(heard)
+        elif cmd in ("schedule", "next", "now"):
+            self._go("schedule", "")
+            self.say(self._nextLine(now))
+        elif cmd == "scores":
+            self._go("scores", "")
+            self.say(self._scoresLine())
+        elif cmd == "quiz":
+            self._js("HostUI.quizStart()")
+        elif cmd == "ans":
+            n = _u(vals.get("hostAns", "")).strip()
+            self._write("hostAns", "")
+            if n in ("1", "2", "3"):
+                self._js("HostUI.answer(%s)" % n)
+            elif n == "next":
+                self._js("HostUI.answer(0)")
+        elif cmd in ("help", "volunteer"):
+            self._go("help", "")
+            self._volunteer()
+        elif cmd == "about":
+            self._go("help", "")
+            self.say((self.content or {}).get("event", {}).get("about", "This is the IEEE Robot Championships."))
+        elif cmd == "info":
+            self._infoLine(_u(vals.get("hostInfo", "")).strip())
+        elif cmd == "time":
+            self.say("It is %s." % malta_hhmm(now))
+        elif cmd == "who":
+            self.say("I am Pepper, a humanoid robot. Today I am the host of the IEEE Robot Championships. I am not in the games myself. I just love watching them!")
+        elif cmd == "thanks":
+            self.say("You are welcome!")
+        elif cmd == "bye":
+            self.say("Goodbye! Enjoy the championships!")
+            self._go("home", "")
+        elif cmd == "stop":
+            self._stopTalk()
+        elif cmd == "nu":
+            if now - self.lastNu >= NU_GAP_S and not self.speaking:
+                self.lastNu = now
+                self.say("Sorry, I did not catch that. You can also touch my screen.")
+
+    def _teamsLine(self):
+        n = len(self.teams)
+        if not n:
+            return "The team list is coming soon. During the matches, the Arena teams play from the red corner and the blue corner."
+        return "%d teams are taking part. Touch a team to see where they come from." % n if n != 1 else "One team is on the list so far."
+
+    def _findTeam(self, heard):
+        heard = re.sub(u"\\s+", u" ", heard)
+        for t in self.teams:
+            for s in (t["name"], t.get("say") or ""):
+                if s and _u(s).strip().lower() == heard:
+                    return t
+        for t in self.teams:
+            if heard and heard in _u(t["name"]).lower():
+                return t
+        return None
+
+    def _teamInfo(self, heard):
+        t = self._findTeam(heard)
+        if t is None:
+            self._go("teams", "")
+            self.say("I could not find that team. Here is the team list.")
+            return
+        comp = "the Robot Arm AI Challenge" if t["cat"] == "arm" else "the Arena"
+        line = "%s%s competes in %s." % (self._name(t["name"]), (" from " + t["country"]) if t.get("country") else "", comp)
+        now = self.clock()
+        for it in self._sorted():
+            if not it.get("done") and start_epoch(it) > now and t["name"] in (it.get("a"), it.get("b")):
+                line += " Their next match: %s, at %s." % (it["title"], it["time"])
+                break
+        self._go("teams", "")
+        self.say(line)
+
+    def _nextLine(self, now):
+        cur, nxt = self._nowNext(now)
+        parts = []
+        if cur:
+            parts.append("Now: %s." % cur["title"])
+        if nxt:
+            parts.append("Next. " + self._itemLine(nxt))
+        if not parts:
+            return "The match times will be on my screen as soon as they are ready. Please ask a volunteer for the latest times."
+        return " ".join(parts)
+
+    def _board(self, cat):
+        return sorted([s for s in self.scores if s.get("cat") == cat], key=lambda s: -float(s.get("points", 0)))
+
+    def _scoresLine(self):
+        out = []
+        for cat, label in (("arena", "Arena"), ("arm", "Robot Arm AI Challenge")):
+            b = self._board(cat)[:3]
+            if b:
+                places = ["first", "second", "third"]
+                out.append("%s: %s." % (label, ", ".join("%s, %s with %s points" % (places[i], self._name(s["team"]), self._num(s["points"])) for i, s in enumerate(b))))
+        if not out:
+            return "There are no scores yet. They will appear on my screen during the games."
+        return "These are the provisional scores. " + " ".join(out) + " The judges announce the official results."
+
+    @staticmethod
+    def _num(p):
+        try:
+            f = float(p)
+            return str(int(f)) if f == int(f) else ("%.1f" % f)
+        except Exception:
+            return str(p)
+
+    def _infoLine(self, idx):
+        info = (self.content or {}).get("event", {}).get("info", [])
+        try:
+            item = info[int(idx)]
+        except Exception:
+            item = None
+        self._go("help", "")
+        self.say(item["a"] if item else "Please ask a volunteer at the information desk.")
+
+    # ------------------------------------------------------------------ tablet commands
+    def onTablet(self, raw):
+        try:
+            msg = json.loads(_u(raw))
+        except Exception:
+            return
+        if not isinstance(msg, dict):
+            return
+        mid = msg.get("id")
+        if mid:
+            if mid in self.seen:
+                return
+            self.seen.append(mid)
+            self.seen = self.seen[-60:]
+        cmd = msg.get("cmd", "")
+        now = self.clock()
+        if cmd == "game":
+            g = self._game(_u(msg.get("game", "") or ""))
+            if g is not None:
+                self.say(g.get("say", ""))
+        elif cmd == "view":
+            self._viewLine(_u(msg.get("view", "")), _u(msg.get("arg", "")), now)
+        elif cmd == "quizq":
+            self._quizQuestion(msg)
+        elif cmd == "quiza":
+            self._quizAnswer(msg)
+        elif cmd == "quizend":
+            self._quizEnd(msg)
+        elif cmd == "volunteer":
+            self._volunteer()
+        elif cmd == "stop":
+            self._stopTalk()
+        elif cmd == "staff-login":
+            self._staffLogin(_u(msg.get("pin", "")), now)
+        elif cmd == "staff-logout":
+            self.staff.pop(_u(msg.get("token", "")), None)
+        elif cmd.startswith("team-") or cmd.startswith("sched-") or cmd.startswith("score-") or cmd in ("announce", "calls", "reload", "alert-seen"):
+            self._staffCmd(cmd, msg, now)
+
+    def _viewLine(self, view, arg, now):
+        if now - self.lastView < VIEW_TALK_GAP_S or self.speaking:
+            return
+        line = None
+        if view == "games":
+            cat = "arm" if arg == "arm" else "arena"
+            line = ((self.content or {}).get("categories", {}).get(cat, {}) or {}).get("say")
+        elif view == "teams":
+            line = self._teamsLine()
+        elif view == "schedule":
+            line = self._nextLine(now)
+        elif view == "scores":
+            line = "Here are the provisional scores. The judges announce the official results." if self.scores else "There are no scores yet."
+        elif view == "help":
+            line = "If you need help, touch the red button and a volunteer will come to you."
+        if line:
+            self.lastView = now
+            self.say(line)
+
+    def _quizQuestion(self, msg):
+        quiz = (self.content or {}).get("quiz", [])
+        try:
+            q = quiz[int(msg.get("i"))]
+            opts = [int(x) for x in msg.get("opts", [0, 1, 2])][:3]
+        except Exception:
+            return
+        words = ["One", "Two", "Three"]
+        self.quizOn = int(msg.get("i"))
+        self.say("%s %s" % (q["q"], " ".join("%s: %s." % (words[k], q["a"][o]) for k, o in enumerate(opts))))
+
+    def _quizAnswer(self, msg):
+        quiz = (self.content or {}).get("quiz", [])
+        try:
+            q = quiz[int(msg.get("i"))]
+        except Exception:
+            return
+        if msg.get("ok") is True:
+            self.say("%s %s" % (random.choice(["Correct!", "Yes! Well done!", "That is right!"]), q.get("why", "")))
+        else:
+            self.say("Not quite. %s" % q.get("why", ""))
+
+    def _quizEnd(self, msg):
+        try:
+            s, n = int(msg.get("score")), int(msg.get("total"))
+        except Exception:
+            return
+        self.quizOn = None
+        tail = "Brilliant! You are a robot expert." if s >= n - 1 else ("Well done!" if s >= 2 else "Good try! Watch the games and try again.")
+        self.say("You got %d out of %d. %s" % (s, n, tail))
+
+    def _volunteer(self):
+        now = self.clock()
+        recent = [a for a in self.alerts if not a.get("seen") and now * 1000 - a.get("t", 0) < 120000]
+        if recent:
+            self.say("A volunteer is already on the way. Please wait here with me.")
+            return
+        self.alerts.append({"id": "a%d" % int(now * 1000), "t": int(now * 1000), "text": "A visitor at Pepper asked for a volunteer.", "seen": False})
+        self.alerts = self.alerts[-50:]
+        self._save()
+        self._log("warning", "[Host] VOLUNTEER CALLED at Pepper")
+        self.say("I have called a volunteer. Please wait here with me.")
+        self._push(True)
+
+    # ------------------------------------------------------------------ staff
+    def _staffLogin(self, pin, now):
+        self.pinFails = [t for t in self.pinFails if now - t < PIN_WINDOW_S]
+        if len(self.pinFails) >= PIN_TRIES:
+            self._js("HostUI.staff(%s)" % json.dumps({"ok": False, "wait": True}))
+            return
+        if pin and pin == _u(self._param("Staff PIN", "2026")).strip():
+            tok = "%016x" % random.getrandbits(64)
+            self.staff[tok] = now
+            self._log("info", "[Host] staff mode opened")
+            self._js("HostUI.staff(%s)" % json.dumps({"ok": True, "token": tok}))
+        else:
+            self.pinFails.append(now)
+            self._js("HostUI.staff(%s)" % json.dumps({"ok": False}))
+
+    def _expireStaff(self, now):
+        for tok in list(self.staff.keys()):
+            if now - self.staff[tok] > STAFF_TTL_S:
+                del self.staff[tok]
+                self._js("HostUI.staffClosed()")
+
+    def _staffCmd(self, cmd, msg, now):
+        tok = _u(msg.get("token", "") or "")
+        if tok not in self.staff:
+            self._js("HostUI.staffClosed()")
+            return
+        self.staff[tok] = now
+        changed = True
+        if cmd == "team-save":
+            t = msg.get("team") or {}
+            name = clean_text(t.get("name", ""), 60)
+            if not name:
+                return
+            new = {"name": name, "country": clean_text(t.get("country", ""), 40), "cat": "arm" if t.get("cat") == "arm" else "arena",
+                   "say": clean_text(t.get("say", ""), 60)}
+            tid = _u(t.get("id", "") or "")
+            old = [x for x in self.teams if x["id"] == tid]
+            if old:
+                prev = old[0]["name"]
+                old[0].update(new)
+                for it in self.schedule:
+                    if it.get("a") == prev:
+                        it["a"] = name
+                    if it.get("b") == prev:
+                        it["b"] = name
+                for s in self.scores:
+                    if s.get("teamId") == tid:
+                        s["team"], s["cat"] = name, new["cat"]
+                self.edited["schedule"] = True
+            else:
+                if any(_u(x["name"]).lower() == name.lower() for x in self.teams):
+                    self._js("HostUI.toast(%s)" % json.dumps("A team with this name is already on the list."))
+                    return
+                new["id"] = "t%d" % int(now * 1000)
+                self.teams.append(new)
+            self.edited["teams"] = True
+            self._setConcepts()
+        elif cmd == "team-del":
+            tid = _u(msg.get("key", ""))
+            self.teams = [x for x in self.teams if x["id"] != tid]
+            self.scores = [s for s in self.scores if s.get("teamId") != tid]
+            self.edited["teams"] = True
+            self._setConcepts()
+        elif cmd == "sched-save":
+            it = msg.get("item") or {}
+            row = {u"day": it.get("day", ""), u"time": it.get("time", ""), u"minutes": _u(it.get("mins", 15)), u"title": it.get("title", ""),
+                   u"category": it.get("cat", ""), u"game": it.get("game", ""), u"side_a": it.get("a", ""), u"side_b": it.get("b", ""),
+                   u"done": u"yes" if it.get("done") else u""}
+            new = sched_item(row, 0)
+            if new is None:
+                self._js("HostUI.toast(%s)" % json.dumps("Check the day, the time (like 14:30) and the title."))
+                return
+            sid = _u(it.get("id", "") or "")
+            old = [x for x in self.schedule if x["id"] == sid]
+            if old:
+                new["id"] = sid
+                self.schedule[self.schedule.index(old[0])] = new
+            else:
+                new["id"] = "s%d" % int(now * 1000)
+                self.schedule.append(new)
+            self.edited["schedule"] = True
+        elif cmd == "sched-del":
+            sid = _u(msg.get("key", ""))
+            self.schedule = [x for x in self.schedule if x["id"] != sid]
+            self.edited["schedule"] = True
+        elif cmd == "score-save":
+            tid = _u(msg.get("teamId", ""))
+            team = [x for x in self.teams if x["id"] == tid]
+            try:
+                pts = float(msg.get("points"))
+            except Exception:
+                return
+            if not team or not (-10000 <= pts <= 100000):
+                return
+            pts = int(pts) if pts == int(pts) else round(pts, 1)
+            ex = [s for s in self.scores if s.get("teamId") == tid]
+            if ex:
+                ex[0]["points"] = pts
+            else:
+                self.scores.append({"id": "c%d" % int(now * 1000), "teamId": tid, "team": team[0]["name"], "cat": team[0]["cat"], "points": pts})
+        elif cmd == "score-del":
+            sid = _u(msg.get("key", ""))
+            self.scores = [s for s in self.scores if s.get("id") != sid]
+        elif cmd == "alert-seen":
+            aid = _u(msg.get("key", ""))
+            for a in self.alerts:
+                if a.get("id") == aid:
+                    a["seen"] = True
+        elif cmd == "calls":
+            self.calls = bool(msg.get("on"))
+        elif cmd == "announce":
+            text = clean_text(msg.get("text", ""), 300)
+            changed = False
+            if text:
+                self._log("info", "[Host] staff announcement")
+                self.say(text)
+        elif cmd == "reload":
+            self.teams = teams_from_rows(parse_csv(self._file(u"html/data/teams.csv") or u""))
+            self.schedule = schedule_from_rows(parse_csv(self._file(u"html/data/schedule.csv") or u""))
+            self.edited = {"teams": False, "schedule": False}
+            self._setConcepts()
+            self._js("HostUI.toast(%s)" % json.dumps("Reloaded: %d teams, %d programme items." % (len(self.teams), len(self.schedule))))
+        else:
+            changed = False
+        if changed:
+            self._save()
+            self._push(True)
+
+    # ------------------------------------------------------------------ match calls
+    def _matchCalls(self, now):
+        if not self.calls:
+            return
+        for it in self._sorted():
+            if it.get("done"):
+                continue
+            s = start_epoch(it)
+            key = it["id"] + "|" + it["day"] + it["time"]
+            if s - CALL_BEFORE_S <= now < s - CALL_BEFORE_S + CALL_WINDOW_S and not self.announced.get(key + "|call"):
+                self.announced[key + "|call"] = True
+                self._save()
+                if it.get("cat") == "stage":
+                    self.say("Attention please. The %s starts in ten minutes." % it["title"], interrupt=False)
+                else:
+                    self.say(("Attention teams. In ten minutes%s: %s. %s Please get ready." % (
+                        {"arena": ", in the Arena", "arm": ", at the Robot Arm AI Challenge"}.get(it.get("cat"), ""), it["title"], self._sides(it))).replace("  ", " "), interrupt=False)
+                return
+            if s <= now < s + START_WINDOW_S and not self.announced.get(key + "|start") and it.get("cat") != "stage":
+                self.announced[key + "|start"] = True
+                self._save()
+                self.say(("Starting now: %s! %s Good luck to both teams!" % (it["title"], self._sides(it))) if (it.get("a") and it.get("b"))
+                         else ("Starting now: %s! %s Good luck!" % (it["title"], self._sides(it))).replace("  ", " "), interrupt=False)
+                return
+
+    # ------------------------------------------------------------------ greeting people who come close
+    def _greetCheck(self, now):
+        if not bool(self._param("Greet visitors", True)):
+            return
+        h = self._read("ALBasicAwareness/HumanTracked")
+        try:
+            h = int(h)
+        except Exception:
+            h = -1
+        newly = h >= 0 and self.lastHuman < 0
+        self.lastHuman = h
+        if newly and not self.speaking and now - self.lastGreet >= GREET_GAP_S and now - self.lastSpeak >= 20.0 and self.quizOn is None:
+            self.lastGreet = now
+            self.say(random.choice(["Hello! Welcome to the IEEE Robot Championships. Touch my screen to see the robot games.",
+                                    "Hi there! Ask me: what is on next? Or touch my screen.",
+                                    "Welcome! Would you like to try the robot quiz? Touch my screen."]))
+
+    # ------------------------------------------------------------------ dialog engine check (lesson from the care companion)
+    def _dialogStep(self, now):
+        if self.listen is not None or self.startAt is None:
+            return
+        if self.dlgTry == 0:
+            if now - self.startAt >= 4.0:
+                self._write("hostPong", "")
+                self.dlgTry, self.dlgAt = 1, now
+                self._call("ALDialog", "forceInput", _s("robotcmd ping"))
+            return
+        if _u(self._read("hostPong")) == PONG:
+            self.listen = True
+            self._log("info", "[Host] the dialog answers: Pepper is listening")
+            return
+        if now - self.dlgAt < 3.0:
+            return
+        if self.dlgTry >= 2:
+            self.listen = False
+            self._log("error", "[Host] the dialog does not answer: Pepper cannot listen. The tablet still works. Stop all behaviours and start the app once.")
+            return
+        self._dialogRepair()
+        self._write("hostPong", "")
+        self.dlgTry, self.dlgAt = 2, now
+        self._call("ALDialog", "forceInput", _s("robotcmd ping"))
+
+    def _dialogRepair(self):
+        d = self._p("ALDialog")
+        if d is None:
+            return
+        def names(m):
+            try:
+                return [_u(x) for x in (getattr(d, m)() or [])]
+            except Exception:
+                return []
+        key = lambda n: re.sub(u"(_enu)?(\\.top)?$", u"", n.replace(u"\\", u"/").split(u"/")[-1].lower()).lstrip(u"~")
+        loaded = [n for n in names("getAllLoadedTopics") if key(n) == DIALOG_NAME]
+        active = [n for n in names("getActivatedTopics") if key(n) == DIALOG_NAME]
+        self._log("warning", "[Host] dialog did not answer. Loaded: %s. Active: %s" % (loaded, active))
+        if not loaded and self.appRoot:
+            try:
+                loaded = [_u(d.loadTopic(_s(os.path.join(self.appRoot, u"Host", u"Host_enu.top"))))]
+            except Exception as e:
+                self._log("warning", "[Host] loadTopic failed (%s)" % e)
+        try:
+            if loaded and not active:
+                d.activateTopic(_s(loaded[0]))
+            if loaded:
+                d.subscribe(DIALOG_SUB)
+                self.dlgSub = True
+        except Exception as e:
+            self._log("warning", "[Host] dialog repair failed (%s)" % e)
+
+    def _setConcepts(self):
+        words = []
+        for t in self.teams:
+            for s in (t["name"], t.get("say") or ""):
+                w = re.sub(u"[^a-z0-9 '\\-]", u"", _u(s).lower()).strip()
+                if w and w not in words:
+                    words.append(w)
+        d = self._p("ALDialog")
+        if d is None:
+            return
+        try:
+            d.setConcept(_s("teamnames"), _s("English"), [_s(w) for w in (words or ["no team yet"])])
+        except Exception as e:
+            self._log("warning", "[Host] team names not loaded into the dialog (%s)" % e)
+
+    # ------------------------------------------------------------------ calm robot
+    def _tune(self):
+        ba = self._p("ALBasicAwareness")
+        if ba is None:
+            return
+        try:
+            self.tuned = (ba.getTrackingMode(), ba.getEngagementMode())
+        except Exception:
+            self.tuned = None
+        try:
+            ba.setTrackingMode(_s("Head"))
+            ba.setEngagementMode(_s("SemiEngaged"))
+        except Exception as e:
+            self._log("warning", "[Host] basic awareness not tuned (%s)" % e)
+
+    def _untune(self):
+        ba = self.px.get("ALBasicAwareness")
+        if ba is not None and self.tuned:
+            try:
+                ba.setTrackingMode(_s(self.tuned[0]))
+                ba.setEngagementMode(_s(self.tuned[1]))
+            except Exception:
+                pass
+
+    # ------------------------------------------------------------------ tablet
+    def _connectTablet(self):
+        try:
+            ts = self.session().service("ALTabletService")
+            ts.onJSEvent.connect(self.onTablet)
+        except Exception as e:
+            self._log("warning", "[Host] onJSEvent not available (%s); the tablet uses ALMemory" % e)
+
+    def _state(self):
+        return {"v": VERSION, "teams": self.teams, "schedule": self.schedule, "scores": self.scores, "alerts": self.alerts[-20:],
+                "calls": self.calls, "voice": self.listen, "speaking": self.speaking}
+
+    def _push(self, force):
+        st = self._state()
+        sig = json.dumps(st, sort_keys=True)
+        now = self.clock()
+        if not force and sig == self.lastSig and now - self.lastPush < PUSH_BEAT_S:
+            return
+        self.lastSig, self.lastPush = sig, now
+        self.seq += 1
+        st["seq"] = self.seq
+        st["now"] = int(now * 1000)
+        body = json.dumps(st, ensure_ascii=True)
+        self._write(STATE_KEY, body)
+        m = self._p("ALMemory")
+        if m is not None:
+            try:
+                m.raiseEvent(STATE_EVT, _s(body))
+            except Exception:
+                pass
+        self._js("HostUI.update(%s)" % body, "update")
+
+    def _go(self, view, arg):
+        self._js("HostUI.go(%s,%s)" % (json.dumps(view), json.dumps(arg)))
+
+    def _js(self, code, kind=None):
+        self.lock.acquire()
+        try:
+            if kind == "update":
+                self.jsq = [q for q in self.jsq if q[0] != "update"]
+            self.jsq.append((kind, code))
+            self.jsq = self.jsq[-50:]
+        finally:
+            self.lock.release()
+        if self.sender is None:
+            self._flushJs()
+
+    def _flushJs(self):
+        while True:
+            self.lock.acquire()
+            try:
+                item = self.jsq.pop(0) if self.jsq else None
+            finally:
+                self.lock.release()
+            if item is None:
+                return
+            ts = self._p("ALTabletService")
+            if ts is not None:
+                try:
+                    ts.executeJS(_s("try{" + item[1] + "}catch(e){}"))
+                except Exception:
+                    pass
+
+    def _sendLoop(self):
+        while self.running:
+            try:
+                self._flushJs()
+            except Exception as e:
+                self._log("error", "[Host] tablet sender error (%s)" % e)
+            self.sleep(0.05)

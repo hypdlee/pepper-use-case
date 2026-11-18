@@ -1,0 +1,79 @@
+topic: ~host()
+language: enu
+
+# Pepper host for the IEEE Robot Championships 2026.
+# Every rule only writes a command for the Host Controller ($hostCmd, plus $hostGame / $hostTeam / $hostAns / $hostInfo).
+# The controller answers out loud and moves the tablet, so speech and screen always match.
+# Team names are loaded at start (and after staff edits) into the dynamic concept ~teamnames.
+
+dynamic: teamnames
+
+concept:(explain) ["what is" "what's" "tell me about" "explain" "how does" "how do you play" "show me" "show" "about"]
+concept:(hello) [hello hi hey "good morning" "good afternoon" "good evening" "hello pepper" "hi pepper"]
+concept:(arena) [arena "the arena" "arena games" "four games" "4 games" "robot games" "the robot games"]
+concept:(arm) ["robot arm" "robot arms" "arm challenge" "the arm challenge" "robot arm challenge" "robot arm ai challenge" "ai challenge" "the arms"]
+concept:(games) [games "the games" "what games" "which games" "what can i watch" "how do the games work"]
+concept:(g_tof) ["time of fall" "tug of war"]
+concept:(g_chaos) ["climate chaos" "the chaos game" "chaos" "the maze" "rescue game"]
+concept:(g_wil) ["weight in line" "weights in line" "the weights" "weight game"]
+concept:(g_hh) ["hanging hazard" "rugby balls" "rugby game"]
+concept:(g_colour) ["colour sort" "color sort" "colour sorting" "color sorting"]
+concept:(g_shape) ["shape sort" "shape sorting" "shapes"]
+concept:(g_dynamic) ["dynamic sort" "dynamic sorting"]
+concept:(g_pour) [pouring pour "the rice" "pouring rice"]
+concept:(g_fold) [folding fold "the cloth" "folding cloth"]
+concept:(g_tower) ["tower duel" "tower construction duel" "tower construction" "the tower" "tower game" "building towers"]
+concept:(teams) [teams "the teams" "which teams" "who is competing" "who is taking part" "list of teams" "team list"]
+concept:(next) ["what is next" "what's next" "next match" "what is on" "what's on" "what is on now" "what is happening" "who is playing" "who is playing now" "who plays next" schedule programme program "the schedule" "when is the final" "when is the next match" "what time is the next match" timetable]
+concept:(scores) [scores score "the scores" "who is winning" "who is first" leaderboard "the leaderboard" results "the results" "who won"]
+concept:(quiz) [quiz "the quiz" "a quiz" "play the quiz" "play a quiz" "test me" "ask me a question"]
+concept:(help) [help "i need help" "help me" "call a volunteer" volunteer "a volunteer" "i am lost" "i lost my" "lost child" "i cannot find my" emergency "first aid" "i am hurt" "i feel sick" "someone is hurt"]
+concept:(toilet) [toilet toilets bathroom restroom "the toilet" "where is the toilet" "where are the toilets"]
+concept:(food) [food drinks "a drink" "something to eat" "where can i eat" coffee snacks "the cafe"]
+concept:(time) ["what time is it" "the time" "what is the time" "tell me the time"]
+concept:(who) ["who are you" "what are you" "what is your name" "are you a robot" "what's your name"]
+concept:(about) ["what is this event" "what is this" "about the championships" "tell me about the championships" "what is the robot championship" "what is happening here" ieee "what is ieee"]
+concept:(thanks) ["thank you" thanks "thank you pepper" cheers]
+concept:(bye) [bye goodbye "see you" "see you later" "bye bye"]
+concept:(stop) [stop "stop talking" "be quiet" quiet "stop pepper" "that's enough" enough]
+concept:(ans1) [one "number one" "answer one" "the first one" first]
+concept:(ans2) [two "number two" "answer two" "the second one" second]
+concept:(ans3) [three "number three" "answer three" "the third one" third]
+concept:(nextq) ["next question" "next one" "go on" continue]
+
+u:("robotcmd ping") $hostPong=ok1
+
+u:(~hello) $hostCmd=hello
+u:({~explain} ~g_tof) $hostGame=tof $hostCmd=game
+u:({~explain} ~g_chaos) $hostGame=chaos $hostCmd=game
+u:({~explain} ~g_wil) $hostGame=wil $hostCmd=game
+u:({~explain} ~g_hh) $hostGame=hh $hostCmd=game
+u:({~explain} ~g_colour) $hostGame=colour $hostCmd=game
+u:({~explain} ~g_shape) $hostGame=shape $hostCmd=game
+u:({~explain} ~g_dynamic) $hostGame=dynamic $hostCmd=game
+u:({~explain} ~g_pour) $hostGame=pour $hostCmd=game
+u:({~explain} ~g_fold) $hostGame=fold $hostCmd=game
+u:({~explain} ~g_tower) $hostGame=tower $hostCmd=game
+u:({~explain} ~arm) $hostCmd=arm
+u:({~explain} ~arena) $hostCmd=arena
+u:({~explain} ~games) $hostCmd=games
+u:({~explain} {team} _~teamnames) $hostTeam=$1 $hostCmd=team
+u:(["where is" "who is" "when does" "when is"] {team} _~teamnames {[playing play]}) $hostTeam=$1 $hostCmd=team
+u:(~teams) $hostCmd=teams
+u:(~next) $hostCmd=next
+u:(~scores) $hostCmd=scores
+u:(~quiz) $hostCmd=quiz
+u:(~ans1) $hostAns=1 $hostCmd=ans
+u:(~ans2) $hostAns=2 $hostCmd=ans
+u:(~ans3) $hostAns=3 $hostCmd=ans
+u:(~nextq) $hostAns=next $hostCmd=ans
+u:(~help) $hostCmd=help
+u:(~toilet) $hostInfo=0 $hostCmd=info
+u:(~food) $hostInfo=1 $hostCmd=info
+u:(~time) $hostCmd=time
+u:(~who) $hostCmd=who
+u:(~about) $hostCmd=about
+u:(~thanks) $hostCmd=thanks
+u:(~bye) $hostCmd=bye
+u:(~stop) $hostCmd=stop
+u:(e:Dialog/NotUnderstood) $hostCmd=nu

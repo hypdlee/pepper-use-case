@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1280, height=800, user-scalable=no">
+<title>IEEE Robot Championships 2026: Pepper host</title>
+<link rel="stylesheet" href="css/host.css">
+</head>
+<body>
+<div id="app">
+  <header class="top">
+    <div class="brand" id="brand">
+      <img id="logo" class="logo" src="brand/logo.png" alt="" onerror="this.style.display='none'">
+      <div class="wordmark">
+        <div class="wm1">IEEE Robot Championships <b>2026</b></div>
+        <div class="wm2">Malta &middot; 28&ndash;29 November &middot; Montekristo Estate Arena</div>
+      </div>
+    </div>
+    <div class="topright">
+      <span id="speaking" class="chip speak" hidden><i></i><i></i><i></i> Pepper is talking</span>
+      <button id="stopTalk" class="chip stopbtn" hidden>Stop</button>
+      <span id="status" class="chip">Starting</span>
+      <span id="clock" class="clock">--:--</span>
+    </div>
+  </header>
+  <div class="band"></div>
+  <nav class="nav" id="nav">
+    <button data-go="home" class="on">Home</button>
+    <button data-go="games">Games</button>
+    <button data-go="teams">Teams</button>
+    <button data-go="schedule">Schedule</button>
+    <button data-go="scores">Scores</button>
+    <button data-go="quiz">Quiz</button>
+    <button data-go="help">Help</button>
+  </nav>
+
+  <main id="main">
+    <!-- HOME -->
+    <section id="v-home" class="view on">
+      <div class="home">
+        <div class="hero">
+          <img id="mascot" class="mascot" src="brand/mascot.png" alt="" onerror="this.style.display='none'">
+          <div class="kicker">Welcome!</div>
+          <h1>Hi, I am Pepper,<br>your championship host.</h1>
+          <p class="lead">Touch the screen or talk to me. Ask me about the games, the teams or the next match.</p>
+          <div id="countBox" class="count">
+            <div class="countlbl" id="countLbl">The championships start in</div>
+            <div class="countrow" id="countRow"></div>
+          </div>
+          <div id="liveBox" class="live" hidden>
+            <div class="liveitem" id="liveNow"></div>
+            <div class="liveitem next" id="liveNext"></div>
+          </div>
+          <div class="stats" id="stats"></div>
+        </div>
+        <div class="tiles">
+          <button class="tile t-yellow" data-go="games" data-arg="arena"><span class="ti">Arena</span><span class="ts">4 robot games</span></button>
+          <button class="tile t-purple" data-go="games" data-arg="arm"><span class="ti">Robot Arm AI</span><span class="ts">Arms that think</span></button>
+          <button class="tile" data-go="teams"><span class="ti">Teams</span><span class="ts" id="tileTeams">Who is competing</span></button>
+          <button class="tile" data-go="schedule"><span class="ti">Schedule</span><span class="ts" id="tileNext">What is on</span></button>
+          <button class="tile" data-go="scores"><span class="ti">Scores</span><span class="ts">Leaderboards</span></button>
+          <button class="tile" data-go="quiz"><span class="ti">Quiz</span><span class="ts">Test yourself</span></button>
+          <button class="tile t-help" data-go="help" data-arg="volunteer"><span class="ti">Call a volunteer</span><span class="ts">We will come to you</span></button>
+        </div>
+      </div>
+    </section>
+
+    <!-- GAMES -->
+    <section id="v-games" class="view">
+      <div class="seg" id="catSeg">
+        <button data-cat="arena" class="on">Arena: 4 Games</button>
+        <button data-cat="arm">Robot Arm AI Challenge</button>
+      </div>
+      <p class="intro" id="catIntro"></p>
+      <div class="cards" id="gameCards"></div>
+      <p class="structure" id="catStructure"></p>
+    </section>
+
+    <!-- GAME DETAIL -->
+    <section id="v-game" class="view">
+      <div class="detail">
+        <div class="media">
+          <div class="vidwrap">
+            <video id="gvid" muted loop playsinline preload="auto"></video>
+            <button id="gplay" class="playover" hidden>&#9658;</button>
+          </div>
+          <div class="simnote">Simulation, to show the idea. Not a real match.</div>
+        </div>
+        <div class="dtext">
+          <div class="dnum" id="gnum"></div>
+          <h2 id="gtitle"></h2>
+          <p class="tagline" id="gtag"></p>
+          <ul class="facts" id="gfacts"></ul>
+          <div class="dbtns">
+            <button class="pill primary" id="gexplain">Pepper, explain</button>
+            <button class="pill" id="gnext">Next game</button>
+            <button class="pill ghost" id="gback">All games</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TEAMS -->
+    <section id="v-teams" class="view">
+      <div class="seg" id="teamSeg">
+        <button data-f="all" class="on">All teams</button>
+        <button data-f="arena">Arena</button>
+        <button data-f="arm">Robot Arm AI</button>
+      </div>
+      <div class="teamgrid" id="teamGrid"></div>
+    </section>
+
+    <!-- SCHEDULE -->
+    <section id="v-schedule" class="view">
+      <div class="seg" id="daySeg">
+        <button data-day="sat" class="on">Saturday 28</button>
+        <button data-day="sun">Sunday 29</button>
+      </div>
+      <div class="sched" id="schedList"></div>
+    </section>
+
+    <!-- SCORES -->
+    <section id="v-scores" class="view">
+      <div class="boards">
+        <div class="board"><h3>Arena</h3><ol id="boardArena"></ol></div>
+        <div class="board"><h3>Robot Arm AI Challenge</h3><ol id="boardArm"></ol></div>
+      </div>
+      <p class="provisional">Provisional scores entered by event staff. Official results are announced by the judges.</p>
+    </section>
+
+    <!-- QUIZ -->
+    <section id="v-quiz" class="view">
+      <div class="quiz" id="quiz"></div>
+    </section>
+
+    <!-- HELP -->
+    <section id="v-help" class="view">
+      <div class="help">
+        <div class="helpcol">
+          <button class="volunteer" id="volBtn"><span class="vt">Call a volunteer</span><span class="vs">A volunteer will come to Pepper</span></button>
+          <div id="volDone" class="voldone" hidden>A volunteer has been called. Please wait here with Pepper.</div>
+          <h3>Good to know</h3>
+          <dl class="info" id="infoList"></dl>
+        </div>
+        <div class="helpcol">
+          <h3>About the championships</h3>
+          <p id="aboutText"></p>
+          <p class="mission" id="missionText"></p>
+          <h3>Pitch themes</h3>
+          <ul class="themes" id="themes"></ul>
+          <p id="stemText"></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- STAFF -->
+    <section id="v-staff" class="view">
+      <div class="staffbar">
+        <div class="seg small" id="staffSeg">
+          <button data-st="alerts" class="on">Alerts</button>
+          <button data-st="teams">Teams</button>
+          <button data-st="schedule">Schedule</button>
+          <button data-st="scores">Scores</button>
+          <button data-st="announce">Announce</button>
+          <button data-st="system">System</button>
+        </div>
+        <button class="pill ghost" id="staffExit">Leave staff mode</button>
+      </div>
+      <div class="staffbody" id="staffBody"></div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <span>Pepper host for the IEEE Malta Section</span>
+    <span id="footRules"></span>
+  </footer>
+
+  <div id="pin" class="modal" hidden>
+    <div class="pinbox">
+      <div class="pintitle">Staff only</div>
+      <div class="pindots" id="pinDots"></div>
+      <div class="pinpad" id="pinPad"></div>
+      <div class="pinmsg" id="pinMsg"></div>
+    </div>
+  </div>
+  <div id="toast" class="toast" hidden></div>
+</div>
+<script src="js/bridge.js"></script>
+<script src="js/host.js"></script>
+</body>
+</html>
