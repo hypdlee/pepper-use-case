@@ -8,9 +8,9 @@
 #   - Calls the two teams 10 minutes before each scheduled match, and announces matches as they start (staff can turn this off).
 #   - Every team is treated the same way. Pepper never comments on a team and never states an official result.
 # Nothing here goes to the internet.
-import json, os, io, re, time, random, threading
+import json, os, io, re, time, random, threading, unicodedata
 
-VERSION = "1.0.0"
+VERSION = "1.0.1"
 TOKEN_KEY = "Host/ControllerToken"
 KEYS = ["hostCmd", "hostTeam", "hostGame", "hostAns", "hostInfo", "Host/TabletCmd", TOKEN_KEY]
 STATE_KEY, STATE_EVT = "Host/State", "Host/Session"
@@ -96,6 +96,21 @@ def parse_csv(text):
             continue
         out.append(dict((h, (r[k] if k < len(r) else u"").strip()) for k, h in enumerate(head)))
     return out
+
+
+def spoken_key(x):
+    """A team name as speech recognition hears it: no accents, no punctuation, no spaces, lower case.
+    'Trodai' and 'Troda\u00ed' match, and so do 'Electro Nexus' and 'ElectroNexus'."""
+    t = unicodedata.normalize("NFKD", _u(x))
+    t = u"".join(c for c in t if not unicodedata.combining(c)).lower()
+    return re.sub(u"[^a-z0-9]", u"", t)
+
+
+def concept_word(x):
+    """A team name as a word list for the dialog's ~teamnames concept: plain letters and spaces only."""
+    t = unicodedata.normalize("NFKD", _u(x))
+    t = u"".join(c for c in t if not unicodedata.combining(c)).lower()
+    return re.sub(u"\\s+", u" ", re.sub(u"[^a-z0-9']", u" ", t)).strip()
 
 
 def norm_cat(c):
@@ -586,25 +601,40 @@ class MyClass(GeneratedClass):
         n = len(self.teams)
         if not n:
             return "The team list is coming soon. During the matches, the Arena teams play from the red corner and the blue corner."
-        return "%d teams are taking part. Touch a team to see where they come from." % n if n != 1 else "One team is on the list so far."
+        if n == 1:
+            return "One team is on the list so far."
+        na = len([t for t in self.teams if t["cat"] == "arena"])
+        nm = n - na
+        parts = []
+        if na:
+            parts.append("%d %s in the Arena" % (na, "team" if na == 1 else "teams"))
+        if nm:
+            parts.append("%d %s in the Robot Arm AI Challenge" % (nm, "team" if nm == 1 else "teams"))
+        return "%d teams are taking part: %s." % (n, " and ".join(parts))
 
-    def _findTeam(self, heard):
-        heard = re.sub(u"\\s+", u" ", heard)
-        for t in self.teams:
-            for s in (t["name"], t.get("say") or ""):
-                if s and _u(s).strip().lower() == heard:
-                    return t
-        for t in self.teams:
-            if heard and heard in _u(t["name"]).lower():
-                return t
-        return None
+    def _findTeams(self, heard):
+        """Every team whose name (or say-as text) sounds like what was heard. Two teams in different competitions can
+        sound the same, for example 'Electro Nexus' in the Arena and 'ElectroNexus' in the Robot Arm AI Challenge."""
+        k = spoken_key(heard)
+        if not k:
+            return []
+        hits = [t for t in self.teams if k in (spoken_key(t["name"]), spoken_key(t.get("say") or ""))]
+        if hits:
+            return hits
+        return [t for t in self.teams if len(k) >= 4 and k in spoken_key(t["name"])]
 
     def _teamInfo(self, heard):
-        t = self._findTeam(heard)
-        if t is None:
+        hits = self._findTeams(heard)
+        if not hits:
             self._go("teams", "")
             self.say("I could not find that team. Here is the team list.")
             return
+        if len(hits) > 1:
+            self._go("teams", "")
+            self.say("There are %d teams with that name: %s." % (len(hits), " and ".join(
+                "%s in %s" % (self._name(t["name"]), "the Robot Arm AI Challenge" if t["cat"] == "arm" else "the Arena") for t in hits)))
+            return
+        t = hits[0]
         comp = "the Robot Arm AI Challenge" if t["cat"] == "arm" else "the Arena"
         line = "%s%s competes in %s." % (self._name(t["name"]), (" from " + t["country"]) if t.get("country") else "", comp)
         now = self.clock()
@@ -809,8 +839,8 @@ class MyClass(GeneratedClass):
                         s["team"], s["cat"] = name, new["cat"]
                 self.edited["schedule"] = True
             else:
-                if any(_u(x["name"]).lower() == name.lower() for x in self.teams):
-                    self._js("HostUI.toast(%s)" % json.dumps("A team with this name is already on the list."))
+                if any(_u(x["name"]).lower() == name.lower() and x["cat"] == new["cat"] for x in self.teams):
+                    self._js("HostUI.toast(%s)" % json.dumps("This team is already on the list for that competition."))
                     return
                 new["id"] = "t%d" % int(now * 1000)
                 self.teams.append(new)
@@ -985,7 +1015,7 @@ class MyClass(GeneratedClass):
         words = []
         for t in self.teams:
             for s in (t["name"], t.get("say") or ""):
-                w = re.sub(u"[^a-z0-9 '\\-]", u"", _u(s).lower()).strip()
+                w = concept_word(s)
                 if w and w not in words:
                     words.append(w)
         d = self._p("ALDialog")

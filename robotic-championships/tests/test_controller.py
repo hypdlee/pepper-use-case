@@ -217,7 +217,7 @@ def run():
     w = World(app)
     box, ns = start(w, store=store)
     st = last_state(w)
-    check(st is not None and st["v"] == "1.0.0", "no first state pushed")
+    check(st is not None and st["v"] == "1.0.1", "no first state pushed")
     check([t["name"] for t in st["teams"]] == ["Team Falcon", "Orion, The", "ArmStrong"], "teams from CSV: %r" % [t["name"] for t in st["teams"]])
     check([t["cat"] for t in st["teams"]] == ["arena", "arena", "arm"], "team categories")
     check([x["title"] for x in st["schedule"]] == ["Opening Ceremony", "Time of Fall", "Colour Sort", "Shape Sort", "Awards Ceremony"], "schedule rows: %r" % [x["title"] for x in st["schedule"]])
@@ -249,7 +249,7 @@ def run():
     dlg(w, box, "scores")
     check("There are no scores yet" in w.said[-1], "no scores line")
     dlg(w, box, "teams")
-    check(w.said[-1].startswith("3 teams are taking part"), "teams line: %r" % w.said[-1])
+    check(w.said[-1] == "3 teams are taking part: 2 teams in the Arena and 1 team in the Robot Arm AI Challenge.", "teams line: %r" % w.said[-1])
     dlg(w, box, "time")
     check(w.said[-1] == "It is 13:00.", "time line (Malta): %r" % w.said[-1])
     n = len(w.said)
@@ -423,6 +423,48 @@ def run():
     check(box.running is False, "older controller did not step down")
     box.running = True; box.onInput_onStop()
     check(("box", "onStopped", ()) in w.calls and ("ALBasicAwareness", "setTrackingMode", ("BodyRotation",)) in w.calls, "stop did not restore tracking")
+
+    # ---- the official team list shipped in the package (8 Arena teams, 5 Robot Arm teams; one name with accents)
+    real = os.path.join(tmp, "real")
+    shutil.copytree(os.path.join(ROOT, "ChampionshipHost"), real)
+    wr = World(real)
+    boxr, nsr = start(wr, store=os.path.join(tmp, "sr"))
+    arena = [t["name"] for t in boxr.teams if t["cat"] == "arena"]
+    arms = [t["name"] for t in boxr.teams if t["cat"] == "arm"]
+    check(len(arena) == 8 and len(arms) == 5, "official list: %d arena, %d arm" % (len(arena), len(arms)))
+    check(u"Troda\u00ed" in arena and "BRIS - SWERVY" in arena and "thumbi" in arms, "official names: %r %r" % (arena, arms))
+    st = last_state(wr)
+    check(len(st["teams"]) == 13 and any(t["name"] == u"Troda\u00ed" for t in st["teams"]), "accented name lost on the way to the tablet")
+    words = wr.concepts[-1][2]
+    check("trodai" in words and "bris swervy" in words and "ctrl alt defeat" in words and "electro nexus" in words and "electronexus" in words,
+          "dialog words: %r" % words)
+    check(all(isinstance(x, str) and all(ord(c) < 128 for c in x) for x in words), "dialog words must be plain letters")
+    dlg(wr, boxr, "teams")
+    check(wr.said[-1] == "13 teams are taking part: 8 teams in the Arena and 5 teams in the Robot Arm AI Challenge.", "teams line: %r" % wr.said[-1])
+    dlg(wr, boxr, "team", hostTeam="trodai")
+    check(wr.said[-1].startswith(u"Troda\u00ed competes in the Arena".encode("utf-8") if str is bytes else u"Troda\u00ed competes in the Arena"),
+          "accented team: %r" % wr.said[-1])
+    dlg(wr, boxr, "team", hostTeam="electro nexus")
+    check(wr.said[-1] == "There are 2 teams with that name: Electro Nexus in the Arena and ElectroNexus in the Robot Arm AI Challenge.", "look-alike names: %r" % wr.said[-1])
+    dlg(wr, boxr, "team", hostTeam="bris swervy")
+    check(wr.said[-1] == "BRIS - SWERVY competes in the Arena.", "punctuation in a name: %r" % wr.said[-1])
+    dlg(wr, boxr, "team", hostTeam="bua")
+    check("could not find" in wr.said[-1], "a 3-letter fragment matched a team")
+    dlg(wr, boxr, "team", hostTeam="indiarm")
+    check(wr.said[-1] == "Indiarm competes in the Robot Arm AI Challenge.", "arm team: %r" % wr.said[-1])
+    tab(wr, boxr, {"cmd": "staff-login", "pin": "2468"})
+    tokr = json.loads(wr.js[-1][len("try{HostUI.staff("):-len(")}catch(e){}")])["token"]
+    tab(wr, boxr, {"cmd": "team-save", "team": {"name": "Indiarm", "cat": "arena"}, "token": tokr})
+    check(len([t for t in boxr.teams if t["name"] == "Indiarm"]) == 2, "the same name in the other competition was refused")
+    tab(wr, boxr, {"cmd": "team-save", "team": {"name": "indiarm", "cat": "arm"}, "token": tokr})
+    check(len([t for t in boxr.teams if t["name"].lower() == "indiarm"]) == 2 and "already on the list" in wr.js[-1], "duplicate in the same competition accepted")
+    fx = [t for t in boxr.teams if t["name"] == u"Troda\u00ed"][0]
+    tab(wr, boxr, {"cmd": "score-save", "teamId": fx["id"], "points": 42, "token": tokr})
+    dlg(wr, boxr, "scores")
+    check(u"first, Troda\u00ed with 42 points" in (wr.said[-1].decode("utf-8") if isinstance(wr.said[-1], bytes) else wr.said[-1]), "scores with an accented name: %r" % wr.said[-1])
+    wr2 = World(real); wr2.t = wr.t
+    boxr2, _ = start(wr2, store=os.path.join(tmp, "sr"))
+    check(any(t["name"] == u"Troda\u00ed" for t in boxr2.teams) and len(boxr2.teams) == 14, "accented name not kept across a restart")
 
     # ---- helpers
     rows = ns["parse_csv"](u"﻿name,x\r\n\"a \"\"b\"\", c\",1\r\n# c\r\n\r\nd,2")

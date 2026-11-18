@@ -44,12 +44,27 @@ function state(extra) {
   // preview mode (no robot): content and the CSV files are read by the page itself
   ok((await txt('#status')) === 'Preview', 'status in preview: ' + await txt('#status'));
   ok((await pg.evaluate(() => HostState.schedule.length)) === 2, 'schedule.csv not read in preview');
-  ok((await pg.evaluate(() => HostState.teams.length)) === 0, 'teams.csv template should be empty');
+  ok((await pg.evaluate(() => HostState.teams.filter(t => t.cat === 'arena').length)) === 8 && (await pg.evaluate(() => HostState.teams.filter(t => t.cat === 'arm').length)) === 5, 'official teams from teams.csv (8 + 5)');
+  ok((await pg.evaluate(() => HostState.teams.some(t => t.name === 'Troda\u00ed'))), 'accented team name read from teams.csv');
   ok((await txt('#footRules')).indexOf('v0.7') >= 0, 'rulebook version not shown');
   ok(await vis('#countBox'), 'countdown not shown before the event');
   ok((await pg.$$eval('.stat', e => e.length)) === 3, 'stats');
   await pg.click('[data-go="teams"]'); await pg.waitForTimeout(100);
-  ok((await txt('#teamGrid')).indexOf('coming soon') >= 0, 'empty team list message');
+  ok((await pg.$$eval('#teamSeg button', e => e.map(x => x.textContent))).join('|') === 'All teams \u00b7 13|Arena \u00b7 8|Robot Arm AI \u00b7 5', 'team counts on the filter buttons');
+  ok((await pg.$$eval('.tgh', e => e.map(x => x.textContent))).join('|') === 'Arena: 4 Games8 teams|Robot Arm AI Challenge5 teams', 'team groups: ' + (await pg.$$eval('.tgh', e => e.map(x => x.textContent))).join('|'));
+  ok((await pg.$$eval('#teamGrid .team', e => e.length)) === 13, 'all 13 team cards');
+  ok((await pg.evaluate(() => { const g = document.getElementById('teamGrid'); return g.scrollHeight <= g.clientHeight + 1; })), 'all 13 teams visible without scrolling');
+  ok((await pg.$$eval('#teamGrid .tn', e => e.every(x => x.scrollWidth <= x.clientWidth + 1))), 'a team name is cut off');
+  ok((await pg.$$eval('#teamGrid .team', e => e.every(x => { const r = x.getBoundingClientRect(); return r.right <= 1280 && r.bottom <= 770; }))), 'a team card is off screen');
+  ok((await pg.$$eval('.tcards', e => e.map(c => { const tops = {}; Array.prototype.forEach.call(c.children, k => { tops[Math.round(k.getBoundingClientRect().top)] = (tops[Math.round(k.getBoundingClientRect().top)] || 0) + 1; }); return Object.keys(tops).map(t => tops[t]).join(','); }).join('|'))) === '4,4|4,1', 'cards per row (expected 4 per row)');
+  await pg.evaluate(() => HostUI.go('home')); await pg.waitForTimeout(100);
+  ok((await txt('#tileTeams')) === '8 Arena \u00b7 5 Robot Arm', 'teams tile in preview: ' + await txt('#tileTeams'));
+  ok((await pg.$$eval('.stat b', e => e.map(x => x.textContent))).join('|') === '40+|13|10+', 'home stats use the real team count');
+  await pg.evaluate(() => HostUI.go('scores')); await pg.waitForTimeout(100);
+  ok((await pg.$$eval('#boardArena li', e => e.length)) === 8 && (await pg.$$eval('#boardArm li', e => e.length)) === 5, 'every team listed on its board before any score');
+  ok((await pg.$$eval('.board', e => e.every(b => b.scrollHeight <= b.clientHeight + 1 && b.getBoundingClientRect().right <= 1280))), 'a scoreboard needs scrolling or is off screen');
+  ok((await pg.$$eval('#boardArena .pt', e => e.every(x => x.textContent === 'No score yet'))), 'no-score label');
+  ok((await pg.$eval('#boardArena li .rk', e => getComputedStyle(e).backgroundColor)) !== 'rgb(255, 205, 87)', 'a team without a score shown as first place');
   await pg.click('[data-go="schedule"]'); await pg.waitForTimeout(100);
   ok((await txt('#schedList')).indexOf('Opening Ceremony') >= 0, 'opening ceremony in schedule');
   // volunteer without robot
@@ -65,7 +80,7 @@ function state(extra) {
   ok(await vis('#liveBox') && !(await vis('#countBox')), 'live box during the event');
   ok((await txt('#liveNow')).indexOf('15:10  Time of Fall') >= 0 && (await txt('#liveNow')).indexOf('Red: Team Falcon') >= 0, 'now: ' + await txt('#liveNow'));
   ok((await txt('#liveNext')).indexOf('15:30  Colour Sort') >= 0, 'next: ' + await txt('#liveNext'));
-  ok((await txt('#tileTeams')) === '4 teams', 'teams tile');
+  ok((await txt('#tileTeams')) === '2 Arena \u00b7 2 Robot Arm', 'teams tile: ' + await txt('#tileTeams'));
   await pg.evaluate(s => HostUI.update(s), state({ seq: 2, speaking: true }));
   ok(await vis('#speaking') && await vis('#stopTalk'), 'speaking indicator');
   await pg.click('#stopTalk'); ok((await sent()).some(m => m.cmd === 'stop'), 'stop button sends stop');
@@ -77,13 +92,18 @@ function state(extra) {
   // games
   await pg.click('[data-go="games"][data-arg="arena"]'); await pg.waitForTimeout(150);
   ok((await pg.$$eval('#gameCards .gcard', e => e.length)) === 4, 'four arena games');
+  const ratio = await pg.$$eval('#gameCards .gcard img', e => e.map(i => (i.clientWidth / i.clientHeight) / (i.naturalWidth / i.naturalHeight)));
+  ok(ratio.length === 4 && ratio.every(r => Math.abs(r - 1) < 0.01), 'arena card pictures are not 16:9 boxes: ' + ratio.join(','));
   ok((await pg.$$eval('#gameCards .gcard', e => e.every(x => x.getBoundingClientRect().right <= 1280 && x.getBoundingClientRect().bottom <= 770))), 'arena cards fit on screen');
   ok((await sent()).some(m => m.cmd === 'view' && m.view === 'games' && m.arg === 'arena'), 'view message');
   await pg.click('[data-cat="arm"]'); await pg.waitForTimeout(150);
   ok((await pg.$$eval('#gameCards .gcard', e => e.length)) === 6, 'six arm games');
+  const ratio2 = await pg.$$eval('#gameCards .gcard img', e => e.map(i => (i.clientWidth / i.clientHeight) / (i.naturalWidth / i.naturalHeight)));
+  ok(ratio2.length === 6 && ratio2.every(r => Math.abs(r - 1) < 0.01), 'arm card pictures are not 16:9 boxes: ' + ratio2.join(','));
   ok((await pg.$$eval('#gameCards .gcard', e => e.every(x => x.getBoundingClientRect().right <= 1280 && x.getBoundingClientRect().bottom <= 770))), 'arm cards fit on screen');
   await pg.click('[data-game="pour"]'); await pg.waitForTimeout(600);
   ok((await txt('#gtitle')) === 'Pouring', 'game detail title');
+  ok((await pg.$eval('.vidwrap', v => Math.abs(v.clientWidth / v.clientHeight - 16 / 9) < 0.01)), 'video box is not 16:9');
   ok((await pg.$$eval('#gfacts li', e => e.length)) === 3, 'three facts');
   ok((await sent()).some(m => m.cmd === 'game' && m.game === 'pour' && m.id !== 'pour'), 'game message: game field kept apart from the message id');
   ok((await pg.$eval('#gvid', v => v.getAttribute('data-src'))) === 'clips/arm-pouring.mp4', 'clip chosen');
@@ -109,6 +129,8 @@ function state(extra) {
   await pg.click('[data-day="sun"]'); ok((await txt('#schedList')).indexOf('Awards Ceremony') >= 0, 'sunday');
   await pg.click('[data-go="scores"]'); await pg.waitForTimeout(150);
   ok((await pg.$$eval('#boardArena .nm', e => e.map(x => x.textContent))).join('|') === 'Team Falcon|Team Orion', 'arena board ordered by points');
+  ok((await pg.$$eval('#boardArm .nm', e => e.map(x => x.textContent))).join('|') === 'ArmStrong|<img src=x onerror="window.__xss=1">', 'unscored teams listed after scored ones');
+  ok((await pg.$$eval('#boardArm .rk', e => e.map(x => x.textContent))).join('|') === '1|-', 'unscored teams get no rank');
   ok((await txt('.provisional')).indexOf('Official results are announced by the judges') >= 0, 'provisional note');
 
   // quiz, by touch and by voice
@@ -167,7 +189,12 @@ function state(extra) {
   ok((await sent()).some(m => m.cmd === 'team-save' && m.team.name === 'Team Nova' && m.team.cat === 'arm' && m.token === 'tok1'), 'team save');
   await pg.click('[data-edit-team="t1"]'); ok((await pg.$eval('#tName', e => e.value)) === 'Team Falcon', 'edit fills the form');
   await pg.click('[data-del-team="t2"]'); ok((await sent()).some(m => m.cmd === 'team-del' && m.key === 't2'), 'team delete');
-  await pg.click('[data-st="schedule"]'); await pg.fill('#sTime', '9:30'); await pg.selectOption('#sGame', 'wil'); await pg.selectOption('#sA', 'Team Falcon');
+  await pg.click('[data-st="schedule"]');
+  ok((await pg.$$eval('#sA option', e => e.map(x => x.textContent))).join('|') === '(none)|Team Falcon|Team Orion', 'arena match offers only arena teams');
+  await pg.selectOption('#sCat', 'arm'); await pg.waitForTimeout(100);
+  ok((await pg.$$eval('#sA option', e => e.map(x => x.textContent))).join('|') === '(none)|<img src=x onerror="window.__xss=1">|ArmStrong', 'arm match offers only arm teams: ' + (await pg.$$eval('#sA option', e => e.map(x => x.textContent))).join('|'));
+  await pg.selectOption('#sCat', 'arena'); await pg.waitForTimeout(100);
+  await pg.fill('#sTime', '9:30'); await pg.selectOption('#sGame', 'wil'); await pg.selectOption('#sA', 'Team Falcon');
   await pg.click('[data-act="sched-save"]');
   ok((await sent()).some(m => m.cmd === 'sched-save' && m.item.time === '09:30' && m.item.title === 'Weight in Line' && m.item.a === 'Team Falcon'), 'schedule save');
   await pg.fill('#sTime', 'soon'); await pg.click('[data-act="sched-save"]'); ok((await txt('#toast')).indexOf('14:30') >= 0, 'bad time refused on the tablet');

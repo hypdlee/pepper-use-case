@@ -16,3 +16,15 @@
   EVIDENCE: mutation runs, survivors []
 - [ ] G8 Run on a real Pepper (speech in a loud arena, clip playback on the tablet, dynamic team concept)
   ABANDON: G8 needs the robot; checklist in docs/README.md "Before the event"
+
+# Round 2 (v1.0.1): official team list, fit on Pepper's tablet
+- [x] G9 Teams from the organisers' sheet: 8 Arena, 5 Robot Arm, names exactly as in "Teams & Settings"
+  EVIDENCE: test_package counts 8 + 5; controller reads them on Python 2.7 and 3, including the accented name
+- [x] G10 Different team counts handled: grouped team view with counts, every team listed on its scoreboard, staff match form offers only that competition's teams, look-alike names answered with both
+  EVIDENCE: CONTROLLER OK (real-list scenario), UI OK 139 checks
+- [x] G11 Fits 1280 x 800 with nothing cut off or stretched: all 13 team cards and both full scoreboards without scrolling, NOW match scrolled into view, every picture box exactly 16:9
+  EVIDENCE: tests/fit_audit.js FIT OK on every view; ratio checks in the UI test
+- [x] G12 New code is tested: 10 deliberate bugs in the new team code, 9 caught, 1 equivalent (removes nothing)
+  EVIDENCE: mutation run, survivors [] after lengthening the audit schedule
+- [ ] G13 Same check on Pepper's own tablet browser
+  ABANDON: G13 needs the robot; the layout is fixed at 1280 x 800 and avoids newer CSS, but it has not been seen on the tablet itself

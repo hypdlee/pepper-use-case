@@ -1,4 +1,4 @@
-# Pepper Championship Host (v1.0.0)
+# Pepper Championship Host (v1.0.1)
 
 Pepper as the neutral, official host of the **IEEE Robot Championships 2026** (28 and 29 November, Montekristo Estate Arena, Malta), built for the IEEE Malta Section.
 
@@ -8,7 +8,7 @@ Every team is treated the same way. Pepper never comments on a team, never favou
 
 Everything runs on the robot. Nothing is sent to the internet.
 
-![Home screen, with sample teams](media/1-home-live.png)
+![Home screen](media/1-home-live.png)
 
 ## What visitors can do
 
@@ -34,7 +34,7 @@ Pepper also answers "who are you", "what time is it", "thank you" and "goodbye",
    - **Greet visitors**: on by default.
 3. Fill in the teams and the programme (see below). You can also do this later on the tablet.
 4. Optional: put the official `logo.png` and `mascot.png` in `html/brand/` (see the README there). Without them the tablet shows the text title only.
-5. Press **Play once**. In the log you should see `[Host] v1.0.0 running. N teams, M programme items, content loaded`, then about 4 seconds later `[Host] the dialog answers: Pepper is listening`.
+5. Press **Play once**. In the log you should see `[Host] v1.0.1 running. N teams, M programme items, content loaded`, then about 4 seconds later `[Host] the dialog answers: Pepper is listening`.
 6. For the event, install the app on the robot (Choregraphe: Robot applications, install) so it survives a reboot.
 
 **Clean start.** Choregraphe can leave a dialog loaded from an earlier run. If the log says the dialog does not answer, or the tablet shows **Voice not ready**:
@@ -46,6 +46,12 @@ The tablet keeps working either way.
 ## Teams and programme
 
 Both files are in `html/data/` and open in Excel or any text editor. Lines starting with `#` are notes.
+
+`teams.csv` already holds the official teams from the organisers' sheet (Teams & Settings): **8 Arena teams** (Trodaí, HRIGA, Hornet, BUA Robotics, Genesis, Ctrl Alt Defeat, Electro Nexus, BRIS - SWERVY) and **5 Robot Arm teams** (thumbi, Autonomous Alliance, Bua AI, Indiarm, ElectroNexus). The sheet has no countries, so that column is empty. The tablet shows the two competitions separately, each with its own count, and Pepper says "13 teams are taking part: 8 teams in the Arena and 5 teams in the Robot Arm AI Challenge."
+
+Two details are handled on purpose:
+- **Similar names.** "Electro Nexus" (Arena) and "ElectroNexus" (Robot Arm) sound the same. If someone asks for that name, Pepper names both and says which competition each is in.
+- **Accents.** Pepper recognises "Trodaí" with or without the accent. If it pronounces a name wrongly, add a "say it as" spelling in staff mode or in the `say_as` column.
 
 - **`teams.csv`** has the columns `name, country, category (arena or arm), say_as`.
   - `say_as` is optional: how Pepper should pronounce a name, if it gets it wrong.

@@ -102,7 +102,13 @@
     return { now: cur, next: nxt };
   }
   H.nowNext = nowNext;
-  function teamName(x) { return x || ''; }
+  function teamsOf(cat) {
+    var out = [];
+    each(H.teams, function (t) { if (t.cat === cat) { out.push(t); } });
+    out.sort(function (a, b) { var x = a.name.toLowerCase(), y = b.name.toLowerCase(); return x < y ? -1 : (x > y ? 1 : 0); });
+    return out;
+  }
+  function plural(n, one, many) { return n + ' ' + (n === 1 ? one : many); }
   function sideText(it) {
     if (!it.a && !it.b) { return ''; }
     if (it.cat === 'arena') { return (it.a ? 'Red: ' + it.a : 'Red corner') + '  vs  ' + (it.b ? 'Blue: ' + it.b : 'Blue corner'); }
@@ -162,8 +168,12 @@
     var t = now(), ev = H.content.event, open = Date.parse(ev.opening), end = Date.parse(ev.awards) + 60 * 60000;
     var nn = nowNext(t);
     var stats = clear($('stats'));
-    each(ev.stats, function (s) { var b = el('div', 'stat'); b.appendChild(el('b', null, s.value)); b.appendChild(el('span', null, s.label)); stats.appendChild(b); });
-    $('tileTeams').textContent = H.teams.length ? H.teams.length + ' teams' : 'Who is competing';
+    var nA = teamsOf('arena').length, nM = teamsOf('arm').length;
+    each(ev.stats, function (s) {
+      var v = (s.label === 'Teams' && H.teams.length) ? String(H.teams.length) : s.value;
+      var b = el('div', 'stat'); b.appendChild(el('b', null, v)); b.appendChild(el('span', null, s.label)); stats.appendChild(b);
+    });
+    $('tileTeams').textContent = H.teams.length ? nA + ' Arena \u00b7 ' + nM + ' Robot Arm' : 'Who is competing';
     $('tileNext').textContent = nn.next ? 'Next: ' + nn.next.time + ' ' + nn.next.title : 'What is on';
     if (t < open) {
       $('countBox').hidden = false; $('liveBox').hidden = true;
@@ -234,16 +244,27 @@
   }
 
   function renderTeams() {
-    each(d.querySelectorAll('#teamSeg button'), function (b) { b.className = b.getAttribute('data-f') === H.teamFilter ? 'on' : ''; });
+    var nA = teamsOf('arena').length, nM = teamsOf('arm').length;
+    each(d.querySelectorAll('#teamSeg button'), function (b) {
+      var f = b.getAttribute('data-f');
+      b.className = f === H.teamFilter ? 'on' : '';
+      b.textContent = f === 'all' ? 'All teams \u00b7 ' + (nA + nM) : (f === 'arena' ? 'Arena \u00b7 ' + nA : 'Robot Arm AI \u00b7 ' + nM);
+    });
     var box = clear($('teamGrid')), shown = 0;
-    var list = H.teams.slice(0).sort(function (a, b) { return a.name.toLowerCase() < b.name.toLowerCase() ? -1 : 1; });
-    each(list, function (t) {
-      if (H.teamFilter !== 'all' && t.cat !== H.teamFilter) { return; }
-      var c = el('div', 'team');
-      c.appendChild(el('div', 'tn', t.name));
-      c.appendChild(el('div', 'tc', t.country || ' '));
-      c.appendChild(el('span', 'tk ' + t.cat, t.cat === 'arm' ? 'Robot Arm AI' : 'Arena'));
-      box.appendChild(c); shown += 1;
+    each([['arena', 'Arena: 4 Games'], ['arm', 'Robot Arm AI Challenge']], function (g) {
+      if (H.teamFilter !== 'all' && H.teamFilter !== g[0]) { return; }
+      var list = teamsOf(g[0]);
+      if (!list.length) { return; }
+      var sec = el('div', 'tgroup'), h = el('div', 'tgh', g[1]);
+      h.appendChild(el('span', null, plural(list.length, 'team', 'teams'))); sec.appendChild(h);
+      var cards = el('div', 'tcards');
+      each(list, function (t) {
+        var c = el('div', 'team'); c.appendChild(el('div', 'tn', t.name));
+        var row = el('div', 'trow'); row.appendChild(el('span', 'tk ' + t.cat, t.cat === 'arm' ? 'Robot Arm AI' : 'Arena'));
+        if (t.country) { row.appendChild(el('span', 'tc', t.country)); }
+        c.appendChild(row); cards.appendChild(c); shown += 1;
+      });
+      sec.appendChild(cards); box.appendChild(sec);
     });
     if (!shown) {
       var e = el('div', 'empty'); e.appendChild(el('b', null, 'The team list is coming soon.'));
@@ -275,6 +296,8 @@
       if (badge) { r.appendChild(el('span', 'badge', badge)); }
       box.appendChild(r);
     });
+    var focus = box.querySelector('.srow.now') || box.querySelector('.srow.next');
+    box.scrollTop = focus ? Math.max(0, focus.offsetTop - 8) : 0;
     if (!any) {
       var e = el('div', 'empty'); e.appendChild(el('b', null, 'The match times will appear here.'));
       e.appendChild(d.createTextNode('Saturday: Opening Ceremony at 14:00. Sunday: Awards Ceremony at 18:00. Ask a volunteer for the latest times.'));
@@ -283,17 +306,23 @@
   }
 
   function boardFor(cat) {
-    var list = [];
-    each(H.scores, function (s) { if (s.cat === cat) { list.push(s); } });
+    var list = [], has = {};
+    each(H.scores, function (x) { if (x.cat === cat) { list.push(x); has[x.team] = true; } });
     list.sort(function (a, b) { return b.points - a.points; });
+    each(teamsOf(cat), function (t) { if (!has[t.name]) { list.push({ team: t.name, cat: cat, points: null }); } });
     return list;
   }
   function renderScores() {
-    each([['arena', 'boardArena'], ['arm', 'boardArm']], function (p) {
-      var ol = clear($(p[1])), list = boardFor(p[0]);
+    each([['arena', 'boardArena', 'Arena'], ['arm', 'boardArm', 'Robot Arm AI Challenge']], function (p) {
+      var ol = clear($(p[1])), list = boardFor(p[0]), n = teamsOf(p[0]).length;
+      var h = ol.parentNode.querySelector('h3'); clear(h).appendChild(d.createTextNode(p[2]));
+      if (n) { h.appendChild(el('span', null, plural(n, 'team', 'teams'))); }
       if (!list.length) { ol.appendChild(el('div', 'none', 'Scores appear here once the first results are in.')); return; }
-      each(list, function (s, i) {
-        var li = el('li'); li.appendChild(el('span', 'rk', i + 1)); li.appendChild(el('span', 'nm', s.team)); li.appendChild(el('span', 'pt', s.points));
+      var rank = 0;
+      each(list, function (s) {
+        var none = s.points === null || s.points === undefined, li = el('li', none ? 'nos' : null);
+        if (!none) { rank += 1; }
+        li.appendChild(el('span', 'rk', none ? '-' : rank)); li.appendChild(el('span', 'nm', s.team)); li.appendChild(el('span', 'pt', none ? 'No score yet' : s.points));
         ol.appendChild(li);
       });
     });
@@ -412,9 +441,16 @@
   function button(text, cls, attr, v) { var b = el('button', cls || 'pill', text); if (attr) { b.setAttribute(attr, v); } return b; }
   function teamOptions(cat, blank) {
     var o = [['', blank]];
-    each(H.teams, function (t) { if (!cat || t.cat === cat) { o.push([t.name, t.name]); } });
+    if (cat === 'stage') { return o; }
+    each(cat ? teamsOf(cat) : H.teams, function (t) { o.push([t.name, t.name]); });
     return o;
   }
+  d.addEventListener('change', function (ev) {
+    if (!ev.target || ev.target.id !== 'sCat') { return; }
+    var E = H.staffEdit || {};
+    H.staffEdit = { id: E.id || '', day: val('sDay'), time: val('sTime'), mins: val('sMins'), title: val('sTitle'), cat: val('sCat'), game: val('sGame'), a: '', b: '', done: !!E.done };
+    renderStaff();
+  }, false);
 
   function renderStaff() {
     each(d.querySelectorAll('#staffSeg button'), function (b) {
@@ -456,8 +492,9 @@
       f.appendChild(select('Competition', 'sCat', [['arena', 'Arena'], ['arm', 'Robot Arm AI'], ['stage', 'Other']], E.cat || 'arena', 150));
       var gopts = [['', '(none)']]; each(H.content.games, function (g) { gopts.push([g.id, g.title]); });
       f.appendChild(select('Game', 'sGame', gopts, E.game || '', 190));
-      f.appendChild(select('Red corner / Team A', 'sA', teamOptions('', '(none)'), E.a || '', 210));
-      f.appendChild(select('Blue corner / Team B', 'sB', teamOptions('', '(none)'), E.b || '', 210));
+      var sc = E.cat || 'arena';
+      f.appendChild(select(sc === 'arm' ? 'Team A' : 'Red corner', 'sA', teamOptions(sc, '(none)'), E.a || '', 210));
+      f.appendChild(select(sc === 'arm' ? 'Team B' : 'Blue corner', 'sB', teamOptions(sc, '(none)'), E.b || '', 210));
       f.appendChild(button(E.id ? 'Save changes' : 'Add to schedule', 'pill primary', 'data-act', 'sched-save'));
       if (E.id) { f.appendChild(button('Cancel', 'pill ghost', 'data-act', 'edit-cancel')); }
       box.appendChild(f);

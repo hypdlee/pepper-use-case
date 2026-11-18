@@ -7,4 +7,5 @@ python3 build.py
 python3 tests/test_package.py
 python3 tests/test_controller.py
 node tests/ui.test.js
+node tests/fit_audit.js "${TMPDIR:-/tmp}/host-fit-audit"
 echo "ALL CHECKS PASSED"

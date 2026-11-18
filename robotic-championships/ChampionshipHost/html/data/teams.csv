@@ -2,3 +2,16 @@
 # category: arena or arm.  say_as (optional): how Pepper should pronounce the name, if it gets it wrong.
 # Example: Team Falcon,Croatia,arena,Team Fal-con
 name,country,category,say_as
+Trodaí,,arena,
+HRIGA,,arena,
+Hornet,,arena,
+BUA Robotics,,arena,
+Genesis,,arena,
+Ctrl Alt Defeat,,arena,
+Electro Nexus,,arena,
+BRIS - SWERVY,,arena,
+thumbi,,arm,
+Autonomous Alliance,,arm,
+Bua AI,,arm,
+Indiarm,,arm,
+ElectroNexus,,arm,
