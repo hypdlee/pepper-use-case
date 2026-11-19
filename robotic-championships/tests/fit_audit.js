@@ -40,6 +40,16 @@ const srv = http.createServer((q, r) => { const p = path.join(ROOT, decodeURICom
     report.push({ name, publicView, clipped: r.clipped, scroll: r.scroll });
   }
   await pg.evaluate(() => HostUI.go('home')); await audit('home', true);
+  // Pepper's intro: every scene, with the real 13 teams and the longest "next" line
+  const scenes = await pg.evaluate(() => HostState.content.intro);
+  for (let i = 0; i < scenes.length; i++) {
+    const sc = scenes[i];
+    const sub = sc.kind === 'next' ? 'Next: Tower Construction Duel (final), Sunday 16:45, then Hanging Hazard (final)' : (sc.sub || '').replace(/\{n\}/g, '13').replace(/\{na\}/g, '8').replace(/\{nm\}/g, '5');
+    await pg.evaluate(s => HostUI.update(s), { seq: 10 + i, v: '1.1.0', now: T, voice: true, speaking: true, calls: true, teams, schedule: sched, scores, alerts: [],
+      intro: { i, n: scenes.length, id: sc.id, kind: sc.kind, clip: sc.clip || '', head: sc.head.replace(/\{n\}/g, '13'), sub } });
+    await audit('intro-' + (i + 1) + '-' + sc.id, true);
+  }
+  await pg.evaluate(s => HostUI.update(s), { seq: 40, v: '1.1.0', now: T, voice: true, speaking: false, calls: true, teams, schedule: sched, scores, alerts: [], intro: null });
   await pg.evaluate(() => HostUI.go('teams')); await audit('teams-all', true);
   await pg.click('[data-f="arena"]'); await audit('teams-arena', true);
   await pg.click('[data-f="arm"]'); await audit('teams-arm', true);

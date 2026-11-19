@@ -33,6 +33,7 @@ concept:(food) [food drinks "a drink" "something to eat" "where can i eat" coffe
 concept:(time) ["what time is it" "the time" "what is the time" "tell me the time"]
 concept:(who) ["who are you" "what are you" "what is your name" "are you a robot" "what's your name"]
 concept:(about) ["what is this event" "what is this" "about the championships" "tell me about the championships" "what is the robot championship" "what is happening here" ieee "what is ieee"]
+concept:(intro) [intro "your intro" "the intro" "introduce yourself" "watch the intro" "show me the intro" "start the intro" "play the intro" "tell me everything"]
 concept:(thanks) ["thank you" thanks "thank you pepper" cheers]
 concept:(bye) [bye goodbye "see you" "see you later" "bye bye"]
 concept:(stop) [stop "stop talking" "be quiet" quiet "stop pepper" "that's enough" enough]
@@ -73,6 +74,7 @@ u:(~food) $hostInfo=1 $hostCmd=info
 u:(~time) $hostCmd=time
 u:(~who) $hostCmd=who
 u:(~about) $hostCmd=about
+u:(~intro) $hostCmd=intro
 u:(~thanks) $hostCmd=thanks
 u:(~bye) $hostCmd=bye
 u:(~stop) $hostCmd=stop

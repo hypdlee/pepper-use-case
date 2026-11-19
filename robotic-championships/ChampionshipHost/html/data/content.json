@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0",
+  "version": "1.1.0",
   "rulebook": "Rulebook v0.7 (final draft)",
   "event": {
     "name": "IEEE Robot Championships 2026",
@@ -10,17 +10,40 @@
     "organisers": "IEEE Malta Section and IEEE Computer Society Malta Chapter",
     "mission": "Advancing Technology for Humanity",
     "stats": [
-      { "value": "40+", "label": "Participants" },
-      { "value": "15+", "label": "Teams" },
-      { "value": "10+", "label": "Countries" }
+      {
+        "value": "40+",
+        "label": "Participants"
+      },
+      {
+        "value": "15+",
+        "label": "Teams"
+      },
+      {
+        "value": "10+",
+        "label": "Countries"
+      }
     ],
     "about": "University teams from IEEE Student Branches across Region 8 compete with robots they built themselves. There are two competitions: the Arena with four robot games, and the new Robot Arm AI Challenge. Every team also presents an AI pitch about how their idea helps people.",
-    "themes": ["Assistive healthcare and wellbeing", "Environmental sustainability and climate action", "Disaster response and humanitarian aid", "Smart cities and future infrastructure"],
+    "themes": [
+      "Assistive healthcare and wellbeing",
+      "Environmental sustainability and climate action",
+      "Disaster response and humanitarian aid",
+      "Smart cities and future infrastructure"
+    ],
     "stem": "Visit the interactive STEM area for hands-on science, engineering and robotics activities.",
     "info": [
-      { "q": "Toilets", "a": "Please ask a volunteer at the information desk." },
-      { "q": "Food and drinks", "a": "Please ask a volunteer at the information desk." },
-      { "q": "Lost child or lost item", "a": "Please go to the information desk." }
+      {
+        "q": "Toilets",
+        "a": "Please ask a volunteer at the information desk."
+      },
+      {
+        "q": "Food and drinks",
+        "a": "Please ask a volunteer at the information desk."
+      },
+      {
+        "q": "Lost child or lost item",
+        "a": "Please go to the information desk."
+      }
     ]
   },
   "categories": {
@@ -41,76 +64,1239 @@
   },
   "games": [
     {
-      "id": "tof", "cat": "arena", "n": "Game 1", "title": "Time of Fall", "clip": "arena-time-of-fall",
+      "id": "tof",
+      "cat": "arena",
+      "n": "Game 1",
+      "title": "Time of Fall",
+      "clip": "arena-time-of-fall",
       "tagline": "A robot tug of war over the pit.",
-      "facts": ["Two robots are joined by a chain, with a pit between them.", "Pull your opponent over the edge, in the shortest time.", "Up to 60 seconds. No add-ons allowed."],
+      "facts": [
+        "Two robots are joined by a chain, with a pit between them.",
+        "Pull your opponent over the edge, in the shortest time.",
+        "Up to 60 seconds. No add-ons allowed."
+      ],
       "say": "Time of Fall is a robot tug of war. The two robots are joined by a chain, with a pit in the middle. The winner pulls the other robot over the edge, as fast as it can. A game lasts up to sixty seconds."
     },
     {
-      "id": "chaos", "cat": "arena", "n": "Game 2", "title": "Climate CHAOS", "clip": "arena-climate-chaos",
+      "id": "chaos",
+      "cat": "arena",
+      "n": "Game 2",
+      "title": "Climate CHAOS",
+      "clip": "arena-climate-chaos",
       "tagline": "A rescue mission after a climate disaster.",
-      "facts": ["Drive through a maze with sinkholes, floods and a fire.", "Rescue survivors from three towers: 50, 100 or 150 points.", "Five minutes. A collapsed tower costs points."],
+      "facts": [
+        "Drive through a maze with sinkholes, floods and a fire.",
+        "Rescue survivors from three towers: 50, 100 or 150 points.",
+        "Five minutes. A collapsed tower costs points."
+      ],
       "say": "Climate CHAOS is a rescue mission. The robot drives through a maze with sinkholes, floods and a fire, and brings survivors back from three towers. The further the tower, the more points. But if a tower collapses, the team loses points."
     },
     {
-      "id": "wil", "cat": "arena", "n": "Game 3", "title": "Weight in Line", "clip": "arena-weight-in-line",
+      "id": "wil",
+      "cat": "arena",
+      "n": "Game 3",
+      "title": "Weight in Line",
+      "clip": "arena-weight-in-line",
       "tagline": "Place the coloured weights in your rings.",
-      "facts": ["Six weights, worth 5 to 30 points each.", "A weight sitting perfectly in its ring scores full points.", "Five minutes, or until a robot falls into a pit."],
+      "facts": [
+        "Six weights, worth 5 to 30 points each.",
+        "A weight sitting perfectly in its ring scores full points.",
+        "Five minutes, or until a robot falls into a pit."
+      ],
       "say": "In Weight in Line, each robot collects coloured weights and places them in its own rings. Heavier weights are worth more points. A weight sitting perfectly in its ring scores the full points. Watch out for the pits!"
     },
     {
-      "id": "hh", "cat": "arena", "n": "Game 4", "title": "Hanging Hazard", "clip": "arena-hanging-hazard",
+      "id": "hh",
+      "cat": "arena",
+      "n": "Game 4",
+      "title": "Hanging Hazard",
+      "clip": "arena-hanging-hazard",
       "tagline": "Rugby balls, swinging weights, and the final.",
-      "facts": ["Score rugby balls in your opponent's pocket.", "Hanging weights come down as hazards.", "Eight minutes. Used for third place and the final."],
+      "facts": [
+        "Score rugby balls in your opponent's pocket.",
+        "Hanging weights come down as hazards.",
+        "Eight minutes. Used for third place and the final."
+      ],
       "say": "Hanging Hazard is the final game. The robots score rugby balls in the other team's pocket, while weights hang down as hazards. A robot that is knocked out loses. It decides third place and the champion."
     },
     {
-      "id": "colour", "cat": "arm", "n": "Game 1, Round 1", "title": "Colour Sort", "clip": "arm-colour-sort",
+      "id": "colour",
+      "cat": "arm",
+      "n": "Game 1, Round 1",
+      "title": "Colour Sort",
+      "clip": "arm-colour-sort",
       "tagline": "Every shape into the bin of the same colour.",
-      "facts": ["Cubes, cylinders and other printed shapes, in four colours.", "Bigger and harder shapes are worth more points.", "Five minutes. A wrong bin costs points."],
+      "facts": [
+        "Cubes, cylinders and other printed shapes, in four colours.",
+        "Bigger and harder shapes are worth more points.",
+        "Five minutes. A wrong bin costs points."
+      ],
       "say": "In Colour Sort, two arms pick up printed shapes and drop each one into the bin of the same colour. A camera helps them see. A shape in the wrong bin costs points."
     },
     {
-      "id": "shape", "cat": "arm", "n": "Game 1, Round 2", "title": "Shape Sort", "clip": "arm-shape-sort",
+      "id": "shape",
+      "cat": "arm",
+      "n": "Game 1, Round 2",
+      "title": "Shape Sort",
+      "clip": "arm-shape-sort",
       "tagline": "Now the shape decides the bin, not the colour.",
-      "facts": ["Cubes go to red, cylinders to blue.", "Dodecahedrons go to green, hexagonal prisms to yellow.", "Five minutes."],
+      "facts": [
+        "Cubes go to red, cylinders to blue.",
+        "Dodecahedrons go to green, hexagonal prisms to yellow.",
+        "Five minutes."
+      ],
       "say": "In Shape Sort, colour no longer matters. Cubes go in the red bin, cylinders in blue, dodecahedrons in green and hexagonal prisms in yellow. The arms have to recognise every shape."
     },
     {
-      "id": "dynamic", "cat": "arm", "n": "Game 1, Round 3", "title": "Dynamic Sort", "clip": "arm-dynamic-sort",
+      "id": "dynamic",
+      "cat": "arm",
+      "n": "Game 1, Round 3",
+      "title": "Dynamic Sort",
+      "clip": "arm-dynamic-sort",
       "tagline": "The judges move things while the arms work.",
-      "facts": ["Same rules as Shape Sort.", "Judges move the bins and objects during the run.", "The arms must notice and plan again."],
+      "facts": [
+        "Same rules as Shape Sort.",
+        "Judges move the bins and objects during the run.",
+        "The arms must notice and plan again."
+      ],
       "say": "Dynamic Sort is the tricky one. The judges move the bins and the objects while the arms are working. The arms have to notice the change and plan again, all on their own."
     },
     {
-      "id": "pour", "cat": "arm", "n": "Game 2, Round 1", "title": "Pouring", "clip": "arm-pouring",
+      "id": "pour",
+      "cat": "arm",
+      "n": "Game 2, Round 1",
+      "title": "Pouring",
+      "clip": "arm-pouring",
       "tagline": "Two arms, one cup of rice, no spilling.",
-      "facts": ["One arm holds the cup of 125 grams of rice, the other holds the bowl.", "Points for rice in the bowl, fewer for rice spilled.", "Two minutes per run. The best of three runs counts."],
+      "facts": [
+        "One arm holds the cup of 125 grams of rice, the other holds the bowl.",
+        "Points for rice in the bowl, fewer for rice spilled.",
+        "Two minutes per run. The best of three runs counts."
+      ],
       "say": "In Pouring, one arm holds a cup with one hundred and twenty five grams of rice, and the other arm holds the bowl. They pour together. The more rice in the bowl, and the less on the table, the better."
     },
     {
-      "id": "fold", "cat": "arm", "n": "Game 2, Round 2", "title": "Folding", "clip": "arm-folding",
+      "id": "fold",
+      "cat": "arm",
+      "n": "Game 2, Round 2",
+      "title": "Folding",
+      "clip": "arm-folding",
       "tagline": "Fold four cloths, neatly, with two arms.",
-      "facts": ["Four square cloths, 30 centimetres wide.", "Each one is folded twice, to about 15 centimetres.", "Five minutes. The folds must stay for 5 seconds."],
+      "facts": [
+        "Four square cloths, 30 centimetres wide.",
+        "Each one is folded twice, to about 15 centimetres.",
+        "Five minutes. The folds must stay for 5 seconds."
+      ],
       "say": "In Folding, the two arms fold four soft cloths, each one twice, and place them neatly in the target zone. Cloth is floppy, so this is very hard for a robot."
     },
     {
-      "id": "tower", "cat": "arm", "n": "Final", "title": "Tower Construction Duel", "clip": "arm-tower-duel",
+      "id": "tower",
+      "cat": "arm",
+      "n": "Final",
+      "title": "Tower Construction Duel",
+      "clip": "arm-tower-duel",
       "tagline": "The two best teams build, and throw.",
-      "facts": ["Build the tallest stable tower: 5 points per block.", "Once a tower is 6 blocks high, red blocks may be thrown at the other tower.", "15 minutes. A team may give one spoken idea per 30 second window."],
+      "facts": [
+        "Build the tallest stable tower: 5 points per block.",
+        "Once a tower is 6 blocks high, red blocks may be thrown at the other tower.",
+        "15 minutes. A team may give one spoken idea per 30 second window."
+      ],
       "say": "The final is the Tower Construction Duel. The two best teams build the tallest tower they can. Once a tower is six blocks high, the arms may throw red blocks at the other tower. The people may only give a short idea when the judge blows the whistle."
     }
   ],
   "quiz": [
-    { "q": "In Time of Fall, what do the robots try to do?", "a": ["Pull the other robot into the pit", "Build a tower", "Sort coloured shapes"], "ok": 0, "why": "It is a tug of war over the pit." },
-    { "q": "How long can a Time of Fall game last?", "a": ["60 seconds", "10 minutes", "One hour"], "ok": 0, "why": "Sixty seconds at most." },
-    { "q": "In Climate CHAOS, where are the survivors?", "a": ["On three towers", "On a boat", "Up a tree"], "ok": 0, "why": "Three towers, worth 50, 100 and 150 points." },
-    { "q": "How heavy can an Arena robot be?", "a": ["20 kilograms", "200 kilograms", "2 kilograms"], "ok": 0, "why": "Up to 20 kilograms." },
-    { "q": "What must every Arena robot have, for safety?", "a": ["A kill switch", "A horn", "A flag"], "ok": 0, "why": "A clearly marked kill switch turns the robot off." },
-    { "q": "Who controls the robot arms during a scored run?", "a": ["Nobody: they work on their own", "A joystick", "A phone app"], "ok": 0, "why": "The arms see and decide by themselves." },
-    { "q": "In Pouring, what do the arms pour?", "a": ["Rice", "Water", "Sand"], "ok": 0, "why": "125 grams of rice." },
-    { "q": "In the Tower Duel, which blocks may be thrown?", "a": ["Red blocks", "Blue blocks", "No blocks"], "ok": 0, "why": "Only red ones, once your tower is 6 blocks high." },
-    { "q": "What is the name of the championship mascot?", "a": ["3-e", "R2", "Bolt"], "ok": 0, "why": "Meet 3-e!" },
-    { "q": "How big is the Arena?", "a": ["6 by 6 metres", "1 by 1 metre", "100 by 100 metres"], "ok": 0, "why": "6 by 6 metres." }
+    {
+      "q": "In Time of Fall, what do the robots try to do?",
+      "a": [
+        "Pull the other robot into the pit",
+        "Build a tower",
+        "Sort coloured shapes"
+      ],
+      "ok": 0,
+      "why": "It is a tug of war over the pit."
+    },
+    {
+      "q": "How long can a Time of Fall game last?",
+      "a": [
+        "60 seconds",
+        "10 minutes",
+        "One hour"
+      ],
+      "ok": 0,
+      "why": "Sixty seconds at most."
+    },
+    {
+      "q": "In Time of Fall, what joins the two robots?",
+      "a": [
+        "A chain",
+        "A rope bridge",
+        "A magnet"
+      ],
+      "ok": 0,
+      "why": "The robots are joined by a chain."
+    },
+    {
+      "q": "Which game is Arena Game 1?",
+      "a": [
+        "Time of Fall",
+        "Hanging Hazard",
+        "Weight in Line"
+      ],
+      "ok": 0,
+      "why": "The Arena starts with Time of Fall."
+    },
+    {
+      "q": "In Climate CHAOS, where are the survivors?",
+      "a": [
+        "On three towers",
+        "On a boat",
+        "Up a tree"
+      ],
+      "ok": 0,
+      "why": "Three towers, worth 50, 100 and 150 points."
+    },
+    {
+      "q": "What does the Climate CHAOS maze show?",
+      "a": [
+        "A building after a climate disaster",
+        "A shopping centre",
+        "A football pitch"
+      ],
+      "ok": 0,
+      "why": "A collapsed building after a climate-related disaster."
+    },
+    {
+      "q": "Which of these is a hazard in Climate CHAOS?",
+      "a": [
+        "A fire",
+        "A volcano",
+        "A snowstorm"
+      ],
+      "ok": 0,
+      "why": "Sinkholes, floods and a fire."
+    },
+    {
+      "q": "How many points is the furthest tower worth in Climate CHAOS?",
+      "a": [
+        "150",
+        "15",
+        "1500"
+      ],
+      "ok": 0,
+      "why": "50, 100 and 150 points."
+    },
+    {
+      "q": "What happens if a tower collapses in Climate CHAOS?",
+      "a": [
+        "The team loses points",
+        "The team wins",
+        "Nothing at all"
+      ],
+      "ok": 0,
+      "why": "A collapsed tower costs points."
+    },
+    {
+      "q": "How long is a Climate CHAOS run?",
+      "a": [
+        "5 minutes",
+        "30 seconds",
+        "2 hours"
+      ],
+      "ok": 0,
+      "why": "Five minutes."
+    },
+    {
+      "q": "In Weight in Line, where do the weights go?",
+      "a": [
+        "Into the team's rings",
+        "Into a basket",
+        "Onto a shelf"
+      ],
+      "ok": 0,
+      "why": "Each robot places weights in its own rings."
+    },
+    {
+      "q": "How many weights are there in Weight in Line?",
+      "a": [
+        "Six",
+        "Two",
+        "Twenty"
+      ],
+      "ok": 0,
+      "why": "Six weights, worth 5 to 30 points."
+    },
+    {
+      "q": "What is the most a single weight is worth in Weight in Line?",
+      "a": [
+        "30 points",
+        "3 points",
+        "300 points"
+      ],
+      "ok": 0,
+      "why": "From 5 up to 30 points."
+    },
+    {
+      "q": "When does a weight score full points?",
+      "a": [
+        "When it sits perfectly in its ring",
+        "When it is thrown high",
+        "When it is painted"
+      ],
+      "ok": 0,
+      "why": "A perfectly placed weight scores full points."
+    },
+    {
+      "q": "What ends a Weight in Line game early?",
+      "a": [
+        "A robot falling into a pit",
+        "A robot singing",
+        "The lights going off"
+      ],
+      "ok": 0,
+      "why": "Five minutes, or until a robot falls into a pit."
+    },
+    {
+      "q": "Which ball is used in Hanging Hazard?",
+      "a": [
+        "A rugby ball",
+        "A tennis ball",
+        "A golf ball"
+      ],
+      "ok": 0,
+      "why": "Robots score rugby balls."
+    },
+    {
+      "q": "Where do robots score in Hanging Hazard?",
+      "a": [
+        "In the other team's pocket",
+        "In their own pocket",
+        "On the ceiling"
+      ],
+      "ok": 0,
+      "why": "Rugby balls go into the opponent's pocket."
+    },
+    {
+      "q": "How long is a Hanging Hazard game?",
+      "a": [
+        "8 minutes",
+        "8 seconds",
+        "8 hours"
+      ],
+      "ok": 0,
+      "why": "Eight minutes."
+    },
+    {
+      "q": "Which game decides the Arena champion?",
+      "a": [
+        "Hanging Hazard",
+        "Time of Fall",
+        "Climate CHAOS"
+      ],
+      "ok": 0,
+      "why": "Hanging Hazard is used for the final and third place."
+    },
+    {
+      "q": "How big is the Arena?",
+      "a": [
+        "6 by 6 metres",
+        "1 by 1 metre",
+        "100 by 100 metres"
+      ],
+      "ok": 0,
+      "why": "6 by 6 metres."
+    },
+    {
+      "q": "How heavy can an Arena robot be?",
+      "a": [
+        "20 kilograms",
+        "200 kilograms",
+        "2 kilograms"
+      ],
+      "ok": 0,
+      "why": "Up to 20 kilograms."
+    },
+    {
+      "q": "How wide can an Arena robot be?",
+      "a": [
+        "80 by 80 centimetres",
+        "8 by 8 metres",
+        "8 by 8 centimetres"
+      ],
+      "ok": 0,
+      "why": "Up to 80 by 80 centimetres."
+    },
+    {
+      "q": "What must every Arena robot have, for safety?",
+      "a": [
+        "A kill switch",
+        "A horn",
+        "A flag"
+      ],
+      "ok": 0,
+      "why": "A clearly marked kill switch turns the robot off."
+    },
+    {
+      "q": "How many people can be in an Arena team?",
+      "a": [
+        "Up to three",
+        "Up to thirty",
+        "Only one"
+      ],
+      "ok": 0,
+      "why": "Teams of up to three."
+    },
+    {
+      "q": "How are Arena robots driven?",
+      "a": [
+        "By the team, with a remote control",
+        "By the audience",
+        "By Pepper"
+      ],
+      "ok": 0,
+      "why": "Teams drive their robots by remote control."
+    },
+    {
+      "q": "How many games are in the Arena?",
+      "a": [
+        "Four",
+        "One",
+        "Ten"
+      ],
+      "ok": 0,
+      "why": "Time of Fall, Climate CHAOS, Weight in Line, Hanging Hazard."
+    },
+    {
+      "q": "What is new at the championships in 2026?",
+      "a": [
+        "The Robot Arm AI Challenge",
+        "A swimming race",
+        "A cooking contest"
+      ],
+      "ok": 0,
+      "why": "The Robot Arm AI Challenge is new for 2026."
+    },
+    {
+      "q": "How many people are in a Robot Arm team?",
+      "a": [
+        "Two",
+        "Ten",
+        "Fifty"
+      ],
+      "ok": 0,
+      "why": "Teams of two."
+    },
+    {
+      "q": "How many robot arms does each team use?",
+      "a": [
+        "Two",
+        "One",
+        "Eight"
+      ],
+      "ok": 0,
+      "why": "Two arms that work together."
+    },
+    {
+      "q": "Who controls the robot arms during a scored run?",
+      "a": [
+        "Nobody: they work on their own",
+        "A joystick",
+        "A phone app"
+      ],
+      "ok": 0,
+      "why": "The arms see and decide by themselves."
+    },
+    {
+      "q": "What is Game 1 of the Robot Arm AI Challenge called?",
+      "a": [
+        "Pick-and-Place",
+        "Hide and Seek",
+        "Tug of War"
+      ],
+      "ok": 0,
+      "why": "Game 1 is Pick-and-Place."
+    },
+    {
+      "q": "In Colour Sort, where does each shape go?",
+      "a": [
+        "In the bin of the same colour",
+        "In the biggest bin",
+        "Back in the box"
+      ],
+      "ok": 0,
+      "why": "Each shape goes in the bin of its colour."
+    },
+    {
+      "q": "In Shape Sort, which bin does a cube go into?",
+      "a": [
+        "The red bin",
+        "The blue bin",
+        "No bin"
+      ],
+      "ok": 0,
+      "why": "Cubes go in the red bin."
+    },
+    {
+      "q": "In Shape Sort, which bin does a cylinder go into?",
+      "a": [
+        "The blue bin",
+        "The red bin",
+        "The yellow bin"
+      ],
+      "ok": 0,
+      "why": "Cylinders go in the blue bin."
+    },
+    {
+      "q": "What makes Dynamic Sort tricky?",
+      "a": [
+        "Judges move bins and objects during the run",
+        "It is played in the dark",
+        "The arms are upside down"
+      ],
+      "ok": 0,
+      "why": "The arms must notice changes and plan again."
+    },
+    {
+      "q": "How long is a sorting round?",
+      "a": [
+        "5 minutes",
+        "5 seconds",
+        "5 hours"
+      ],
+      "ok": 0,
+      "why": "Five minutes per round."
+    },
+    {
+      "q": "What happens when a shape goes in the wrong bin?",
+      "a": [
+        "The team loses points",
+        "The team gets a bonus",
+        "The round restarts"
+      ],
+      "ok": 0,
+      "why": "A wrong bin costs points."
+    },
+    {
+      "q": "What is Game 2 of the Robot Arm AI Challenge?",
+      "a": [
+        "Two-Arm Coordination",
+        "Arm Wrestling",
+        "Robot Dancing"
+      ],
+      "ok": 0,
+      "why": "Game 2 tests two arms working together."
+    },
+    {
+      "q": "In Pouring, what do the arms pour?",
+      "a": [
+        "Rice",
+        "Water",
+        "Sand"
+      ],
+      "ok": 0,
+      "why": "125 grams of rice."
+    },
+    {
+      "q": "How much rice is in the cup in Pouring?",
+      "a": [
+        "125 grams",
+        "125 kilograms",
+        "1 gram"
+      ],
+      "ok": 0,
+      "why": "125 grams."
+    },
+    {
+      "q": "In Pouring, what does the second arm hold?",
+      "a": [
+        "The bowl",
+        "A spoon",
+        "A flag"
+      ],
+      "ok": 0,
+      "why": "One arm holds the cup, the other the bowl."
+    },
+    {
+      "q": "How many Pouring runs does a team get?",
+      "a": [
+        "Three, and the best counts",
+        "One only",
+        "Twenty"
+      ],
+      "ok": 0,
+      "why": "Three runs; the best one counts."
+    },
+    {
+      "q": "In Folding, what do the arms fold?",
+      "a": [
+        "Square cloths",
+        "Paper planes",
+        "Metal sheets"
+      ],
+      "ok": 0,
+      "why": "Four soft square cloths."
+    },
+    {
+      "q": "How many cloths are folded in Folding?",
+      "a": [
+        "Four",
+        "Forty",
+        "One"
+      ],
+      "ok": 0,
+      "why": "Four cloths."
+    },
+    {
+      "q": "How many times is each cloth folded?",
+      "a": [
+        "Twice",
+        "Ten times",
+        "Never"
+      ],
+      "ok": 0,
+      "why": "Twice, to about 15 centimetres."
+    },
+    {
+      "q": "Why is folding hard for a robot?",
+      "a": [
+        "Cloth is soft and floppy",
+        "Cloth is too heavy",
+        "Cloth is invisible"
+      ],
+      "ok": 0,
+      "why": "Floppy things are hard to grab and predict."
+    },
+    {
+      "q": "Which teams play the Tower Construction Duel?",
+      "a": [
+        "The two best teams",
+        "Every team at once",
+        "Only the youngest team"
+      ],
+      "ok": 0,
+      "why": "The top two teams meet in the final."
+    },
+    {
+      "q": "How many points is each block in a stable tower worth?",
+      "a": [
+        "5 points",
+        "50 points",
+        "500 points"
+      ],
+      "ok": 0,
+      "why": "5 points per block."
+    },
+    {
+      "q": "In the Tower Duel, which blocks may be thrown?",
+      "a": [
+        "Red blocks",
+        "Blue blocks",
+        "No blocks"
+      ],
+      "ok": 0,
+      "why": "Only red ones, once your tower is 6 blocks high."
+    },
+    {
+      "q": "How high must your tower be before you may throw?",
+      "a": [
+        "6 blocks",
+        "60 blocks",
+        "1 block"
+      ],
+      "ok": 0,
+      "why": "Six blocks high."
+    },
+    {
+      "q": "How long is the Tower Construction Duel?",
+      "a": [
+        "15 minutes",
+        "15 seconds",
+        "15 hours"
+      ],
+      "ok": 0,
+      "why": "Fifteen minutes."
+    },
+    {
+      "q": "When may a team speak to its arms in the Tower Duel?",
+      "a": [
+        "When the judge blows the whistle",
+        "Whenever they like",
+        "Never, not even once"
+      ],
+      "ok": 0,
+      "why": "One short idea in each 30-second whistle window."
+    },
+    {
+      "q": "Which game is optional in the Robot Arm AI Challenge?",
+      "a": [
+        "Wrap and Pack",
+        "Pouring",
+        "Colour Sort"
+      ],
+      "ok": 0,
+      "why": "Wrap and Pack is optional."
+    },
+    {
+      "q": "What is the name of the championship mascot?",
+      "a": [
+        "3-e",
+        "R2",
+        "Bolt"
+      ],
+      "ok": 0,
+      "why": "Meet 3-e!"
+    },
+    {
+      "q": "When are the IEEE Robot Championships 2026?",
+      "a": [
+        "28 and 29 November",
+        "1 and 2 January",
+        "In the summer"
+      ],
+      "ok": 0,
+      "why": "Saturday 28 and Sunday 29 November 2026."
+    },
+    {
+      "q": "Where are the championships held?",
+      "a": [
+        "Montekristo Estate, Malta",
+        "On the Moon",
+        "In a submarine"
+      ],
+      "ok": 0,
+      "why": "Montekristo Estate Arena, Malta."
+    },
+    {
+      "q": "How many teams compete in the Arena?",
+      "a": [
+        "Eight",
+        "Eighty",
+        "Two"
+      ],
+      "ok": 0,
+      "why": "Eight Arena teams."
+    },
+    {
+      "q": "How many teams compete in the Robot Arm AI Challenge?",
+      "a": [
+        "Five",
+        "Fifty",
+        "One"
+      ],
+      "ok": 0,
+      "why": "Five Robot Arm teams."
+    },
+    {
+      "q": "How many games are there in total?",
+      "a": [
+        "Seven",
+        "Seventy",
+        "Three"
+      ],
+      "ok": 0,
+      "why": "Four Arena games and three Robot Arm games."
+    },
+    {
+      "q": "Who organises the championships?",
+      "a": [
+        "IEEE Malta Section",
+        "A football club",
+        "A pizza shop"
+      ],
+      "ok": 0,
+      "why": "The IEEE Malta Section and the IEEE Computer Society Malta Chapter."
+    },
+    {
+      "q": "What does every team also present?",
+      "a": [
+        "An AI for Humanity pitch",
+        "A cooking show",
+        "A magic trick"
+      ],
+      "ok": 0,
+      "why": "Every team presents an AI pitch."
+    },
+    {
+      "q": "What is IEEE's mission?",
+      "a": [
+        "Advancing Technology for Humanity",
+        "Faster cars for everyone",
+        "Robots instead of people"
+      ],
+      "ok": 0,
+      "why": "Advancing Technology for Humanity."
+    },
+    {
+      "q": "What does IEEE stand for?",
+      "a": [
+        "Institute of Electrical and Electronics Engineers",
+        "International Energy and Engine Experts",
+        "Institute of Easy Electronic Experiments"
+      ],
+      "ok": 0,
+      "why": "IEEE is the Institute of Electrical and Electronics Engineers."
+    },
+    {
+      "q": "What can visitors explore besides the games?",
+      "a": [
+        "A STEM area with hands-on activities",
+        "A water park",
+        "A zoo"
+      ],
+      "ok": 0,
+      "why": "A large interactive STEM area."
+    },
+    {
+      "q": "What material are the game objects 3D printed in?",
+      "a": [
+        "PLA plastic",
+        "Gold",
+        "Glass"
+      ],
+      "ok": 0,
+      "why": "They are printed in PLA."
+    },
+    {
+      "q": "What is the capital city of Malta?",
+      "a": [
+        "Valletta",
+        "Rome",
+        "Madrid"
+      ],
+      "ok": 0,
+      "why": "Valletta is Malta's capital."
+    },
+    {
+      "q": "What kind of robot is Pepper?",
+      "a": [
+        "A humanoid robot",
+        "A drone",
+        "A robot vacuum"
+      ],
+      "ok": 0,
+      "why": "Pepper is human-shaped: a humanoid."
+    },
+    {
+      "q": "How does Pepper move around?",
+      "a": [
+        "On wheels",
+        "On two legs",
+        "By flying"
+      ],
+      "ok": 0,
+      "why": "Pepper rolls on wheels."
+    },
+    {
+      "q": "Where is Pepper's tablet?",
+      "a": [
+        "On its chest",
+        "On its back",
+        "On its head"
+      ],
+      "ok": 0,
+      "why": "The tablet is on Pepper's chest."
+    },
+    {
+      "q": "About how tall is Pepper?",
+      "a": [
+        "1.2 metres",
+        "12 metres",
+        "12 centimetres"
+      ],
+      "ok": 0,
+      "why": "About 1.2 metres."
+    },
+    {
+      "q": "Which company first made Pepper?",
+      "a": [
+        "Aldebaran",
+        "LEGO",
+        "NASA"
+      ],
+      "ok": 0,
+      "why": "Pepper was made by Aldebaran, with SoftBank."
+    },
+    {
+      "q": "In which year was Pepper first shown?",
+      "a": [
+        "2014",
+        "1914",
+        "2064"
+      ],
+      "ok": 0,
+      "why": "Pepper was introduced in 2014."
+    },
+    {
+      "q": "Is Pepper taking part in the games today?",
+      "a": [
+        "No, Pepper is the host",
+        "Yes, in the Arena",
+        "Yes, in Pouring"
+      ],
+      "ok": 0,
+      "why": "Pepper is the host, not a competitor."
+    },
+    {
+      "q": "What does Pepper use to hear you?",
+      "a": [
+        "Microphones",
+        "A periscope",
+        "A thermometer"
+      ],
+      "ok": 0,
+      "why": "Pepper has microphones in its head."
+    },
+    {
+      "q": "Where does the word 'robot' come from?",
+      "a": [
+        "A Czech play from 1920",
+        "An ancient Roman book",
+        "A video game"
+      ],
+      "ok": 0,
+      "why": "Karel Capek's play R.U.R. used the word robot."
+    },
+    {
+      "q": "What did the Czech word 'robota' mean?",
+      "a": [
+        "Hard work",
+        "Metal man",
+        "Fast car"
+      ],
+      "ok": 0,
+      "why": "Robota means forced or hard work."
+    },
+    {
+      "q": "What was the first robot used in a factory called?",
+      "a": [
+        "Unimate",
+        "Robby",
+        "Wall-E"
+      ],
+      "ok": 0,
+      "why": "Unimate started work in a car factory in 1961."
+    },
+    {
+      "q": "What is a humanoid robot?",
+      "a": [
+        "A robot shaped like a person",
+        "A robot that only swims",
+        "A robot made of wood"
+      ],
+      "ok": 0,
+      "why": "Humanoid means human-shaped."
+    },
+    {
+      "q": "What does a sensor do?",
+      "a": [
+        "It measures something",
+        "It makes the robot heavier",
+        "It paints the robot"
+      ],
+      "ok": 0,
+      "why": "Sensors measure light, distance, sound and more."
+    },
+    {
+      "q": "What does a motor do in a robot?",
+      "a": [
+        "It makes parts move",
+        "It stores pictures",
+        "It cools the room"
+      ],
+      "ok": 0,
+      "why": "Motors turn energy into movement."
+    },
+    {
+      "q": "What is the 'brain' of most robots?",
+      "a": [
+        "A computer processor",
+        "A battery",
+        "A wheel"
+      ],
+      "ok": 0,
+      "why": "A processor runs the robot's program."
+    },
+    {
+      "q": "What does a LiDAR sensor use to measure distance?",
+      "a": [
+        "Laser light",
+        "Smell",
+        "Taste"
+      ],
+      "ok": 0,
+      "why": "LiDAR times laser light bouncing back."
+    },
+    {
+      "q": "What does an ultrasonic sensor use?",
+      "a": [
+        "Sound echoes",
+        "Magnets",
+        "Smoke"
+      ],
+      "ok": 0,
+      "why": "It listens for echoes, like a bat."
+    },
+    {
+      "q": "What does a gyroscope sense?",
+      "a": [
+        "Turning",
+        "Colour",
+        "Temperature"
+      ],
+      "ok": 0,
+      "why": "A gyroscope measures rotation."
+    },
+    {
+      "q": "What does a camera give a robot?",
+      "a": [
+        "Vision",
+        "Hearing",
+        "Smell"
+      ],
+      "ok": 0,
+      "why": "Cameras let robots see."
+    },
+    {
+      "q": "What is the part that grabs things on a robot arm called?",
+      "a": [
+        "A gripper",
+        "A propeller",
+        "A wheel"
+      ],
+      "ok": 0,
+      "why": "The gripper grabs objects."
+    },
+    {
+      "q": "What are the bending points of a robot arm called?",
+      "a": [
+        "Joints",
+        "Tracks",
+        "Wheels"
+      ],
+      "ok": 0,
+      "why": "Motors turn the joints, like your elbow and wrist."
+    },
+    {
+      "q": "What is a robot that works without a remote control called?",
+      "a": [
+        "Autonomous",
+        "Rusty",
+        "Manual"
+      ],
+      "ok": 0,
+      "why": "Autonomous robots decide by themselves."
+    },
+    {
+      "q": "What does AI stand for?",
+      "a": [
+        "Artificial Intelligence",
+        "Automatic Ink",
+        "Advanced Iron"
+      ],
+      "ok": 0,
+      "why": "AI is Artificial Intelligence."
+    },
+    {
+      "q": "How does machine learning learn?",
+      "a": [
+        "From lots of examples",
+        "From sleeping",
+        "From eating"
+      ],
+      "ok": 0,
+      "why": "Machine learning finds patterns in examples."
+    },
+    {
+      "q": "Which robot made the first powered flight on another planet?",
+      "a": [
+        "Ingenuity, on Mars",
+        "Pepper, on the Moon",
+        "A drone on Venus"
+      ],
+      "ok": 0,
+      "why": "NASA's Ingenuity helicopter flew on Mars in 2021."
+    },
+    {
+      "q": "Which planet do the rovers Curiosity and Perseverance explore?",
+      "a": [
+        "Mars",
+        "Jupiter",
+        "The Sun"
+      ],
+      "ok": 0,
+      "why": "Both rovers explore Mars."
+    },
+    {
+      "q": "Which famous author wrote the Three Laws of Robotics?",
+      "a": [
+        "Isaac Asimov",
+        "William Shakespeare",
+        "J. K. Rowling"
+      ],
+      "ok": 0,
+      "why": "Isaac Asimov wrote them in his stories."
+    },
+    {
+      "q": "What does a 3D printer do?",
+      "a": [
+        "Builds objects layer by layer",
+        "Prints only on paper",
+        "Takes photos"
+      ],
+      "ok": 0,
+      "why": "It builds objects one thin layer at a time."
+    },
+    {
+      "q": "Which wheels let a robot drive sideways?",
+      "a": [
+        "Mecanum wheels",
+        "Square wheels",
+        "Wooden wheels"
+      ],
+      "ok": 0,
+      "why": "Mecanum wheels have angled rollers."
+    },
+    {
+      "q": "What does a robot use to store energy?",
+      "a": [
+        "A battery",
+        "A sponge",
+        "A mirror"
+      ],
+      "ok": 0,
+      "why": "Batteries power most mobile robots."
+    },
+    {
+      "q": "What is a drone?",
+      "a": [
+        "A flying robot",
+        "A robot fish",
+        "A robot dog"
+      ],
+      "ok": 0,
+      "why": "Drones are flying robots."
+    },
+    {
+      "q": "Which language of 0s and 1s do computers use?",
+      "a": [
+        "Binary",
+        "Latin",
+        "Morse code only"
+      ],
+      "ok": 0,
+      "why": "Computers work in binary."
+    },
+    {
+      "q": "What do we call many small robots working together?",
+      "a": [
+        "A swarm",
+        "A herd",
+        "A forest"
+      ],
+      "ok": 0,
+      "why": "Swarm robots cooperate like bees."
+    },
+    {
+      "q": "What does the big red stop button on a robot do?",
+      "a": [
+        "Stops the robot at once",
+        "Makes it go faster",
+        "Turns on music"
+      ],
+      "ok": 0,
+      "why": "It cuts the robot's power straight away."
+    }
+  ],
+  "intro": [
+    {
+      "id": "welcome",
+      "kind": "title",
+      "head": "Hello! I am Pepper",
+      "sub": "Your host at this stand",
+      "say": "Hello everyone, and welcome to the IEEE Robot Championships 2026, here in Malta! I am Pepper, your host at this stand. Let me show you what is happening."
+    },
+    {
+      "id": "event",
+      "kind": "stats",
+      "head": "Two competitions",
+      "sub": "{na} Arena teams \u00b7 {nm} Robot Arm teams",
+      "say": "This weekend, {n} university teams compete in two competitions: {na} teams in the Arena, and {nm} teams in the new Robot Arm AI Challenge."
+    },
+    {
+      "id": "tof",
+      "kind": "clip",
+      "clip": "arena-time-of-fall",
+      "head": "Time of Fall",
+      "sub": "Arena \u00b7 Game 1",
+      "say": "The Arena starts with Time of Fall: a robot tug of war over the pit."
+    },
+    {
+      "id": "chaos",
+      "kind": "clip",
+      "clip": "arena-climate-chaos",
+      "head": "Climate CHAOS",
+      "sub": "Arena \u00b7 Game 2",
+      "say": "Then Climate CHAOS: a rescue mission through a disaster maze."
+    },
+    {
+      "id": "wil",
+      "kind": "clip",
+      "clip": "arena-weight-in-line",
+      "head": "Weight in Line",
+      "sub": "Arena \u00b7 Game 3",
+      "say": "Weight in Line tests control and accuracy."
+    },
+    {
+      "id": "hh",
+      "kind": "clip",
+      "clip": "arena-hanging-hazard",
+      "head": "Hanging Hazard",
+      "sub": "Arena \u00b7 Game 4",
+      "say": "And Hanging Hazard, with rugby balls and swinging hazards, decides the Arena champion."
+    },
+    {
+      "id": "pick",
+      "kind": "clip",
+      "clip": "arm-colour-sort",
+      "head": "Pick-and-Place",
+      "sub": "Robot Arm AI \u00b7 Game 1",
+      "say": "In the Robot Arm AI Challenge, the arms work all on their own. First, they sort objects by colour, by shape, and while things move."
+    },
+    {
+      "id": "twoarm",
+      "kind": "clip",
+      "clip": "arm-pouring",
+      "head": "Two-Arm Coordination",
+      "sub": "Robot Arm AI \u00b7 Game 2",
+      "say": "Then two arms work together, pouring rice and folding cloth."
+    },
+    {
+      "id": "tower",
+      "kind": "clip",
+      "clip": "arm-tower-duel",
+      "head": "Tower Construction Duel",
+      "sub": "Robot Arm AI \u00b7 Final",
+      "say": "And the two best teams meet in the Tower Construction Duel."
+    },
+    {
+      "id": "teams",
+      "kind": "teams",
+      "head": "Meet the teams",
+      "sub": "{n} teams",
+      "say": "Please give a big welcome to our Arena teams: {arena_teams}. And to our Robot Arm teams: {arm_teams}."
+    },
+    {
+      "id": "next",
+      "kind": "next",
+      "head": "What's next",
+      "sub": "",
+      "say": "{next}"
+    },
+    {
+      "id": "invite",
+      "kind": "invite",
+      "head": "Touch my screen",
+      "sub": "Your turn",
+      "say": "Touch my screen to explore the games, find your team, or try my robot quiz. Enjoy the championships!"
+    }
   ]
 }

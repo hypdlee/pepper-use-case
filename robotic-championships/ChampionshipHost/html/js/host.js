@@ -11,7 +11,7 @@
     content: null, teams: [], schedule: [], scores: [], alerts: [], calls: true,
     voice: null, speaking: false, linked: false, robot: false, version: '',
     clockSkew: 0, view: 'home', cat: 'arena', game: null, teamFilter: 'all', day: 'sat',
-    quiz: null, staffToken: null, staffTab: 'alerts', staffEdit: null, lastTouch: 0, volunteerAt: 0
+    quiz: null, intro: null, introAuto: true, introEvery: 10, reelI: 0, staffToken: null, staffTab: 'alerts', staffEdit: null, lastTouch: 0, volunteerAt: 0
   };
   w.HostState = H;
 
@@ -139,7 +139,11 @@
     if (H.view === 'game' && view !== 'game') { stopVideo(); }
     if (H.view === 'quiz' && view !== 'quiz') { H.quiz = null; }
     if (view === 'staff' && !H.staffToken) { view = 'home'; }
+    if (view === 'intro' && !H.intro) { view = 'home'; }
+    if (H.view === 'home' && view !== 'home') { pauseReel(); }
+    if (H.view === 'intro' && view !== 'intro') { try { $('ivid').pause(); } catch (e) { /* ignore */ } }
     H.view = view;
+    $('app').className = view === 'intro' ? 'introing' : '';
     each(d.querySelectorAll('.view'), function (v) { v.className = 'view' + (v.id === 'v-' + view ? ' on' : ''); });
     each(d.querySelectorAll('#nav button'), function (b) {
       var g = b.getAttribute('data-go');
@@ -153,7 +157,8 @@
   function render() {
     renderHeader();
     if (!H.content) { return; }
-    if (H.view === 'home') { renderHome(); }
+    if (H.view === 'home') { renderHome(); playReel(); }
+    if (H.view === 'intro') { renderIntro(); }
     if (H.view === 'games') { renderGames(); }
     if (H.view === 'game') { renderGame(); }
     if (H.view === 'teams') { renderTeams(); }
@@ -191,6 +196,84 @@
       clear($('countRow'));
     }
   }
+  /* the reel: every game clip in turn, muted, with its name */
+  function reelGames() { return H.content ? H.content.games : []; }
+  function playReel() {
+    var v = $('reel'), list = reelGames();
+    if (!list.length) { return; }
+    var g = list[H.reelI % list.length], src = 'clips/' + g.clip + '.mp4';
+    $('reelKind').textContent = g.cat === 'arm' ? 'Robot Arm AI' : 'Arena';
+    $('reelTitle').textContent = g.title;
+    if (v.getAttribute('data-src') !== src) { v.setAttribute('data-src', src); v.poster = 'clips/' + g.clip + '.jpg'; v.src = src; }
+    try { var p = v.play(); if (p && p.then) { p.then(null, function () { /* autoplay refused: the poster stays */ }); } } catch (e) { /* ignore */ }
+  }
+  function pauseReel() { try { $('reel').pause(); } catch (e) { /* ignore */ } }
+  function nextReel() { H.reelI += 1; if (H.view === 'home') { playReel(); } }
+  H.nextReel = nextReel;
+
+  /* Pepper's intro: the robot sends the scene; without a robot the page plays it by itself, silently */
+  function renderIntro() {
+    var sc = H.intro; if (!sc) { return; }
+    $('introHead').textContent = sc.head || '';
+    $('introSub').textContent = sc.kind === 'next' ? 'Programme' : (sc.sub || '');
+    var dots = clear($('introDots')), i;
+    for (i = 0; i < sc.n; i += 1) { dots.appendChild(el('span', i === sc.i ? 'on' : null)); }
+    var v = $('ivid'), big = clear($('introBig'));
+    if (sc.clip) {
+      big.style.display = 'none';
+      var src = 'clips/' + sc.clip + '.mp4';
+      if (v.getAttribute('data-src') !== src) { v.setAttribute('data-src', src); v.poster = 'clips/' + sc.clip + '.jpg'; v.src = src; try { var p = v.play(); if (p && p.then) { p.then(null, function () {}); } } catch (e) { /* ignore */ } }
+      return;
+    }
+    try { v.pause(); } catch (e) { /* ignore */ }
+    big.style.display = 'block';
+    if (sc.kind === 'title') {
+      var img = el('img', 'ib-mascot'); img.src = 'brand/mascot.png'; img.alt = ''; img.onerror = function () { img.style.display = 'none'; }; big.appendChild(img);
+      var t = el('div', 'ib-title'); t.appendChild(d.createTextNode('IEEE Robot Championships ')); t.appendChild(el('em', null, '2026')); big.appendChild(t);
+      big.appendChild(el('div', 'ib-line', 'Montekristo Estate, Malta \u00b7 28 and 29 November'));
+    } else if (sc.kind === 'stats') {
+      var st = el('div', 'ib-stats');
+      each([[String(H.teams.length || '13'), 'teams'], ['7', 'games'], ['2', 'days']], function (x) { var b = el('div'); b.appendChild(el('b', null, x[0])); b.appendChild(el('span', null, x[1])); st.appendChild(b); });
+      big.appendChild(st); big.appendChild(el('div', 'ib-line', 'From IEEE Student Branches across Region 8'));
+    } else if (sc.kind === 'teams') {
+      var cols = el('div', 'ib-cols');
+      each([['arena', 'Arena'], ['arm', 'Robot Arm AI']], function (g) {
+        var c = el('div', 'ib-col'), list = teamsOf(g[0]);
+        c.appendChild(el('h4', null, g[1] + ' \u00b7 ' + list.length));
+        each(list, function (tm) { c.appendChild(el('div', null, tm.name)); });
+        cols.appendChild(c);
+      });
+      big.appendChild(cols);
+    } else if (sc.kind === 'next') {
+      big.appendChild(el('div', 'ib-next', sc.sub || ''));
+    } else {
+      big.appendChild(el('div', 'ib-title', 'Explore the championships'));
+      big.appendChild(el('div', 'ib-line', 'Games \u00b7 Teams \u00b7 Schedule \u00b7 Scores \u00b7 Robot quiz'));
+    }
+  }
+  var localIntro = null;
+  function fillLocal(text) {
+    var nA = teamsOf('arena').length, nM = teamsOf('arm').length;
+    return String(text || '').replace(/\{n\}/g, H.teams.length).replace(/\{na\}/g, nA).replace(/\{nm\}/g, nM);
+  }
+  function localScene(i) {
+    var list = H.content.intro, sc = list[i], nn = nowNext(now());
+    H.intro = { i: i, n: list.length, id: sc.id, kind: sc.kind, clip: sc.clip || '', head: fillLocal(sc.head), sub: sc.kind === 'next' ? (nn.next ? 'Coming up next, at ' + nn.next.time + ': ' + nn.next.title + '.' : 'Enjoy the championships!') : fillLocal(sc.sub) };
+  }
+  function startIntro() {
+    if (send({ cmd: 'intro' })) { return; }
+    if (!H.content || !H.content.intro) { return; }
+    var i = 0; localScene(0); go('intro');
+    if (localIntro) { w.clearInterval(localIntro); }
+    localIntro = w.setInterval(function () {
+      i += 1;
+      if (i >= H.content.intro.length || !H.intro) { stopLocalIntro(); return; }
+      localScene(i); renderIntro();
+    }, 5000);
+  }
+  function stopLocalIntro() { if (localIntro) { w.clearInterval(localIntro); localIntro = null; } H.intro = null; go('home'); }
+  function skipIntro() { if (localIntro) { stopLocalIntro(); return; } if (!send({ cmd: 'intro-stop' })) { H.intro = null; go('home'); } }
+
   function fillLive(box, tag, it, empty) {
     clear(box);
     box.appendChild(el('span', 'tag', tag));
@@ -330,9 +413,29 @@
 
   /* ---------- quiz ---------- */
   function shuffle(a) { var i, j, t; for (i = a.length - 1; i > 0; i -= 1) { j = Math.floor(Math.random() * (i + 1)); t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+  var BAG_KEY = 'host.quizBag', memBag = null;
+  function loadBag() { try { var b = JSON.parse(w.localStorage.getItem(BAG_KEY) || 'null'); if (b && b.order && b.order.length === H.content.quiz.length) { return b; } } catch (e) { /* storage off */ } return memBag; }
+  function saveBag(b) { memBag = b; try { w.localStorage.setItem(BAG_KEY, JSON.stringify(b)); } catch (e) { /* storage off: kept in memory */ } }
+  function nextFive() {
+    var total = H.content.quiz.length, b = loadBag(), last = [], i, idx;
+    if (!b || b.pos + 5 > b.order.length) {
+      last = b ? b.order.slice(Math.max(0, b.pos - 5), b.pos) : [];
+      idx = []; for (i = 0; i < total; i += 1) { idx.push(i); }
+      idx = shuffle(idx);
+      /* the first round of a new pass never repeats the questions just asked */
+      var head = [], tail = [];
+      each(idx, function (x) { if (head.length < 5 && last.indexOf(x) < 0) { head.push(x); } else { tail.push(x); } });
+      idx = head.concat(tail);
+      b = { order: idx, pos: 0, round: b ? b.round : 0 };
+    }
+    var five = b.order.slice(b.pos, b.pos + 5);
+    b.pos += 5; b.round = (b.round || 0) + 1; saveBag(b);
+    return { five: five, round: b.round, left: b.order.length - b.pos };
+  }
+  H.nextFive = nextFive;
   function startQuiz() {
-    var idx = [], i; for (i = 0; i < H.content.quiz.length; i += 1) { idx.push(i); }
-    H.quiz = { order: shuffle(idx).slice(0, 5), k: 0, score: 0, picked: -1, opts: null };
+    var r = nextFive();
+    H.quiz = { order: r.five, k: 0, score: 0, picked: -1, opts: null, round: r.round };
     askQuestion();
   }
   function askQuestion() {
@@ -358,7 +461,7 @@
     var box = clear($('quiz')), Q = H.quiz;
     if (!Q) {
       box.appendChild(el('div', 'qprog', 'Robot quiz'));
-      box.appendChild(el('div', 'qq', 'How much do you know about the robot games? Five questions!'));
+      box.appendChild(el('div', 'qq', 'How much do you know about robots? Five questions at a time, from a bank of ' + H.content.quiz.length + '.'));
       var s = el('button', 'pill primary', 'Start the quiz'); s.id = 'quizStart'; box.appendChild(s);
       return;
     }
@@ -526,7 +629,10 @@
       box.appendChild(f);
       var quick = ['The opening ceremony starts in 10 minutes. Please take your seats.', 'Please do not touch the robots or step into the arena.', 'The next match starts in 5 minutes.', 'The awards ceremony starts in 10 minutes.', 'Thank you for coming! Please take all your belongings with you.'];
       each(quick, function (q) { var b = button(q, 'pill', 'data-quick', q); b.style.height = 'auto'; b.style.padding = '12px 20px'; b.style.textAlign = 'left'; box.appendChild(b); });
-      var c = el('div', 'form'); c.appendChild(el('span', null, 'Match calls: Pepper calls the two teams 10 minutes before each scheduled match, and announces matches as they start. Now: ' + (H.calls ? 'ON' : 'OFF')));
+      var ic = el('div', 'form'); ic.appendChild(el('span', null, "Pepper's intro (about 2 minutes). By itself after " + H.introEvery + ' quiet minutes when someone is near: ' + (H.introAuto && H.introEvery > 0 ? 'ON' : 'OFF') + '  '));
+      ic.appendChild(button('Start the intro now', 'pill primary', 'data-act', 'intro-start'));
+      ic.appendChild(button(H.introAuto ? 'Stop the automatic intro' : 'Allow the automatic intro', 'pill', 'data-act', 'intro-auto')); box.appendChild(ic);
+      var c = el('div', 'form'); c.appendChild(el('span', null, 'Match calls: one call ten minutes before each block of matches, and before the opening and the awards. Now: ' + (H.calls ? 'ON' : 'OFF') + '  '));
       c.appendChild(button(H.calls ? 'Turn off' : 'Turn on', 'pill', 'data-act', 'calls')); box.appendChild(c);
     } else if (H.staffTab === 'system') {
       var lines = ['Version: ' + (H.version || 'unknown'), 'Link: ' + (w.Bridge ? w.Bridge.channel : 'none') + (H.linked ? ', Pepper connected' : ', no link'),
@@ -561,6 +667,8 @@
     }
     if (a === 'announce') { var x = val('aText'); if (x) { staffSend({ cmd: 'announce', text: x.slice(0, 300) }); $('aText').value = ''; } return; }
     if (a === 'calls') { staffSend({ cmd: 'calls', on: !H.calls }); return; }
+    if (a === 'intro-start') { staffSend({ cmd: 'intro-start' }); return; }
+    if (a === 'intro-auto') { staffSend({ cmd: 'intro-auto', on: !H.introAuto }); return; }
     if (a === 'reload') { staffSend({ cmd: 'reload' }); }
   }
 
@@ -603,7 +711,9 @@
     if (id === 'gback') { go('games'); return; }
     if (id === 'gplay') { playVideo(); return; }
     if (id === 'volBtn') { callVolunteer(); return; }
-    if (id === 'stopTalk') { send({ cmd: 'stop' }); return; }
+    if (id === 'stopTalk') { if (H.intro) { skipIntro(); } else { send({ cmd: 'stop' }); } return; }
+    if (id === 'introBtn' || (t.parentNode && t.parentNode.id === 'introBtn')) { startIntro(); return; }
+    if (id === 'introSkip') { skipIntro(); return; }
     if (id === 'staffExit') { send({ cmd: 'staff-logout', token: H.staffToken }); H.staffToken = null; go('home'); return; }
     var b = t; while (b && b !== d) { if (b.id === 'brand') { brandTap(); return; } b = b.parentNode; }
   }, false);
@@ -625,6 +735,9 @@
       if (typeof s.calls === 'boolean') { H.calls = s.calls; }
       H.voice = s.voice === true ? true : (s.voice === false ? false : null);
       H.speaking = !!s.speaking; H.version = s.v || H.version;
+      if (typeof s.introAuto === 'boolean') { H.introAuto = s.introAuto; } if (typeof s.introEvery === 'number') { H.introEvery = s.introEvery; }
+      if (s.intro) { if (localIntro) { w.clearInterval(localIntro); localIntro = null; } H.intro = s.intro; if (H.view !== 'intro') { go('intro'); return; } renderIntro(); renderHeader(); return; }
+      if (!s.intro && H.intro && !localIntro) { H.intro = null; if (H.view === 'intro') { go('home'); return; } }
       if (H.view === 'game' || H.view === 'quiz') { renderHeader(); } else { render(); }
     },
     go: function (view, arg) { H.lastTouch = (new Date()).getTime(); if (view === 'game') { openGame(arg, true); } else { go(view, arg); } },
@@ -648,7 +761,7 @@
     if (H.robot && w.Bridge && !w.Bridge.linked()) { H.linked = false; }
     renderHeader();
     if (H.view === 'home') { renderHome(); }
-    if (H.view !== 'home' && H.view !== 'staff' && H.lastTouch && t - H.lastTouch > IDLE_HOME_MS) { go('home'); }
+    if (H.view !== 'home' && H.view !== 'staff' && H.view !== 'intro' && H.lastTouch && t - H.lastTouch > IDLE_HOME_MS) { go('home'); }
     if (H.view === 'staff' && t - H.lastTouch > STAFF_IDLE_MS) { send({ cmd: 'staff-logout', token: H.staffToken }); H.staffToken = null; go('home'); }
   }
   getJSON('data/content.json', function (t) {
@@ -659,6 +772,7 @@
   w.setTimeout(loadLocalData, 2500);
   w.setInterval(tick, 1000);
   H.lastTouch = (new Date()).getTime();
+  try { $('reel').addEventListener('ended', nextReel, false); $('reel').addEventListener('error', function () { w.setTimeout(nextReel, 4000); }, false); } catch (e) { /* ignore */ }
   if (w.Bridge) { w.Bridge.onchange = renderHeader; w.Bridge.connect(); }
   render();
 })(window, document);

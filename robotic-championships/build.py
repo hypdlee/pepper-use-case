@@ -62,8 +62,10 @@ class MyClass(GeneratedClass):
 
 PARAMS = [
     ("Staff PIN", 3, "2026", "PIN for staff mode on the tablet (tap the title five times). Change it before the event."),
-    ("Match calls", 0, "1", "On: Pepper calls the two teams 10 minutes before each match in the schedule and announces matches as they start. Staff can also switch this on the tablet."),
-    ("Greet visitors", 0, "1", "On: Pepper says hello when someone comes close (at most every 45 seconds)."),
+    ("Match calls", 0, "1", "On: ten minutes before each block of matches (and before the opening and the awards), Pepper calls the teams. Staff can also switch this on the tablet."),
+    ("Greet visitors", 0, "1", "On: Pepper says hello when someone comes close (at most every 2 minutes)."),
+    ("Intro when idle (minutes)", 1, "10", "Pepper gives its intro by itself after this many quiet minutes, if someone is near. 0 = only when asked. Staff can also switch this off on the tablet."),
+    ("Announce match starts", 0, "0", "On: Pepper also announces every match as it starts. Off: only one call ten minutes before each block of matches."),
 ]
 
 def controller_box(code):

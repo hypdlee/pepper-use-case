@@ -10,7 +10,7 @@
 # Nothing here goes to the internet.
 import json, os, io, re, time, random, threading, unicodedata
 
-VERSION = "1.0.2"
+VERSION = "1.1.0"
 TOKEN_KEY = "Host/ControllerToken"
 KEYS = ["hostCmd", "hostTeam", "hostGame", "hostAns", "hostInfo", "Host/TabletCmd", TOKEN_KEY]
 STATE_KEY, STATE_EVT = "Host/State", "Host/Session"
@@ -21,9 +21,12 @@ PONG = "ok1"
 CALL_BEFORE_S = 600             # match call 10 minutes before (rulebook 6.5: teams get 10 minutes' notice)
 CALL_WINDOW_S = 120             # a call is only made in the first 2 minutes of that window (no late calls after a restart)
 START_WINDOW_S = 90             # "starting now" only in the first 90 s
-VIEW_TALK_GAP_S = 8.0
-NU_GAP_S = 15.0
-GREET_GAP_S = 45.0
+NU_GAP_S = 30.0
+GREET_GAP_S = 120.0           # v1.1: Pepper talks less on its own
+BLOCK_GAP_S = 600             # matches less than 10 minutes apart form one block: one call per block
+INTRO_MIN_S = 4.0             # each intro scene stays at least this long (clips at least INTRO_CLIP_S)
+INTRO_CLIP_S = 6.0
+INTRO_MAX_S = 40.0            # and at most this long, even if speech never reports that it ended
 STAFF_TTL_S = 300.0
 PIN_TRIES, PIN_WINDOW_S = 5, 60.0
 PUSH_BEAT_S = 4.0
@@ -200,11 +203,13 @@ class MyClass(GeneratedClass):
         self.sayJob = None
         self.speaking = False
         self.lastSpeak = 0.0
-        self.lastView = 0.0
         self.lastNu = 0.0
         self.lastGreet = 0.0
         self.lastHuman = -1
         self.quizOn = None
+        self.intro = None             # v1.1: Pepper's intro show: {"i": scene, "t0": started}
+        self.introAuto = True
+        self.lastActivity = 0.0
         self.listen = None
         self.dlgTry = 0
         self.dlgAt = 0.0
@@ -232,6 +237,8 @@ class MyClass(GeneratedClass):
         self.content = self._loadContent()
         self._loadData()
         self.calls = self.calls and bool(self._param("Match calls", True))
+        self.introAuto = self.introAuto and self._introEvery() > 0
+        self.lastActivity = self.clock()
         self._log("info", "[Host] v%s running. %d teams, %d programme items, content %s" % (
             VERSION, len(self.teams), len(self.schedule), "loaded" if self.content else "MISSING"))
         self._dialogOpen()
@@ -254,6 +261,7 @@ class MyClass(GeneratedClass):
         if not getattr(self, "running", False):
             return
         self.running = False
+        self.intro = None
         self._stopTalk()
         self._untune()
         self._dialogClose()
@@ -363,11 +371,12 @@ class MyClass(GeneratedClass):
         self.scores = st.get("scores") if isinstance(st.get("scores"), list) else []
         self.alerts = (st.get("alerts") if isinstance(st.get("alerts"), list) else [])[-50:]
         self.calls = bool(st.get("calls", True))
+        self.introAuto = bool(st.get("introAuto", True))
         self.announced = st.get("announced") if isinstance(st.get("announced"), dict) else {}
 
     def _save(self):
         data = {"teams": self.teams, "schedule": self.schedule, "scores": self.scores, "alerts": self.alerts[-50:],
-                "calls": self.calls, "edited": self.edited, "announced": self.announced, "saved": self.clock()}
+                "calls": self.calls, "introAuto": self.introAuto, "edited": self.edited, "announced": self.announced, "saved": self.clock()}
         try:
             if not os.path.isdir(STORE_DIR):
                 os.makedirs(STORE_DIR)
@@ -404,6 +413,7 @@ class MyClass(GeneratedClass):
         cmd = vals.get("hostCmd", "")
         if cmd:
             self._write("hostCmd", "")
+            self.lastActivity = self.clock()
             if self.listen is False:
                 self.listen = True
             self._onDialog(_u(cmd).strip().lower(), vals)
@@ -413,6 +423,7 @@ class MyClass(GeneratedClass):
             self.onTablet(raw)
         now = self.clock()
         self._dialogStep(now)
+        self._introStep(now)
         if now - self.lastSpeakCheck >= 0.5:
             self.lastSpeakCheck = now
             self._checkSpeaking()
@@ -420,6 +431,7 @@ class MyClass(GeneratedClass):
             self.lastCallCheck = now
             self._matchCalls(now)
             self._expireStaff(now)
+            self._introAutoCheck(now)         # first: after a quiet spell, someone arriving gets the intro, not a greeting
             self._greetCheck(now)
         self._push(False)
 
@@ -606,9 +618,16 @@ class MyClass(GeneratedClass):
         elif cmd == "bye":
             self.say("Goodbye! Enjoy the championships!")
             self._go("home", "")
+        elif cmd == "intro":
+            self.startIntro("voice")
         elif cmd == "stop":
-            self._stopTalk()
+            if self.intro is not None:
+                self.stopIntro()
+            else:
+                self._stopTalk()
         elif cmd == "nu":
+            if self.intro is not None:
+                return
             if now - self.lastNu >= NU_GAP_S and not self.speaking:
                 self.lastNu = now
                 self.say("Sorry, I did not catch that. You can also touch my screen.")
@@ -719,12 +738,17 @@ class MyClass(GeneratedClass):
             self.seen = self.seen[-60:]
         cmd = msg.get("cmd", "")
         now = self.clock()
+        self.lastActivity = now
         if cmd == "game":
             g = self._game(_u(msg.get("game", "") or ""))
             if g is not None:
                 self.say(g.get("say", ""))
         elif cmd == "view":
-            self._viewLine(_u(msg.get("view", "")), _u(msg.get("arg", "")), now)
+            pass                          # v1.1: Pepper no longer talks when a screen changes
+        elif cmd == "intro":
+            self.startIntro("tablet")
+        elif cmd == "intro-stop":
+            self.stopIntro()
         elif cmd == "quizq":
             self._quizQuestion(msg)
         elif cmd == "quiza":
@@ -734,32 +758,16 @@ class MyClass(GeneratedClass):
         elif cmd == "volunteer":
             self._volunteer()
         elif cmd == "stop":
-            self._stopTalk()
+            if self.intro is not None:
+                self.stopIntro()
+            else:
+                self._stopTalk()
         elif cmd == "staff-login":
             self._staffLogin(_u(msg.get("pin", "")), now)
         elif cmd == "staff-logout":
             self.staff.pop(_u(msg.get("token", "")), None)
-        elif cmd.startswith("team-") or cmd.startswith("sched-") or cmd.startswith("score-") or cmd in ("announce", "calls", "reload", "alert-seen"):
+        elif cmd.startswith("team-") or cmd.startswith("sched-") or cmd.startswith("score-") or cmd in ("announce", "calls", "reload", "alert-seen", "intro-start", "intro-auto"):
             self._staffCmd(cmd, msg, now)
-
-    def _viewLine(self, view, arg, now):
-        if now - self.lastView < VIEW_TALK_GAP_S or self.speaking:
-            return
-        line = None
-        if view == "games":
-            cat = "arm" if arg == "arm" else "arena"
-            line = ((self.content or {}).get("categories", {}).get(cat, {}) or {}).get("say")
-        elif view == "teams":
-            line = self._teamsLine()
-        elif view == "schedule":
-            line = self._nextLine(now)
-        elif view == "scores":
-            line = "Here are the provisional scores. The judges announce the official results." if self.scores else "There are no scores yet."
-        elif view == "help":
-            line = "If you need help, touch the red button and a volunteer will come to you."
-        if line:
-            self.lastView = now
-            self.say(line)
 
     def _quizQuestion(self, msg):
         quiz = (self.content or {}).get("quiz", [])
@@ -768,9 +776,8 @@ class MyClass(GeneratedClass):
             opts = [int(x) for x in msg.get("opts", [0, 1, 2])][:3]
         except Exception:
             return
-        words = ["One", "Two", "Three"]
         self.quizOn = int(msg.get("i"))
-        self.say("%s %s" % (q["q"], " ".join("%s: %s." % (words[k], q["a"][o]) for k, o in enumerate(opts))))
+        self.say(q["q"])                  # v1.1: the answers are on the screen; Pepper reads only the question
 
     def _quizAnswer(self, msg):
         quiz = (self.content or {}).get("quiz", [])
@@ -779,9 +786,9 @@ class MyClass(GeneratedClass):
         except Exception:
             return
         if msg.get("ok") is True:
-            self.say("%s %s" % (random.choice(["Correct!", "Yes! Well done!", "That is right!"]), q.get("why", "")))
+            self.say(random.choice(["Correct!", "Yes! Well done!", "That is right!"]))
         else:
-            self.say("Not quite. %s" % q.get("why", ""))
+            self.say("Not quite.")
 
     def _quizEnd(self, msg):
         try:
@@ -915,6 +922,11 @@ class MyClass(GeneratedClass):
                     a["seen"] = True
         elif cmd == "calls":
             self.calls = bool(msg.get("on"))
+        elif cmd == "intro-start":
+            changed = False
+            self.startIntro("staff")
+        elif cmd == "intro-auto":
+            self.introAuto = bool(msg.get("on"))
         elif cmd == "announce":
             text = clean_text(msg.get("text", ""), 300)
             changed = False
@@ -934,29 +946,161 @@ class MyClass(GeneratedClass):
             self._push(True)
 
     # ------------------------------------------------------------------ match calls
-    def _matchCalls(self, now):
-        if not self.calls:
-            return
+    def _blockStarts(self):
+        """The first item of each block: matches of the same game less than 10 minutes apart are one block, so the
+        teams get one call ten minutes before the block (sixteen Time of Fall matches 4 minutes apart: one call)."""
+        out, prev = [], None
         for it in self._sorted():
             if it.get("done"):
                 continue
+            s = start_epoch(it)
+            same = (prev is not None and prev.get("cat") == it.get("cat") and prev.get("title") == it.get("title")
+                    and s - (start_epoch(prev) + prev.get("mins", 15) * 60) < BLOCK_GAP_S)
+            if not same and (it.get("cat") != "stage" or it.get("mins", 0) >= 30):
+                out.append(it)
+            prev = it
+        return out
+
+    def _firstLine(self, it):
+        a, b = it.get("a") or "", it.get("b") or ""
+        if it.get("cat") == "arena" and a and b:
+            return " First match: %s in the red corner, against %s in the blue corner." % (self._name(a), self._name(b))
+        names = [self._name(x) for x in (a, b) if x]
+        if not names:
+            return ""
+        return " First up: %s." % " and ".join(names)
+
+    def _matchCalls(self, now):
+        if not self.calls:
+            return
+        for it in self._blockStarts():
             s = start_epoch(it)
             key = it["id"] + "|" + it["day"] + it["time"]
             if s - CALL_BEFORE_S <= now < s - CALL_BEFORE_S + CALL_WINDOW_S and not self.announced.get(key + "|call"):
                 self.announced[key + "|call"] = True
                 self._save()
+                if self.intro is not None:
+                    self.stopIntro()
                 if it.get("cat") == "stage":
-                    self.say("Attention please. The %s starts in ten minutes." % it["title"], interrupt=False)
+                    self.say("Attention please. The %s starts in ten minutes." % it["title"])
                 else:
-                    self.say(("Attention teams. In ten minutes%s: %s. %s Please get ready." % (
-                        {"arena": ", in the Arena", "arm": ", at the Robot Arm AI Challenge"}.get(it.get("cat"), ""), it["title"], self._sides(it))).replace("  ", " "), interrupt=False)
+                    first = self._firstLine(it)
+                    self.say(("Attention teams. In ten minutes%s: %s.%s Please get ready." % (
+                        {"arena": ", in the Arena", "arm": ", at the Robot Arm AI Challenge"}.get(it.get("cat"), ""), it["title"], first)).replace("  ", " "))
                 return
-            if s <= now < s + START_WINDOW_S and not self.announced.get(key + "|start") and it.get("cat") != "stage":
+        if not bool(self._param("Announce match starts", False)):
+            return
+        for it in self._sorted():
+            if it.get("done") or it.get("cat") == "stage":
+                continue
+            s = start_epoch(it)
+            key = it["id"] + "|" + it["day"] + it["time"]
+            if s <= now < s + START_WINDOW_S and not self.announced.get(key + "|start"):
                 self.announced[key + "|start"] = True
                 self._save()
+                if self.intro is not None:
+                    self.stopIntro()
                 self.say(("Starting now: %s! %s Good luck to both teams!" % (it["title"], self._sides(it))) if (it.get("a") and it.get("b"))
-                         else ("Starting now: %s! %s Good luck!" % (it["title"], self._sides(it))).replace("  ", " "), interrupt=False)
+                         else ("Starting now: %s! %s Good luck!" % (it["title"], self._sides(it))).replace("  ", " "))
                 return
+
+    # ------------------------------------------------------------------ Pepper's intro show (v1.1)
+    def _introEvery(self):
+        try:
+            return max(0, int(self._param("Intro when idle (minutes)", 10)))
+        except Exception:
+            return 0
+
+    def _introScenes(self):
+        return (self.content or {}).get("intro", [])
+
+    def _introFill(self, text):
+        arena = sorted([t for t in self.teams if t["cat"] == "arena"], key=lambda t: _u(t["name"]).lower())
+        arms = sorted([t for t in self.teams if t["cat"] == "arm"], key=lambda t: _u(t["name"]).lower())
+        def names(ts):
+            ns = [self._name(t["name"]) for t in ts]
+            return ", ".join(ns[:-1]) + " and " + ns[-1] if len(ns) > 1 else (ns[0] if ns else "")
+        vals = {"n": len(self.teams), "na": len(arena), "nm": len(arms), "arena_teams": names(arena), "arm_teams": names(arms),
+                "next": self._comingUp(self.clock())}
+        out = _u(text)
+        for k, v in vals.items():
+            out = out.replace(u"{%s}" % k, _u(v))
+        return out
+
+    def _comingUp(self, now):
+        open_at = EVENT_DAY_UTC["sat"] + 14 * 3600 - MALTA_UTC_OFFSET_S
+        if now < open_at - 6 * 3600:
+            return "The championships open on Saturday the 28th at two in the afternoon, and the Arena starts at twenty past three."
+        cur, nxt = self._nowNext(now)
+        if nxt is not None:
+            where = {"arena": " in the Arena", "arm": " at the Robot Arm AI Challenge"}.get(nxt.get("cat"), "")
+            return "Coming up next, at %s: %s%s." % (nxt["time"], nxt["title"], where)
+        return "Thank you for being part of the IEEE Robot Championships 2026!"
+
+    def _introSceneState(self):
+        if self.intro is None:
+            return None
+        sc = self._introScenes()[self.intro["i"]]
+        st = {"i": self.intro["i"], "n": len(self._introScenes()), "id": sc.get("id"), "kind": sc.get("kind", "title"),
+              "clip": sc.get("clip", ""), "head": self._introFill(sc.get("head", "")), "sub": self._introFill(sc.get("sub", ""))}
+        if st["kind"] == "next":
+            st["sub"] = self._comingUp(self.clock())
+        return st
+
+    def startIntro(self, source):
+        if not self._introScenes():
+            return
+        self._log("info", "[Host] intro started (%s)" % source)
+        self.quizOn = None
+        self.intro = {"i": 0, "t0": self.clock()}
+        self._js("HostUI.go(\"intro\",\"\")")
+        self._introScene()
+
+    def _introScene(self):
+        sc = self._introScenes()[self.intro["i"]]
+        self.intro["t0"] = self.clock()
+        self.say(self._introFill(sc.get("say", "")))
+        self._push(True)
+
+    def _introStep(self, now):
+        if self.intro is None:
+            return
+        sc = self._introScenes()[self.intro["i"]]
+        held = now - self.intro["t0"]
+        least = INTRO_CLIP_S if sc.get("clip") else INTRO_MIN_S
+        if held < least or (self.speaking and held < INTRO_MAX_S):
+            return
+        if self.intro["i"] + 1 >= len(self._introScenes()):
+            self._log("info", "[Host] intro finished")
+            self.intro = None
+            self.lastActivity = now
+            self._go("home", "")
+            self._push(True)
+            return
+        self.intro["i"] += 1
+        self._introScene()
+
+    def stopIntro(self):
+        if self.intro is None:
+            return
+        self.intro = None
+        self._stopTalk()
+        self.lastActivity = self.clock()
+        self._go("home", "")
+        self._push(True)
+
+    def _introAutoCheck(self, now):
+        every = self._introEvery()
+        if not self.introAuto or every <= 0 or self.intro is not None or self.speaking or self.quizOn is not None:
+            return
+        if now - max(self.lastActivity, self.lastSpeak) < every * 60:
+            return
+        try:
+            near = int(self._read("ALBasicAwareness/HumanTracked")) >= 0
+        except Exception:
+            near = False
+        if near:
+            self.startIntro("idle")
 
     # ------------------------------------------------------------------ greeting people who come close
     def _greetCheck(self, now):
@@ -969,11 +1113,9 @@ class MyClass(GeneratedClass):
             h = -1
         newly = h >= 0 and self.lastHuman < 0
         self.lastHuman = h
-        if newly and not self.speaking and now - self.lastGreet >= GREET_GAP_S and now - self.lastSpeak >= 20.0 and self.quizOn is None:
+        if newly and not self.speaking and now - self.lastGreet >= GREET_GAP_S and now - self.lastSpeak >= 20.0 and self.quizOn is None and self.intro is None:
             self.lastGreet = now
-            self.say(random.choice(["Hello! Welcome to the IEEE Robot Championships. Touch my screen to see the robot games.",
-                                    "Hi there! Ask me: what is on next? Or touch my screen.",
-                                    "Welcome! Would you like to try the robot quiz? Touch my screen."]))
+            self.say(random.choice(["Hello! Touch my screen, or watch my intro.", "Welcome! Touch my screen to see the robot games."]))
 
     # ------------------------------------------------------------------ dialog check: does Pepper hear?
     def _dialogStep(self, now):
@@ -1114,7 +1256,8 @@ class MyClass(GeneratedClass):
 
     def _state(self):
         return {"v": VERSION, "teams": self.teams, "schedule": self.schedule, "scores": self.scores, "alerts": self.alerts[-20:],
-                "calls": self.calls, "voice": self.listen, "speaking": self.speaking}
+                "calls": self.calls, "voice": self.listen, "speaking": self.speaking,
+                "intro": self._introSceneState(), "introAuto": self.introAuto, "introEvery": self._introEvery()}
 
     def _push(self, force):
         st = self._state()

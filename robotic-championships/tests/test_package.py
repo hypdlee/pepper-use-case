@@ -41,8 +41,8 @@ for b in (2, 4):
     check((b, 2, 0, 2) in links, "box %d is not started with the behaviour" % b)
 check((0, 4, 4, 4) in links and (4, 3, 0, 3) in links, "controller stop / stopped links")
 params = {p.get("name"): p for p in boxes[4].findall("c:Parameter", ns)}
-check(set(params) == {"Staff PIN", "Match calls", "Greet visitors"}, "parameters: %r" % sorted(params))
-check(len({p.get("id") for p in params.values()} | {"1", "2", "3", "4"}) == 7, "parameter ids clash with the box ports")
+check(set(params) == {"Staff PIN", "Match calls", "Greet visitors", "Intro when idle (minutes)", "Announce match starts"}, "parameters: %r" % sorted(params))
+check(len({p.get("id") for p in params.values()} | {"1", "2", "3", "4"}) == 4 + len(params), "parameter ids clash with the box ports")
 for name in params:
     check(('"%s"' % name) in src, "parameter %s is not read by the controller" % name)
 

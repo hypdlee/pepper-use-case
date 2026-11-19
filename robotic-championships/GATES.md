@@ -36,3 +36,19 @@
   EVIDENCE: simulator starts with an old copy loaded and refuses a second load; start, repair, stop and newer-controller cases pass
 - [ ] G16 Confirmed on the robot
   ABANDON: G16 needs the next Choregraphe log
+
+# Round 4 (v1.1.0): Pepper gives the intro, talks less, 100-question quiz
+- [x] G17 Pepper's intro: 12 scenes (who Pepper is, both competitions, every game with its clip, all 13 teams, what's next, invitation), each waits for Pepper to finish speaking; starts from the tablet, by voice, by staff, or by itself after a quiet spell with someone near; Skip / "stop" end it; a match call ends it first
+  EVIDENCE: test_controller intro block (order of 12 scenes, long sentence holds the scene, auto intro needs someone near, parameter 0 + staff override, no restart after finishing) OK on 2.7.15 and 3.13.18
+- [x] G18 Less talking: screens are silent, greeting at most every 2 minutes, one call per block of matches (16 Time of Fall matches: one call), start announcements off by default, quiz speech is the question plus "Correct!" / "Not quite"
+  EVIDENCE: test_controller block-call and quiet-view checks OK
+- [x] G19 Quiz has 100 questions; five per round from a shuffled bag; no repeat until all 100 were asked; new pass never starts with the five just asked; bag survives a reload
+  EVIDENCE: content.json quiz length 100; ui.test.js 21 rounds, 100 unique, reload continues at round 22; UI OK 309 checks
+- [x] G20 Official running order imported (56 items) with match sides; no award nominee names; no care or medical wording
+  EVIDENCE: ui.test.js schedule checks; test_package care-word and neutrality checks
+- [x] G21 Fits 1280 x 800: new Home and all 12 intro scenes, nothing clipped or off screen
+  EVIDENCE: fit_audit.js intro-1 ... intro-12 clipped=[] needs-scroll=[]; FIT OK
+- [x] G22 New code is tested: 11 bugs planted (3 quiz shuffle, 8 intro and match calls); 10 caught, 1 equivalent (end-of-intro time is already covered by the last sentence's time)
+  EVIDENCE: mutation run after tightening three tests
+- [ ] G23 Confirmed on the robot
+  ABANDON: G23 needs a run on Pepper and the Choregraphe log

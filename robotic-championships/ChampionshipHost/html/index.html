@@ -38,11 +38,15 @@
     <!-- HOME -->
     <section id="v-home" class="view on">
       <div class="home">
-        <div class="hero">
-          <img id="mascot" class="mascot" src="brand/mascot.png" alt="" onerror="this.style.display='none'">
-          <div class="kicker">Welcome!</div>
-          <h1>Hi, I am Pepper,<br>your championship host.</h1>
-          <p class="lead">Touch the screen or talk to me. Ask me about the games, the teams or the next match.</p>
+        <div class="stage">
+          <div class="reel">
+            <video id="reel" muted playsinline preload="auto"></video>
+            <div class="reelcap"><span id="reelKind"></span><b id="reelTitle"></b></div>
+          </div>
+          <button class="introbtn" id="introBtn"><span class="play"></span>Watch Pepper's intro</button>
+          <div class="stats" id="stats"></div>
+        </div>
+        <div class="side">
           <div id="countBox" class="count">
             <div class="countlbl" id="countLbl">The championships start in</div>
             <div class="countrow" id="countRow"></div>
@@ -51,17 +55,32 @@
             <div class="liveitem" id="liveNow"></div>
             <div class="liveitem next" id="liveNext"></div>
           </div>
-          <div class="stats" id="stats"></div>
+          <div class="tiles">
+            <button class="tile t-yellow" data-go="games" data-arg="arena"><span class="ti">Arena</span><span class="ts">4 robot games</span></button>
+            <button class="tile t-purple" data-go="games" data-arg="arm"><span class="ti">Robot Arm AI</span><span class="ts">3 AI games</span></button>
+            <button class="tile" data-go="teams"><span class="ti">Teams</span><span class="ts" id="tileTeams">Who is competing</span></button>
+            <button class="tile" data-go="schedule"><span class="ti">Schedule</span><span class="ts" id="tileNext">What is on</span></button>
+            <button class="tile" data-go="scores"><span class="ti">Scores</span><span class="ts">Leaderboards</span></button>
+            <button class="tile" data-go="quiz"><span class="ti">Robot quiz</span><span class="ts">100 questions</span></button>
+          </div>
+          <button class="volsmall" data-go="help" data-arg="volunteer">Call a volunteer</button>
         </div>
-        <div class="tiles">
-          <button class="tile t-yellow" data-go="games" data-arg="arena"><span class="ti">Arena</span><span class="ts">4 robot games</span></button>
-          <button class="tile t-purple" data-go="games" data-arg="arm"><span class="ti">Robot Arm AI</span><span class="ts">Arms that think</span></button>
-          <button class="tile" data-go="teams"><span class="ti">Teams</span><span class="ts" id="tileTeams">Who is competing</span></button>
-          <button class="tile" data-go="schedule"><span class="ti">Schedule</span><span class="ts" id="tileNext">What is on</span></button>
-          <button class="tile" data-go="scores"><span class="ti">Scores</span><span class="ts">Leaderboards</span></button>
-          <button class="tile" data-go="quiz"><span class="ti">Quiz</span><span class="ts">Test yourself</span></button>
-          <button class="tile t-help" data-go="help" data-arg="volunteer"><span class="ti">Call a volunteer</span><span class="ts">We will come to you</span></button>
+      </div>
+    </section>
+
+    <!-- PEPPER'S INTRO -->
+    <section id="v-intro" class="view">
+      <div class="ishow" id="introBox">
+        <div class="ivis" id="introVis">
+          <video id="ivid" muted loop playsinline preload="auto"></video>
+          <div class="ibig" id="introBig"></div>
         </div>
+        <div class="itext">
+          <div class="isub" id="introSub"></div>
+          <h1 class="ihead" id="introHead"></h1>
+          <div class="idots" id="introDots"></div>
+        </div>
+        <button class="iskip" id="introSkip">Skip</button>
       </div>
     </section>
 

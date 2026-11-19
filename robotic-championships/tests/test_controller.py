@@ -66,7 +66,7 @@ class Fut(object):
     """A qi future for a sentence that takes 3 seconds (or less, if speech is stopped)."""
     def __init__(self, w):
         w.sent += 1
-        self.w, self.n, self.end = w, w.sent, w.t + 3
+        self.w, self.n, self.end = w, w.sent, w.t + getattr(w, 'speech_s', 3)
     def isFinished(self):
         return self.w.t >= self.end or self.w.stopped >= self.n
     def cancel(self):
@@ -164,7 +164,7 @@ def make(w, params=None):
         def service(self, name):
             return {"ALMemory": Mem, "ALAnimatedSpeech": Speech, "ALTextToSpeech": TTS, "ALTabletService": Tablet,
                     "ALDialog": Dialog, "ALBasicAwareness": Aware, "ALFrameManager": Frame}.get(name, Rec)(name, w)
-    P = {"Staff PIN": "2468", "Match calls": True, "Greet visitors": True}
+    P = {"Staff PIN": "2468", "Match calls": True, "Greet visitors": True, "Intro when idle (minutes)": 10, "Announce match starts": False}
     P.update(params or {})
     class GeneratedClass(object):
         behaviorId = "bid"
@@ -246,7 +246,7 @@ def run():
     w = World(app)
     box, ns = start(w, store=store)
     st = last_state(w)
-    check(st is not None and st["v"] == "1.0.2", "no first state pushed")
+    check(st is not None and st["v"] == "1.1.0", "no first state pushed")
     check([t["name"] for t in st["teams"]] == ["Team Falcon", "Orion, The", "ArmStrong"], "teams from CSV: %r" % [t["name"] for t in st["teams"]])
     check([t["cat"] for t in st["teams"]] == ["arena", "arena", "arm"], "team categories")
     check([x["title"] for x in st["schedule"]] == ["Opening Ceremony", "Time of Fall", "Colour Sort", "Shape Sort", "Awards Ceremony"], "schedule rows: %r" % [x["title"] for x in st["schedule"]])
@@ -320,15 +320,16 @@ def run():
     check(len(w.said) == k + 1, "repeated tablet message not ignored")
     w.stopped = w.sent; box.speaking = False; box.lastView = 0
     tab(w, box, {"cmd": "view", "view": "schedule"})
-    k = len(w.said); tab(w, box, {"cmd": "view", "view": "teams"})
-    check(len(w.said) == k, "view lines not rate limited")
+    k = len(w.said)
+    for v in ("teams", "games", "scores", "help", "schedule"):
+        box.lastView = 0; w.stopped = w.sent; box.speaking = False; tab(w, box, {"cmd": "view", "view": v})
+    check(len(w.said) == k, "v1.1: Pepper must not talk when a screen changes: %r" % w.said[k:])
     tab(w, box, {"cmd": "quizq", "i": 0, "opts": [2, 0, 1]})
-    check(w.said[-1] == "In Time of Fall, what do the robots try to do? One: Sort coloured shapes. Two: Pull the other robot into the pit. Three: Build a tower.",
-          "quiz question: %r" % w.said[-1])
+    check(w.said[-1] == "In Time of Fall, what do the robots try to do?", "quiz question (question only): %r" % w.said[-1])
     tab(w, box, {"cmd": "quiza", "i": 0, "ok": False})
-    check(w.said[-1] == "Not quite. It is a tug of war over the pit.", "quiz wrong")
+    check(w.said[-1] == "Not quite.", "quiz wrong: %r" % w.said[-1])
     tab(w, box, {"cmd": "quiza", "i": 0, "ok": True})
-    check(w.said[-1].endswith("It is a tug of war over the pit.") and not w.said[-1].startswith("Not"), "quiz right")
+    check(w.said[-1] in ("Correct!", "Yes! Well done!", "That is right!"), "quiz right: %r" % w.said[-1])
     tab(w, box, {"cmd": "quizend", "score": 5, "total": 5})
     check(w.said[-1].startswith("You got 5 out of 5. Brilliant"), "quiz end")
     tab(w, box, {"cmd": "quizq", "i": 99})
@@ -408,17 +409,20 @@ def run():
     check(not any("Attention teams" in s for s in w3.said), "called too early")
     w3.t = utc(2026, 11, 28, 13, 30) + 1; tick(w3, box3, 5.2)
     calls = [s for s in w3.said if "Attention teams" in s]
-    check(len(calls) == 1 and calls[0] == "Attention teams. In ten minutes, in the Arena: Time of Fall. Red corner: Team Falcon. Blue corner: Orion, The. Please get ready.",
+    check(len(calls) == 1 and calls[0] == "Attention teams. In ten minutes, in the Arena: Time of Fall. First match: Team Falcon in the red corner, against Orion, The in the blue corner. Please get ready.",
           "match call: %r" % calls)
     tick(w3, box3, 20)
     check(len([s for s in w3.said if "Attention teams" in s]) == 1, "match call repeated")
     w3b = World(app); w3b.t = w3.t
-    box3b, _ = start(w3b, store=store3); w3b.mem["hostPong"] = "ok1"; tick(w3b, box3b, 6)
+    w3.t = utc(2026, 11, 28, 13, 40) + 2; tick(w3, box3, 5.2)
+    check(not any(s.startswith("Starting now") for s in w3.said), "match start announced although that setting is off")
+    w3b.t = w3.t - 600
+    box3b, _ = start(w3b, params={"Announce match starts": True}, store=store3); w3b.mem["hostPong"] = "ok1"; tick(w3b, box3b, 6)
     check(not any("Attention teams" in s for s in w3b.said), "match call repeated after a restart")
     w3b.t = utc(2026, 11, 28, 13, 40) + 2; tick(w3b, box3b, 5.2)
     check(any(s == "Starting now: Time of Fall! Red corner: Team Falcon. Blue corner: Orion, The. Good luck to both teams!" for s in w3b.said), "start announcement: %r" % w3b.said[-1:])
     w3b.t = utc(2026, 11, 28, 13, 50) + 2; tick(w3b, box3b, 5.2)
-    check(any("Robot Arm AI Challenge: Colour Sort. With ArmStrong" in s or "Robot Arm AI Challenge: Colour Sort. With Arm Strong" in s for s in w3b.said), "arm call: %r" % w3b.said[-2:])
+    check(any(s == "Attention teams. In ten minutes, at the Robot Arm AI Challenge: Colour Sort. First up: Arm Strong. Please get ready." for s in w3b.said), "arm call: %r" % w3b.said[-2:])
     k = len(w3b.said); w3b.t = utc(2026, 11, 28, 14, 50) + 2; tick(w3b, box3b, 5.2); w3b.t = utc(2026, 11, 28, 15, 0) + 2; tick(w3b, box3b, 5.2)
     check(len(w3b.said) == k, "a finished (done) match was called: %r" % w3b.said[k:])
     w3b.t = utc(2026, 11, 29, 16, 50) + 2; tick(w3b, box3b, 5.2)
@@ -430,6 +434,109 @@ def run():
     w5 = World(app); w5.t = utc(2026, 11, 28, 13, 30) + 1
     box5, _ = start(w5, params={"Match calls": False}, store=os.path.join(tmp, "store5")); w5.mem["hostPong"] = "ok1"; tick(w5, box5, 6)
     check(not any("Attention" in s for s in w5.said), "calls made while switched off")
+
+    # ---- one call per block: three Time of Fall matches 4 minutes apart, then a later block
+    blk = os.path.join(tmp, "blk"); shutil.copytree(app, blk)
+    io.open(os.path.join(blk, "html", "data", "schedule.csv"), "w", encoding="utf-8").write(
+        u"day,time,minutes,title,category,game,side_a,side_b,done\nsat,15:20,4,Time of Fall,arena,tof,Team Falcon,ArmStrong,\n"
+        u"sat,15:24,4,Time of Fall,arena,tof,Orion,Team Falcon,\nsat,15:28,4,Time of Fall,arena,tof,ArmStrong,Orion,\n"
+        u"sat,18:15,12,Climate CHAOS,arena,chaos,Team Falcon,,\nsat,18:27,12,Climate CHAOS,arena,chaos,Orion,,\n"
+        u"sat,17:50,10,AI for Humanity Pitch 4,stage,,,,\n")
+    wb = World(blk); wb.t = utc(2026, 11, 28, 14, 9)
+    boxb, _ = start(wb, store=os.path.join(tmp, "sb")); wb.mem["hostPong"] = "ok1"
+    for _ in range(30):
+        wb.t += 60; tick(wb, boxb, 0.1); boxb.lastCallCheck = 0
+    calls = [x for x in wb.said if x.startswith("Attention")]
+    check(len(calls) == 1 and "Time of Fall" in calls[0], "a block of three matches should get one call: %r" % calls)
+    wb.t = utc(2026, 11, 28, 16, 40)
+    for _ in range(140):
+        wb.t += 60; tick(wb, boxb, 0.1); boxb.lastCallCheck = 0
+    calls = [x for x in wb.said if x.startswith("Attention")]
+    check(len(calls) == 2 and calls[1] == "Attention teams. In ten minutes, in the Arena: Climate CHAOS. First up: Team Falcon. Please get ready.",
+          "second block / short stage items: %r" % calls)
+
+    # ---- Pepper's intro
+    wi = World(app); wi.t = utc(2026, 11, 28, 13, 26)
+    boxi, nsi = start(wi, store=os.path.join(tmp, "si")); wi.mem["hostPong"] = "ok1"; tick(wi, boxi, 5)
+    scenes = boxi.content["intro"]
+    wi.speech_s = 9   # a long first sentence: the scene must wait for Pepper to finish
+    dlg(wi, boxi, "intro")
+    check(boxi.intro is not None and boxi.intro["i"] == 0 and any('HostUI.go("intro","")' in j for j in wi.js), "intro did not start by voice")
+    check(wi.said[-1].startswith("Hello everyone, and welcome to the IEEE Robot Championships 2026"), "intro scene 1: %r" % wi.said[-1])
+    st = last_state(wi)["intro"]
+    check(st["i"] == 0 and st["n"] == len(scenes) == 12 and st["kind"] == "title" and st["head"] == "Hello! I am Pepper", "intro state: %r" % st)
+    tick(wi, boxi, 7)
+    check(boxi.intro["i"] == 0, "scene left while Pepper was still talking")
+    wi.speech_s = 3; tick(wi, boxi, 3)
+    check(boxi.intro["i"] == 1, "scene did not move on after Pepper finished: %r" % boxi.intro)
+    seen = [0, boxi.intro["i"]]
+    for _ in range(1500):
+        tick(wi, boxi, 0.1)
+        if boxi.intro is None:
+            break
+        if boxi.intro["i"] != seen[-1]:
+            seen.append(boxi.intro["i"])
+    check(seen == list(range(12)) and boxi.intro is None, "intro scenes not shown in order: %r" % seen)
+    said = wi.said[-12:]
+    check(said[1] == "This weekend, 3 university teams compete in two competitions: 2 teams in the Arena, and 1 teams in the new Robot Arm AI Challenge.", "event scene: %r" % said[1])
+    check(said[9] == "Please give a big welcome to our Arena teams: Orion, The and Team Falcon. And to our Robot Arm teams: Arm Strong.", "teams scene: %r" % said[9])
+    check(said[10].startswith("Coming up next, at 14:40: Time of Fall in the Arena"), "next scene: %r" % said[10])
+    check(not any("{" in x for x in said), "a template was not filled: %r" % [x for x in said if "{" in x])
+    check(any('HostUI.go("home","")' in j for j in wi.js[-3:]) and last_state(wi)["intro"] is None, "intro end did not return home")
+    tab(wi, boxi, {"cmd": "intro"}); tick(wi, boxi, 1)
+    check(boxi.intro is not None, "intro did not start from the tablet")
+    n0 = len(wi.said); dlg(wi, boxi, "nu"); check(len(wi.said) == n0, "not-understood spoke during the intro")
+    tab(wi, boxi, {"cmd": "intro-stop"})
+    check(boxi.intro is None and ("ALTextToSpeech", "stopAll", ()) in wi.calls, "intro did not stop")
+    dlg(wi, boxi, "intro"); dlg(wi, boxi, "stop"); check(boxi.intro is None, "voice stop did not end the intro")
+    # a match call during the intro ends the intro first
+    wi.t = utc(2026, 11, 28, 13, 30) + 1; tab(wi, boxi, {"cmd": "intro"}); boxi.lastCallCheck = 0; tick(wi, boxi, 0.2)
+    check(boxi.intro is None and wi.said[-1].startswith("Attention teams. In ten minutes, in the Arena: Time of Fall"), "match call during the intro: %r" % wi.said[-1:])
+    # by itself after 10 quiet minutes, only when someone is near, and staff can switch it off
+    wa = World(app); wa.t = utc(2026, 11, 28, 9, 0)
+    boxa, _ = start(wa, store=os.path.join(tmp, "sa")); wa.mem["hostPong"] = "ok1"
+    wa.mem["ALBasicAwareness/HumanTracked"] = -1
+    for _ in range(12):
+        wa.t += 60; tick(wa, boxa, 0.1); boxa.lastCallCheck = 0
+    check(boxa.intro is None, "intro started with nobody near")
+    wa.mem["ALBasicAwareness/HumanTracked"] = 2; tick(wa, boxa, 0.1); boxa.lastCallCheck = 0; tick(wa, boxa, 0.1)
+    check(boxa.intro is not None, "no intro after 10 quiet minutes with someone near")
+    tab(wa, boxa, {"cmd": "intro-stop"})
+    for _ in range(5):
+        wa.t += 60; tick(wa, boxa, 0.1); boxa.lastCallCheck = 0
+    check(boxa.intro is None, "intro came back too soon after a touch")
+    tab(wa, boxa, {"cmd": "staff-login", "pin": "2468"})
+    ta = json.loads(wa.js[-1][len("try{HostUI.staff("):-len(")}catch(e){}")])["token"]
+    tab(wa, boxa, {"cmd": "intro-auto", "on": False, "token": ta})
+    for _ in range(15):
+        wa.t += 60; tick(wa, boxa, 0.1); boxa.lastCallCheck = 0
+    check(boxa.intro is None and last_state(wa)["introAuto"] is False, "intro started although staff switched it off")
+    tab(wa, boxa, {"cmd": "staff-login", "pin": "2468"})
+    ta = json.loads(wa.js[-1][len("try{HostUI.staff("):-len(")}catch(e){}")])["token"]
+    tab(wa, boxa, {"cmd": "intro-start", "token": ta}); check(boxa.intro is not None, "staff could not start the intro")
+    tab(wa, boxa, {"cmd": "intro-auto", "on": True, "token": ta})
+    for _ in range(1500):
+        tick(wa, boxa, 0.1)
+        if boxa.intro is None:
+            break
+    check(boxa.intro is None, "staff intro did not finish")
+    again = False
+    for _ in range(5):
+        wa.t += 60; tick(wa, boxa, 0.1); boxa.lastCallCheck = 0; again = again or boxa.intro is not None
+    check(not again, "intro started again right after it finished")
+    w0 = World(app); w0.t = utc(2026, 11, 28, 9, 0)
+    box0, _ = start(w0, params={"Intro when idle (minutes)": 0}, store=os.path.join(tmp, "s0")); w0.mem["ALBasicAwareness/HumanTracked"] = 3
+    ever = False
+    for _ in range(30):
+        w0.t += 60; tick(w0, box0, 0.1); box0.lastCallCheck = 0; ever = ever or box0.intro is not None
+    check(not ever, "intro started by itself although the box parameter is 0")
+    tab(w0, box0, {"cmd": "staff-login", "pin": "2468"})
+    t0 = json.loads(w0.js[-1][len("try{HostUI.staff("):-len(")}catch(e){}")])["token"]
+    tab(w0, box0, {"cmd": "intro-auto", "on": True, "token": t0})
+    for _ in range(30):
+        w0.t += 60; tick(w0, box0, 0.1); box0.lastCallCheck = 0; ever = ever or box0.intro is not None
+    check(not ever, "parameter 0 and staff switched the automatic intro on: it must still wait to be asked")
+    check(nsi["MyClass"]._introFill is not None, "intro helpers missing")
 
     # ---- dialog check: repair and failure
     w6 = World(app); w6.ping_fail = 1
@@ -449,9 +556,9 @@ def run():
     w8.mem["ALBasicAwareness/HumanTracked"] = 3; tick(w8, box8, 5.2)
     check(len(w8.said) == k + 1, "no greeting for a new visitor")
     w8.mem["ALBasicAwareness/HumanTracked"] = -1; tick(w8, box8, 25); w8.mem["ALBasicAwareness/HumanTracked"] = 4; tick(w8, box8, 5.2)
-    check(len(w8.said) == k + 1, "greeting not rate limited (45 s)")
-    w8.mem["ALBasicAwareness/HumanTracked"] = -1; tick(w8, box8, 20); w8.mem["ALBasicAwareness/HumanTracked"] = 5; tick(w8, box8, 5.2)
-    check(len(w8.said) == k + 2, "no greeting after the 45 s pause")
+    check(len(w8.said) == k + 1, "greeting not rate limited (2 minutes)")
+    w8.mem["ALBasicAwareness/HumanTracked"] = -1; tick(w8, box8, 95); w8.mem["ALBasicAwareness/HumanTracked"] = 5; tick(w8, box8, 5.2)
+    check(len(w8.said) == k + 2, "no greeting after the 2 minute pause")
 
     # ---- takeover and stop
     w.mem["Host/ControllerToken"] = "someone-else"; box.running = True; tick(w, box)
@@ -500,11 +607,11 @@ def run():
     dlg(wr, boxr, "team", hostTeam="electro nexus")
     check(wr.said[-1] == "There are 2 teams with that name: Electro Nexus in the Arena and ElectroNexus in the Robot Arm AI Challenge.", "look-alike names: %r" % wr.said[-1])
     dlg(wr, boxr, "team", hostTeam="bris swervy")
-    check(wr.said[-1] == "BRIS - SWERVY competes in the Arena.", "punctuation in a name: %r" % wr.said[-1])
+    check(wr.said[-1] == "BRIS - SWERVY competes in the Arena. Their next match: Time of Fall, at 15:20.", "punctuation in a name: %r" % wr.said[-1])
     dlg(wr, boxr, "team", hostTeam="bua")
     check("could not find" in wr.said[-1], "a 3-letter fragment matched a team")
     dlg(wr, boxr, "team", hostTeam="indiarm")
-    check(wr.said[-1] == "Indiarm competes in the Robot Arm AI Challenge.", "arm team: %r" % wr.said[-1])
+    check(wr.said[-1] == "Indiarm competes in the Robot Arm AI Challenge. Their next match: Colour Sort, at 16:45.", "arm team from the official programme: %r" % wr.said[-1])
     tab(wr, boxr, {"cmd": "staff-login", "pin": "2468"})
     tokr = json.loads(wr.js[-1][len("try{HostUI.staff("):-len(")}catch(e){}")])["token"]
     tab(wr, boxr, {"cmd": "team-save", "team": {"name": "Indiarm", "cat": "arena"}, "token": tokr})

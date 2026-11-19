@@ -15,12 +15,12 @@ CUTS = [
     ("arena-climate-chaos",    GAMES_SRC, 7.4, 15.3, 287, 201, 626, 627, True),
     ("arena-weight-in-line",   GAMES_SRC, 15.5, 23.35, 287, 201, 626, 627, True),
     ("arena-hanging-hazard",   GAMES_SRC, 23.5, 29.9, 287, 201, 626, 627, True),
-    ("arm-colour-sort",        ARMS_SRC, 6.2, 12.15, 35, 212, 831, 586, False),
-    ("arm-shape-sort",         ARMS_SRC, 12.3, 18.2, 35, 212, 831, 586, False),
-    ("arm-dynamic-sort",       ARMS_SRC, 18.3, 25.3, 35, 212, 831, 586, False),
-    ("arm-pouring",            ARMS_SRC, 25.4, 32.35, 35, 212, 831, 586, False),
-    ("arm-folding",            ARMS_SRC, 32.5, 39.35, 35, 212, 831, 586, False),
-    ("arm-tower-duel",         ARMS_SRC, 39.5, 47.5, 35, 212, 831, 586, False),
+    ("arm-colour-sort",        ARMS_SRC, 6.2, 12.15, 39, 215, 823, 580, False),
+    ("arm-shape-sort",         ARMS_SRC, 12.3, 18.2, 39, 215, 823, 580, False),
+    ("arm-dynamic-sort",       ARMS_SRC, 18.3, 25.3, 39, 215, 823, 580, False),
+    ("arm-pouring",            ARMS_SRC, 25.4, 32.35, 39, 215, 823, 580, False),
+    ("arm-folding",            ARMS_SRC, 32.5, 39.35, 39, 215, 823, 580, False),
+    ("arm-tower-duel",         ARMS_SRC, 39.5, 47.5, 39, 215, 823, 580, False),
 ]
 
 def hue_mask(hsv, lo, hi, smin=60, vmin=90):

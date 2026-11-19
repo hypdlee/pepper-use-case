@@ -43,7 +43,8 @@ function state(extra) {
 
   // preview mode (no robot): content and the CSV files are read by the page itself
   ok((await txt('#status')) === 'Preview', 'status in preview: ' + await txt('#status'));
-  ok((await pg.evaluate(() => HostState.schedule.length)) === 2, 'schedule.csv not read in preview');
+  ok((await pg.evaluate(() => HostState.schedule.length)) === 56, 'the official running order (56 items) not read in preview');
+  ok((await pg.evaluate(() => HostState.schedule.filter(x => x.title === 'Time of Fall').length)) === 16 && (await pg.evaluate(() => HostState.schedule[6].a === 'Troda\u00ed' && HostState.schedule[6].b === 'BRIS - SWERVY')), 'Time of Fall matches from the running order');
   ok((await pg.evaluate(() => HostState.teams.filter(t => t.cat === 'arena').length)) === 8 && (await pg.evaluate(() => HostState.teams.filter(t => t.cat === 'arm').length)) === 5, 'official teams from teams.csv (8 + 5)');
   ok((await pg.evaluate(() => HostState.teams.some(t => t.name === 'Troda\u00ed'))), 'accented team name read from teams.csv');
   ok((await txt('#footRules')).indexOf('v0.7') >= 0, 'rulebook version not shown');
@@ -219,6 +220,72 @@ function state(extra) {
     await pg.evaluate(v => HostUI.go(v), v); await pg.waitForTimeout(80);
     ok((await pg.evaluate(() => document.documentElement.scrollWidth)) <= 1280, 'horizontal overflow on ' + v);
   }
+  // ---- v1.1: Pepper's intro (driven by the robot)
+  await pg.evaluate(() => HostUI.go('home')); await pg.waitForTimeout(100);
+  const before = (await sent()).length;
+  await pg.click('#introBtn');
+  ok((await sent()).slice(before).some(m => m.cmd === 'intro'), 'intro button asks Pepper for the intro');
+  const scenes = content.intro;
+  ok(scenes.length === 12 && scenes.every(x => x.say && x.head), 'twelve intro scenes with speech and a title');
+  for (let i = 0; i < scenes.length; i++) {
+    const sc = scenes[i];
+    await pg.evaluate(s => HostUI.update(s), state({ seq: 100 + i, intro: { i, n: scenes.length, id: sc.id, kind: sc.kind, clip: sc.clip || '', head: sc.head.replace('{n}', '4'), sub: 'Sub' } }));
+    await pg.waitForTimeout(60);
+    ok(await vis('#v-intro') && !(await vis('#nav')), 'intro screen with the navigation hidden, scene ' + sc.id);
+    ok((await txt('#introHead')) === sc.head.replace('{n}', '4'), 'intro title, scene ' + sc.id);
+    ok((await pg.$$eval('#introDots span', e => e.length)) === 12 && (await pg.$$eval('#introDots span.on', e => e.length)) === 1, 'progress dots, scene ' + sc.id);
+    if (sc.clip) { ok((await pg.$eval('#ivid', v => v.getAttribute('data-src'))) === 'clips/' + sc.clip + '.mp4' && !(await vis('#introBig')), 'intro clip, scene ' + sc.id); }
+    else { ok(await vis('#introBig'), 'intro panel, scene ' + sc.id); }
+    ok((await pg.evaluate(() => { const b = document.getElementById('introBig'); return Array.prototype.every.call(b.querySelectorAll('*'), e => e.getBoundingClientRect().right <= b.getBoundingClientRect().right + 1 && e.getBoundingClientRect().bottom <= b.getBoundingClientRect().bottom + 1); })), 'intro panel content spills out, scene ' + sc.id);
+    if (sc.kind === 'teams') { ok((await pg.$$eval('.ib-col div', e => e.length)) === 4, 'team names in the intro'); }
+  }
+  await pg.click('#introSkip');
+  ok((await sent()).some(m => m.cmd === 'intro-stop'), 'skip asks Pepper to stop the intro');
+  await pg.evaluate(s => HostUI.update(s), state({ seq: 200, intro: null })); await pg.waitForTimeout(80);
+  ok(await vis('#v-home') && await vis('#nav'), 'back home with the navigation after the intro');
+  await pg.evaluate(() => { HostState.lastTouch = Date.now() - 200000; });
+  await pg.evaluate(s => HostUI.update(s), state({ seq: 201, intro: { i: 3, n: 12, id: 'chaos', kind: 'clip', clip: 'arena-climate-chaos', head: 'Climate CHAOS', sub: '' } }));
+  await pg.waitForTimeout(1300);
+  ok(await vis('#v-intro'), 'the idle timer must not end the intro');
+  await pg.evaluate(s => HostUI.update(s), state({ seq: 202, intro: null })); await pg.waitForTimeout(80);
+
+  // ---- v1.1: home reel shows the games in turn
+  await pg.evaluate(() => HostUI.go('home')); await pg.waitForTimeout(80);
+  const r1 = await txt('#reelTitle'); await pg.evaluate(() => HostState.nextReel()); const r2 = await txt('#reelTitle');
+  ok(r1 && r2 && r1 !== r2 && content.games.some(g => g.title === r2), 'home reel moves to the next game: ' + r1 + ' -> ' + r2);
+  ok((await pg.$eval('.reel', v => Math.abs(v.clientWidth / v.clientHeight - 16 / 9) < 0.01)), 'reel box is 16:9');
+
+  // ---- v1.1: 100 questions, five per round, nothing repeats until all 100 were asked
+  await pg.evaluate(() => { try { localStorage.removeItem('host.quizBag'); } catch (e) {} });
+  await pg.reload(); await pg.waitForTimeout(3000);
+  await pg.evaluate(() => { window.__sent = []; Bridge.canSend = () => true; Bridge.send = m => { window.__sent.push(m); return true; }; });
+  const rounds = await pg.evaluate(() => { const out = []; for (let i = 0; i < 21; i++) { out.push(HostState.nextFive()); } return out; });
+  const first20 = [].concat(...rounds.slice(0, 20).map(r => r.five));
+  ok(first20.length === 100 && new Set(first20).size === 100, '20 rounds of five cover all 100 questions once');
+  ok(rounds.every(r => r.five.length === 5), 'every round has five questions');
+  ok(rounds[20].five.every(q => rounds[19].five.indexOf(q) < 0), 'a new pass does not start with the questions just asked');
+  ok(rounds[20].round === 21 && rounds[19].left === 0, 'round counter');
+  await pg.reload(); await pg.waitForTimeout(3000);
+  await pg.evaluate(() => { window.__sent = []; Bridge.canSend = () => true; Bridge.send = m => { window.__sent.push(m); return true; }; });
+  const after = await pg.evaluate(() => HostState.nextFive());
+  ok(after.round === 22 && after.five.every(q => rounds[20].five.indexOf(q) < 0), 'the shuffle bag continues after a reload');
+  await pg.evaluate(() => HostUI.go('quiz')); ok((await txt('.qq')).indexOf('100') >= 0, 'quiz start mentions the 100 questions');
+
+  // ---- v1.1: staff can start the intro and switch the automatic intro off
+  await pg.evaluate(s => HostUI.update(s), state({ seq: 300 }));
+  await pg.evaluate(() => HostUI.staff({ ok: true, token: 'tok9' })); await pg.click('[data-st="announce"]');
+  await pg.click('[data-act="intro-start"]'); ok((await sent()).some(m => m.cmd === 'intro-start' && m.token === 'tok9'), 'staff intro start');
+  await pg.click('[data-act="intro-auto"]'); ok((await sent()).some(m => m.cmd === 'intro-auto' && m.on === false && m.token === 'tok9'), 'staff automatic intro off');
+  await pg.evaluate(() => HostUI.staffClosed());
+
+  // ---- v1.1: without a robot, the page plays the intro by itself
+  await pg.evaluate(() => { Bridge.canSend = () => false; HostUI.go('home'); }); await pg.waitForTimeout(80);
+  await pg.click('#introBtn'); await pg.waitForTimeout(100);
+  ok(await vis('#v-intro') && (await txt('#introHead')) === 'Hello! I am Pepper', 'intro plays without a robot');
+  await pg.waitForTimeout(5200); ok((await txt('#introHead')) === 'Two competitions', 'local intro moves on: ' + await txt('#introHead'));
+  await pg.click('#introSkip'); ok(await vis('#v-home'), 'local intro skip');
+  await pg.evaluate(() => { Bridge.canSend = () => true; });
+
   // CSV parser matches the controller's rules
   const rows = await pg.evaluate(() => HostState.parseCSV('﻿name,x\r\n"a ""b"", c",1\r\n# c\r\n\r\nd,2'));
   ok(JSON.stringify(rows) === JSON.stringify([{ name: 'a "b", c', x: '1' }, { name: 'd', x: '2' }]), 'csv parser ' + JSON.stringify(rows));

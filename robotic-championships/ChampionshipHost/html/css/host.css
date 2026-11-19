@@ -64,39 +64,71 @@ main { position: relative; -webkit-flex: 1; flex: 1; overflow: hidden; }
 .seg button.on { background: var(--ink); border-color: var(--ink); color: #fff; }
 .seg.small button { height: 44px; font-size: 16px; padding: 0 18px; }
 
-/* home */
+/* home: a looping reel of the games on the left, the programme and big tiles on the right */
 .home { display: -webkit-flex; display: flex; height: 100%; }
-.hero { position: relative; width: 600px; margin-right: 24px; padding: 26px 30px; border-radius: 22px; background: var(--yellow-soft); overflow: hidden; }
-.mascot { position: absolute; right: 18px; top: 16px; height: 170px; }
-.kicker { font-size: 16px; font-weight: 800; color: var(--purple); text-transform: uppercase; letter-spacing: 1.5px; }
-.hero h1 { font-size: 40px; line-height: 1.12; font-weight: 800; margin: 8px 0 10px; }
-.lead { font-size: 19px; line-height: 1.45; color: #3B4352; margin: 0 0 16px; max-width: 470px; }
-.count { background: #fff; border-radius: 16px; padding: 14px 18px; }
-.countlbl { font-size: 15px; font-weight: 700; color: var(--muted); }
-.countrow { display: -webkit-flex; display: flex; margin-top: 6px; }
-.cnum { margin-right: 22px; }
-.cnum b { display: block; font-size: 42px; font-weight: 800; line-height: 1; }
-.cnum span { font-size: 13px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
-.live { background: #fff; border-radius: 16px; padding: 10px 18px; }
-.liveitem { padding: 6px 0; font-size: 18px; font-weight: 700; }
-.liveitem .tag { display: inline-block; font-size: 12px; font-weight: 800; padding: 3px 9px; border-radius: 20px; background: var(--red); color: #fff; margin-right: 10px; letter-spacing: 1px; }
-.liveitem.next .tag { background: var(--ink); }
-.liveitem .sub { display: block; font-size: 15px; font-weight: 600; color: var(--muted); margin-top: 2px; }
-.stats { display: -webkit-flex; display: flex; margin-top: 16px; }
-.stat { margin-right: 34px; }
+.stage { width: 640px; margin-right: 24px; }
+.reel { position: relative; width: 640px; height: 360px; border-radius: 22px; overflow: hidden; background: var(--stage); }
+.reel video { display: block; width: 640px; height: 360px; object-fit: contain; }
+.reelcap { position: absolute; left: 16px; bottom: 14px; padding: 8px 16px; border-radius: 30px; background: rgba(255,255,255,0.92); }
+.reelcap span { font-size: 13px; font-weight: 800; color: var(--purple); text-transform: uppercase; letter-spacing: 1.2px; margin-right: 10px; }
+.reelcap b { font-size: 20px; font-weight: 800; }
+.introbtn { display: block; width: 640px; height: 70px; margin-top: 14px; border-radius: 35px; background: var(--yellow); font-size: 26px; font-weight: 800; text-align: center; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+.introbtn .play { display: inline-block; width: 0; height: 0; border-top: 12px solid transparent; border-bottom: 12px solid transparent; border-left: 20px solid var(--ink); margin-right: 16px; vertical-align: -3px; }
+.introbtn:active { opacity: 0.8; }
+.stats { display: -webkit-flex; display: flex; margin-top: 16px; padding-left: 8px; }
+.stat { margin-right: 40px; }
 .stat b { font-size: 32px; font-weight: 800; color: var(--purple); }
 .stat span { display: block; font-size: 14px; color: var(--muted); font-weight: 600; }
-.tiles { -webkit-flex: 1; flex: 1; display: -webkit-flex; display: flex; -webkit-flex-wrap: wrap; flex-wrap: wrap; -webkit-align-content: flex-start; align-content: flex-start; }
-.tile { width: 296px; height: 128px; margin: 0 12px 12px 0; border-radius: 20px; border: 2px solid var(--line); background: #fff; text-align: left; padding: 18px 22px; }
+.side { -webkit-flex: 1; flex: 1; }
+.count { background: var(--yellow-soft); border-radius: 18px; padding: 12px 18px; margin-bottom: 12px; }
+.countlbl { font-size: 15px; font-weight: 700; color: var(--muted); }
+.countrow { display: -webkit-flex; display: flex; margin-top: 4px; }
+.cnum { margin-right: 24px; }
+.cnum b { display: block; font-size: 38px; font-weight: 800; line-height: 1; }
+.cnum span { font-size: 13px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+.live { background: var(--yellow-soft); border-radius: 18px; padding: 8px 18px; margin-bottom: 12px; }
+.liveitem { padding: 5px 0; font-size: 18px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.liveitem .tag { display: inline-block; font-size: 12px; font-weight: 800; padding: 3px 9px; border-radius: 20px; background: var(--red); color: #fff; margin-right: 10px; letter-spacing: 1px; }
+.liveitem.next .tag { background: var(--ink); }
+.liveitem .sub { display: block; font-size: 15px; font-weight: 600; color: var(--muted); margin-top: 1px; overflow: hidden; text-overflow: ellipsis; }
+.tiles { display: -webkit-flex; display: flex; -webkit-flex-wrap: wrap; flex-wrap: wrap; }
+.tile { width: 274px; height: 100px; margin: 0 12px 12px 0; border-radius: 20px; border: 2px solid var(--line); background: #fff; text-align: left; padding: 14px 20px; }
+.tiles .tile:nth-child(2n) { margin-right: 0; }
 .tile .ti { display: block; font-size: 24px; font-weight: 800; }
-.tile .ts { display: block; font-size: 16px; color: var(--muted); margin-top: 6px; font-weight: 600; }
+.tile .ts { display: block; font-size: 16px; color: var(--muted); margin-top: 4px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tile.t-yellow { background: var(--yellow); border-color: var(--yellow); }
 .tile.t-yellow .ts { color: #5a4300; }
 .tile.t-purple { background: var(--purple); border-color: var(--purple); color: #fff; }
 .tile.t-purple .ts { color: #EBD7EF; }
-.tile.t-help { width: 604px; height: 96px; border-color: var(--red); }
-.tile.t-help .ti { color: var(--red); }
 .tile:active { -webkit-transform: scale(0.98); transform: scale(0.98); }
+.volsmall { width: 560px; height: 50px; border-radius: 25px; border: 2px solid var(--red); color: var(--red); font-size: 19px; font-weight: 800; }
+
+/* Pepper's intro: the navigation hides, the visual is as big as the screen allows */
+#app.introing .nav { display: none; }
+#v-intro { padding: 20px 24px; }
+.ishow { position: relative; display: -webkit-flex; display: flex; height: 100%; -webkit-align-items: center; align-items: center; }
+.ivis { position: relative; width: 896px; height: 504px; border-radius: 24px; overflow: hidden; background: var(--stage); margin-right: 28px; }
+.ivis video { display: block; width: 896px; height: 504px; object-fit: contain; }
+.ibig { position: absolute; left: 0; top: 0; width: 896px; height: 504px; padding: 40px 48px; background: var(--yellow-soft); }
+.itext { width: 300px; }
+.isub { font-size: 16px; font-weight: 800; color: var(--purple); text-transform: uppercase; letter-spacing: 1.4px; }
+.ihead { font-size: 40px; line-height: 1.12; font-weight: 800; margin: 8px 0 18px; }
+.idots span { display: inline-block; width: 12px; height: 12px; border-radius: 6px; background: var(--line); margin-right: 7px; }
+.idots span.on { background: var(--purple); }
+.iskip { position: absolute; right: 0; top: 0; height: 48px; padding: 0 26px; border-radius: 24px; border: 2px solid var(--line); font-size: 18px; font-weight: 700; background: #fff; }
+.ib-mascot { position: absolute; right: 40px; top: 30px; height: 300px; }
+.ib-title { position: relative; max-width: 560px; font-size: 54px; font-weight: 800; line-height: 1.08; margin-top: 70px; }
+.ib-title em { font-style: normal; color: var(--purple); }
+.ib-line { font-size: 26px; font-weight: 600; color: #3B4352; margin-top: 18px; max-width: 800px; line-height: 1.35; }
+.ib-stats { display: -webkit-flex; display: flex; margin-top: 90px; }
+.ib-stats div { margin-right: 70px; }
+.ib-stats b { display: block; font-size: 110px; line-height: 1; font-weight: 800; color: var(--purple); }
+.ib-stats span { font-size: 22px; font-weight: 700; color: var(--muted); }
+.ib-cols { display: -webkit-flex; display: flex; }
+.ib-col { width: 400px; }
+.ib-col h4 { font-size: 22px; margin: 0 0 12px; }
+.ib-col div { font-size: 26px; font-weight: 700; padding: 5px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ib-next { font-size: 36px; font-weight: 800; line-height: 1.25; margin-top: 110px; }
 
 /* games */
 .intro { font-size: 18px; line-height: 1.45; color: #3B4352; margin: 0 0 14px; max-width: 1100px; }
