@@ -1016,7 +1016,7 @@ class MyClass(GeneratedClass):
                                     "Hi there! Ask me: what is on next? Or touch my screen.",
                                     "Welcome! Would you like to try the robot quiz? Touch my screen."]))
 
-    # ------------------------------------------------------------------ dialog engine check (lesson from the care companion)
+    # ------------------------------------------------------------------ dialog check: does Pepper hear?
     def _dialogStep(self, now):
         if self.listen is not None or self.startAt is None:
             return

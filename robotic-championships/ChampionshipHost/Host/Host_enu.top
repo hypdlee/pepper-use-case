@@ -27,7 +27,7 @@ concept:(teams) [teams "the teams" "which teams" "who is competing" "who is taki
 concept:(next) ["what is next" "what's next" "next match" "what is on" "what's on" "what is on now" "what is happening" "who is playing" "who is playing now" "who plays next" schedule programme program "the schedule" "when is the final" "when is the next match" "what time is the next match" timetable]
 concept:(scores) [scores score "the scores" "who is winning" "who is first" leaderboard "the leaderboard" results "the results" "who won"]
 concept:(quiz) [quiz "the quiz" "a quiz" "play the quiz" "play a quiz" "test me" "ask me a question"]
-concept:(help) [help "i need help" "help me" "call a volunteer" volunteer "a volunteer" "i am lost" "i lost my" "lost child" "i cannot find my" emergency "first aid" "i am hurt" "i feel sick" "someone is hurt"]
+concept:(help) [help "i need help" "help me" "call a volunteer" volunteer "a volunteer" "i am lost" "i lost my" "lost child" "i cannot find my"]
 concept:(toilet) [toilet toilets bathroom restroom "the toilet" "where is the toilet" "where are the toilets"]
 concept:(food) [food drinks "a drink" "something to eat" "where can i eat" coffee snacks "the cafe"]
 concept:(time) ["what time is it" "the time" "what is the time" "tell me the time"]

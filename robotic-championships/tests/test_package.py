@@ -87,6 +87,14 @@ for n, line in enumerate(top.splitlines(), 1):
               "unbalanced brackets or quotes on line %d" % n)
 check(len(re.findall(r"^u:", top, re.M)) == len(set(re.findall(r"^u:\(([^)]*)\)", top, re.M))), "duplicate rule triggers")
 
+# this is a robot competition, not a care setting: no care or medical wording in what Pepper hears, says or shows
+care = ["first aid", "hurt", "sick", "injur", "nurse", "medic", "doctor", "patient", "dizzy", "caregiver", "carer", "care home", "emergency"]
+for rel in ("Host/Host_enu.top", "html/data/content.json", "html/js/host.js", "html/index.html"):
+    t = io.open(os.path.join(PKG, rel), encoding="utf-8").read().lower()
+    check(not [w for w in care if w in t], "care or medical wording in %s: %r" % (rel, [w for w in care if w in t]))
+low = src.lower()
+check(not [w for w in care if w in low] and "care companion" not in low, "care or medical wording in the controller: %r" % [w for w in care if w in low])
+
 # clips
 for g in content["games"]:
     mp4 = os.path.join(PKG, "html", "clips", g["clip"] + ".mp4")

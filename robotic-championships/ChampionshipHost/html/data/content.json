@@ -20,7 +20,6 @@
     "info": [
       { "q": "Toilets", "a": "Please ask a volunteer at the information desk." },
       { "q": "Food and drinks", "a": "Please ask a volunteer at the information desk." },
-      { "q": "First aid", "a": "Please ask any volunteer. They will call first aid straight away." },
       { "q": "Lost child or lost item", "a": "Please go to the information desk." }
     ]
   },

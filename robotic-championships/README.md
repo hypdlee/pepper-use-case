@@ -39,7 +39,7 @@ Everything runs on the robot. Nothing is sent to the internet.
 | Schedule | "what is next", "who is playing now" | The programme, with NOW and NEXT |
 | Scores | "who is winning", "scores" | Provisional leaderboards for both competitions |
 | Quiz | "quiz", then "one", "two", "three" | Five random questions about the games |
-| Call a volunteer | "help", "I am lost", "first aid" | A red alert on the staff screen; Pepper says a volunteer is coming |
+| Call a volunteer | "help", "call a volunteer", "I am lost" | A red alert on the staff screen; Pepper says a volunteer is coming |
 | Help | "toilets", "food" | Good-to-know answers (edit them in `html/data/content.json`) |
 
 Pepper also answers "who are you", "what time is it", "thank you" and "goodbye", and says hello when someone comes close (at most every 45 seconds).
