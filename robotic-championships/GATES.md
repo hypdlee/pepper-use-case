@@ -60,3 +60,13 @@
   EVIDENCE: fit_audit.js measures against the top of the dock; FIT OK. Cards checked to end above 700 px in ui.test.js
 - [x] G26 Larger type throughout (body 17 to 23 px, titles 25 to 50 px, quiz answers 31 px) and a full-screen purple intro
   EVIDENCE: screenshots in docs/media and the repo tour GIF, reviewed at full size
+
+# Round 6 (v1.1.1): robot log showed every tablet line spoken twice
+- [x] G27 Root cause: stopped or replaced copies stayed connected to ALTabletService.onJSEvent (the link was never disconnected), so every copy ever started answered each tap. Log: two v1.1.0 behaviour ids and a v1.0.x id (".post") all speaking quiz lines
+  EVIDENCE: in the log, "heard command" (dialog, guarded by the token) comes from one id only; tablet-driven lines come from all three
+- [x] G28 Fix: stop and takeover disconnect the tablet link; tablet events are ignored unless this copy is running and owns the token; the tablet sends through ALMemory first (older versions only listen on onJSEvent)
+  EVIDENCE: simulator now keeps links until disconnected; two copies in one robot: a tap is answered once; replaced and stopped copies silent; ui.test.js channel check; 3 mutations reverting the fix all caught
+- [x] G29 Noise: "did not catch that" only with someone at Pepper, at most once a minute, never during the quiz or intro
+  EVIDENCE: test_controller not-understood block; 2 mutations caught
+- [ ] G30 Confirmed on the robot after one restart
+  ABANDON: G30 needs the next Choregraphe log

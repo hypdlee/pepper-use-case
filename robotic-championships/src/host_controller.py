@@ -10,7 +10,7 @@
 # Nothing here goes to the internet.
 import json, os, io, re, time, random, threading, unicodedata
 
-VERSION = "1.1.0"
+VERSION = "1.1.1"
 TOKEN_KEY = "Host/ControllerToken"
 KEYS = ["hostCmd", "hostTeam", "hostGame", "hostAns", "hostInfo", "Host/TabletCmd", TOKEN_KEY]
 STATE_KEY, STATE_EVT = "Host/State", "Host/Session"
@@ -21,7 +21,7 @@ PONG = "ok1"
 CALL_BEFORE_S = 600             # match call 10 minutes before (rulebook 6.5: teams get 10 minutes' notice)
 CALL_WINDOW_S = 120             # a call is only made in the first 2 minutes of that window (no late calls after a restart)
 START_WINDOW_S = 90             # "starting now" only in the first 90 s
-NU_GAP_S = 30.0
+NU_GAP_S = 60.0
 GREET_GAP_S = 120.0           # v1.1: Pepper talks less on its own
 BLOCK_GAP_S = 600             # matches less than 10 minutes apart form one block: one call per block
 INTRO_MIN_S = 4.0             # each intro scene stays at least this long (clips at least INTRO_CLIP_S)
@@ -204,6 +204,7 @@ class MyClass(GeneratedClass):
         self.speaking = False
         self.lastSpeak = 0.0
         self.lastNu = 0.0
+        self.jsLink = None
         self.lastGreet = 0.0
         self.lastHuman = -1
         self.quizOn = None
@@ -262,9 +263,28 @@ class MyClass(GeneratedClass):
             return
         self.running = False
         self.intro = None
+        self.quizOn = None
         self._stopTalk()
         self._untune()
         self._dialogClose()
+        self._disconnectTablet()
+
+    def _disconnectTablet(self):
+        """Without this, a stopped copy stays connected to the tablet and keeps answering every touch."""
+        link, self.jsLink = getattr(self, "jsLink", None), None
+        if not link:
+            return
+        try:
+            link[0].onJSEvent.disconnect(link[1])
+        except Exception as e:
+            self._log("warning", "[Host] tablet link not removed (%s)" % e)
+
+    def _owner(self):
+        """True while this copy is the one running: stopped copies, and copies replaced by a newer start, stay silent."""
+        if not getattr(self, "running", False):
+            return False
+        owner = self._read(TOKEN_KEY)
+        return not (self.token and owner and owner != self.token)
 
     # ------------------------------------------------------------------ NAOqi access
     def _p(self, name):
@@ -408,7 +428,7 @@ class MyClass(GeneratedClass):
         owner = vals.get(TOKEN_KEY, "")
         if self.token and owner and owner != self.token:
             self._log("warning", "[Host] a newer Host Controller started: this one stops")
-            self.running = False
+            self._halt()
             return
         cmd = vals.get("hostCmd", "")
         if cmd:
@@ -626,9 +646,15 @@ class MyClass(GeneratedClass):
             else:
                 self._stopTalk()
         elif cmd == "nu":
-            if self.intro is not None:
+            # In a noisy hall the dialog often hears noise as speech. Only answer someone who is standing at Pepper,
+            # at most once a minute, and never during the intro or the quiz (the screen shows what to do there).
+            if self.intro is not None or self.quizOn is not None:
                 return
-            if now - self.lastNu >= NU_GAP_S and not self.speaking:
+            try:
+                near = int(self._read("ALBasicAwareness/HumanTracked")) >= 0
+            except Exception:
+                near = False
+            if near and now - self.lastNu >= NU_GAP_S and not self.speaking:
                 self.lastNu = now
                 self.say("Sorry, I did not catch that. You can also touch my screen.")
 
@@ -724,6 +750,8 @@ class MyClass(GeneratedClass):
 
     # ------------------------------------------------------------------ tablet commands
     def onTablet(self, raw):
+        if not self._owner():
+            return
         try:
             msg = json.loads(_u(raw))
         except Exception:
@@ -1250,7 +1278,7 @@ class MyClass(GeneratedClass):
     def _connectTablet(self):
         try:
             ts = self.session().service("ALTabletService")
-            ts.onJSEvent.connect(self.onTablet)
+            self.jsLink = (ts, ts.onJSEvent.connect(self.onTablet))
         except Exception as e:
             self._log("warning", "[Host] onJSEvent not available (%s); the tablet uses ALMemory" % e)
 

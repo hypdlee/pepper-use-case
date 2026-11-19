@@ -43,6 +43,15 @@ function state(extra) {
 
   // preview mode (no robot): content and the CSV files are read by the page itself
   ok((await txt('#status')) === 'Preview', 'status in preview: ' + await txt('#status'));
+  // a tap goes through robot memory only; the direct link is the fallback, so stopped copies on that link hear nothing
+  const ch = await pg.evaluate(() => {
+    const got = []; window.ALTabletBinding = { raiseEvent: () => got.push('binding') };
+    Bridge.mem = { insertData: () => got.push('memory') };
+    Bridge.send({ cmd: 'x' }); const both = got.join('+');
+    got.length = 0; Bridge.mem = null; Bridge.send({ cmd: 'x' }); const only = got.join('+');
+    delete window.ALTabletBinding; return both + '|' + only;
+  });
+  ok(ch === 'memory|binding', 'tablet channels: ' + ch);
   ok((await pg.evaluate(() => HostState.schedule.length)) === 56, 'the official running order (56 items) not read in preview');
   ok((await pg.evaluate(() => HostState.schedule.filter(x => x.title === 'Time of Fall').length)) === 16 && (await pg.evaluate(() => HostState.schedule[6].a === 'Troda\u00ed' && HostState.schedule[6].b === 'BRIS - SWERVY')), 'Time of Fall matches from the running order');
   ok((await pg.evaluate(() => HostState.teams.filter(t => t.cat === 'arena').length)) === 8 && (await pg.evaluate(() => HostState.teams.filter(t => t.cat === 'arm').length)) === 5, 'official teams from teams.csv (8 + 5)');

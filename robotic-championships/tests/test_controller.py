@@ -37,6 +37,7 @@ class World(object):
         self.stopped = -1
         self.sent = 0
         self.tablet_cb = None
+        self.links = {}
 
 class Rec(object):
     def __init__(self, name, w):
@@ -97,8 +98,14 @@ class Tablet(Rec):
     def onJSEvent(self):
         w = self._w
         class S(object):
+            # like the robot: a link stays until it is disconnected, even after the box that made it has stopped
             def connect(self, cb):
                 w.tablet_cb = cb
+                w.links[len(w.links) + 1] = cb
+                return len(w.links)
+            def disconnect(self, link):
+                w.calls.append(("ALTabletService", "onJSEvent.disconnect", (link,)))
+                w.links.pop(link, None)
         return S()
 
 class Dialog(Rec):
@@ -198,8 +205,9 @@ def start(w, params=None, store=None):
     box, ns = make(w, params)
     if store:
         ns["STORE_DIR"] = store
+    n0 = w.calls.count(("thread", "start", ()))
     box.onInput_onStart()
-    assert w.calls.count(("thread", "start", ())) == 2, "worker and tablet sender should both start"
+    assert w.calls.count(("thread", "start", ())) - n0 == 2, "worker and tablet sender should both start"
     box.sender = None
     box._flushJs()
     return box, ns
@@ -246,7 +254,7 @@ def run():
     w = World(app)
     box, ns = start(w, store=store)
     st = last_state(w)
-    check(st is not None and st["v"] == "1.1.0", "no first state pushed")
+    check(st is not None and st["v"] == "1.1.1", "no first state pushed")
     check([t["name"] for t in st["teams"]] == ["Team Falcon", "Orion, The", "ArmStrong"], "teams from CSV: %r" % [t["name"] for t in st["teams"]])
     check([t["cat"] for t in st["teams"]] == ["arena", "arena", "arm"], "team categories")
     check([x["title"] for x in st["schedule"]] == ["Opening Ceremony", "Time of Fall", "Colour Sort", "Shape Sort", "Awards Ceremony"], "schedule rows: %r" % [x["title"] for x in st["schedule"]])
@@ -290,8 +298,14 @@ def run():
     n = len(w.said)
     dlg(w, box, "nu"); dlg(w, box, "nu")
     check(len(w.said) == n, "not-understood spoke while Pepper was talking / too often")
-    tick(w, box, 16); dlg(w, box, "nu")
+    w.mem["ALBasicAwareness/HumanTracked"] = -1; tick(w, box, 61); dlg(w, box, "nu")
+    check(len(w.said) == n, "not-understood answered noise with nobody at Pepper")
+    w.mem["ALBasicAwareness/HumanTracked"] = 2; dlg(w, box, "nu")
     check(w.said[-1].startswith("Sorry, I did not catch that"), "not understood line")
+    tick(w, box, 30); dlg(w, box, "nu"); check(len(w.said) == n + 1, "not-understood more than once a minute")
+    tick(w, box, 31); box.quizOn = 0; dlg(w, box, "nu"); check(len(w.said) == n + 1, "not-understood during the quiz")
+    box.quizOn = None; dlg(w, box, "nu"); check(len(w.said) == n + 2, "not-understood after the quiz")
+    w.mem["ALBasicAwareness/HumanTracked"] = -1
     dlg(w, box, "stop")
     check(("ALTextToSpeech", "stopAll", ()) in w.calls, "stop did not stop speech")
     dlg(w, box, "ans", hostAns="2")
@@ -559,6 +573,24 @@ def run():
     check(len(w8.said) == k + 1, "greeting not rate limited (2 minutes)")
     w8.mem["ALBasicAwareness/HumanTracked"] = -1; tick(w8, box8, 95); w8.mem["ALBasicAwareness/HumanTracked"] = 5; tick(w8, box8, 5.2)
     check(len(w8.said) == k + 2, "no greeting after the 2 minute pause")
+
+    # ---- two copies running (Play pressed twice): only the newest answers, the other lets go of the tablet
+    wd = World(app); wd.mem["hostPong"] = "ok1"
+    boxA, _ = start(wd, store=os.path.join(tmp, "sdA")); tick(wd, boxA, 5)
+    boxB, _ = start(wd, store=os.path.join(tmp, "sdB")); tick(wd, boxB, 0.1)
+    tick(wd, boxA, 0.2)
+    check(boxA.running is False and len(wd.links) == 1, "older copy still connected to the tablet: %r" % sorted(wd.links))
+    n = len(wd.said)
+    for cb in list(wd.links.values()):
+        cb(json.dumps({"cmd": "game", "game": "tof", "id": "dup1"}))
+    boxB._flushJs()
+    check(len(wd.said) == n + 1, "a tap was answered %d times" % (len(wd.said) - n))
+    n = len(wd.said); boxA.onTablet(json.dumps({"cmd": "game", "game": "tof", "id": "dup2"}))
+    check(len(wd.said) == n, "a replaced copy still answers the tablet")
+    boxB.onInput_onStop()
+    check(wd.links == {} and ("ALTabletService", "onJSEvent.disconnect", (2,)) in wd.calls, "stop left the tablet connected")
+    n = len(wd.said); boxB.onTablet(json.dumps({"cmd": "game", "game": "tof", "id": "dup3"}))
+    check(len(wd.said) == n, "a stopped copy still answers the tablet")
 
     # ---- takeover and stop
     w.mem["Host/ControllerToken"] = "someone-else"; box.running = True; tick(w, box)

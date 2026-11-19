@@ -1,4 +1,4 @@
-# Pepper Championship Host (v1.1.0)
+# Pepper Championship Host (v1.1.1)
 
 Pepper as the neutral, official host of the **IEEE Robot Championships 2026** (28 and 29 November, Montekristo Estate Arena, Malta), built for the IEEE Malta Section.
 
@@ -60,7 +60,7 @@ The questions cover the seven games (from the Rulebook v0.7), the event, IEEE an
 | Call a volunteer | "help", "call a volunteer", "I am lost" | A red alert on the staff screen; Pepper says a volunteer is coming |
 | Help | "toilets", "food" | Good-to-know answers (edit them in `html/data/content.json`) |
 
-Pepper also answers "who are you", "what time is it", "thank you" and "goodbye", and says a short hello when someone comes close (at most every 2 minutes). Moving between screens is silent. Pepper only speaks when someone asks, opens a game, starts the intro or the quiz, or when a match call is due.
+If Pepper does not understand, it says so only when someone is standing at it, at most once a minute, and never during the quiz or the intro (noise in a busy hall is often heard as speech). Pepper also answers "who are you", "what time is it", "thank you" and "goodbye", and says a short hello when someone comes close (at most every 2 minutes). Moving between screens is silent. Pepper only speaks when someone asks, opens a game, starts the intro or the quiz, or when a match call is due.
 
 ## Install and start
 
@@ -73,8 +73,10 @@ Pepper also answers "who are you", "what time is it", "thank you" and "goodbye",
    - **Announce match starts**: off by default, so Pepper makes one call per block of matches. Switch it on to also announce every match as it starts.
 3. Fill in the teams and the programme (see below). You can also do this later on the tablet.
 4. Optional: put the official `logo.png` and `mascot.png` in `html/brand/` (see the README there). Without them the tablet shows the text title only.
-5. Press **Play once**. In the log you should see `[Host] v1.1.0 running. N teams, M programme items, content loaded`, `[Host] dialog loaded and listening`, and about 4 seconds later `[Host] the dialog answers: Pepper is listening`. Pepper then says hello when someone comes close.
+5. Press **Play once**. In the log you should see `[Host] v1.1.1 running. N teams, M programme items, content loaded`, `[Host] dialog loaded and listening`, and about 4 seconds later `[Host] the dialog answers: Pepper is listening`. Pepper then says hello when someone comes close.
 6. For the event, install the app on the robot (Choregraphe: Robot applications, install) so it survives a reboot.
+
+**Only one copy may run.** If the log shows two different `behavior_...` numbers, or a version that is not v1.1.1, older copies are still running and every touch is answered twice. Since v1.1.1 a new start takes over: older copies let go of the tablet and go quiet, and the tablet sends through robot memory, which older versions do not hear. A copy of v1.0.x started earlier can still hold the tablet until Pepper restarts, so **restart Pepper once** after installing v1.1.1. Also remove any older version from Robot applications, so it cannot start by itself.
 
 **Clean start.** The Host Controller loads the dialog itself. If an earlier run left a copy loaded, it removes that copy first (the log says `removed an old copy of the dialog left by an earlier run`), so the "topic is already loaded" error cannot stop it. If the tablet still shows **Voice not ready**:
 - Stop all behaviours and start the app once.
