@@ -29,7 +29,7 @@ Pepper greets residents by name, checks in on medicine, leads exercise and breat
 ## 2. Robotic championships: Pepper Championship Host
 
 <p align="center">
-  <img src="robotic-championships/media/tablet-tour.gif" alt="Pepper tablet tour: home, games, teams, schedule, scores, quiz and help" width="720">
+  <img src="robotic-championships/media/tablet-tour.gif" alt="Pepper tablet tour: home, Pepper's intro, games, teams, schedule, scores and the quiz" width="720">
 </p>
 
 <p align="center">
@@ -39,7 +39,7 @@ Pepper greets residents by name, checks in on medicine, leads exercise and breat
 
 <p align="center"><sub>A tour of the host tablet, then the four Arena games and the Robot Arm AI Challenge (simulations, used to explain the rules).</sub></p>
 
-Pepper welcomes visitors, explains every game, shows the teams, the programme and provisional scores, runs a robot quiz, calls a volunteer when someone needs help, and calls the teams ten minutes before their match. Every team is treated the same way. [Read more](robotic-championships)
+Pepper opens with a two-minute intro: the two competitions, every game with its clip, all 13 teams by name and what is coming next. Then the tablet takes over: the games, teams, programme, provisional scores and a robot quiz of 100 questions, five at a time. Pepper calls the teams ten minutes before each block of matches. Every team is treated the same way. [Read more](robotic-championships)
 
 ---
 
