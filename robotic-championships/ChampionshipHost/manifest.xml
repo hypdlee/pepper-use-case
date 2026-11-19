@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<package uuid="ieee-championship-host" version="1.0.1">
+<package uuid="ieee-championship-host" version="1.0.2">
  <names>
   <name lang="en_US">IEEE Championship Host</name>
  </names>
@@ -15,8 +15,5 @@
    <nature>interactive</nature>
    <permissions/>
   </behaviorContent>
-  <dialogContent topicName="Host" typeVersion="1.0">
-   <topic path="Host/Host_enu.top" language="en_US"/>
-  </dialogContent>
  </contents>
 </package>

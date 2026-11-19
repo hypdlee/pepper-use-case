@@ -1,4 +1,4 @@
-# Pepper Championship Host (v1.0.1)
+# Pepper Championship Host (v1.0.2)
 
 Pepper as the neutral, official host of the **IEEE Robot Championships 2026** (28 and 29 November, Montekristo Estate Arena, Malta), built for the IEEE Malta Section.
 
@@ -34,10 +34,10 @@ Pepper also answers "who are you", "what time is it", "thank you" and "goodbye",
    - **Greet visitors**: on by default.
 3. Fill in the teams and the programme (see below). You can also do this later on the tablet.
 4. Optional: put the official `logo.png` and `mascot.png` in `html/brand/` (see the README there). Without them the tablet shows the text title only.
-5. Press **Play once**. In the log you should see `[Host] v1.0.1 running. N teams, M programme items, content loaded`, then about 4 seconds later `[Host] the dialog answers: Pepper is listening`.
+5. Press **Play once**. In the log you should see `[Host] v1.0.2 running. N teams, M programme items, content loaded`, `[Host] dialog loaded and listening`, and about 4 seconds later `[Host] the dialog answers: Pepper is listening`. Pepper then says hello when someone comes close.
 6. For the event, install the app on the robot (Choregraphe: Robot applications, install) so it survives a reboot.
 
-**Clean start.** Choregraphe can leave a dialog loaded from an earlier run. If the log says the dialog does not answer, or the tablet shows **Voice not ready**:
+**Clean start.** The Host Controller loads the dialog itself. If an earlier run left a copy loaded, it removes that copy first (the log says `removed an old copy of the dialog left by an earlier run`), so the "topic is already loaded" error cannot stop it. If the tablet still shows **Voice not ready**:
 - Stop all behaviours and start the app once.
 - If that does not help, restart the robot.
 
@@ -101,8 +101,8 @@ To recut the clips: `python3 tools/neutral_clips.py robo-games.mp4 robotic-arms.
 | Part | File | Job |
 |---|---|---|
 | Show App box | inside `behavior.xar` | Opens the tablet app |
-| Host (Dialog box) | `Host/Host_enu.top` | Listens. Each rule only writes a command (`$hostCmd`) |
-| Host Controller (Python box) | `src/host_controller.py`, built into `behavior.xar` | Speaks (with gestures), moves the tablet, holds the data, makes match calls |
+| Dialog topic (no Dialog box) | `Host/Host_enu.top` | Listens. Each rule only writes a command (`$hostCmd`). The Host Controller loads, starts and unloads it |
+| Host Controller (Python box) | `src/host_controller.py`, built into `behavior.xar` | Speaks (with gestures, without blocking), runs the dialog, moves the tablet, holds the data, makes match calls |
 | Tablet app | `html/` | IEEE Malta look: white, yellow #FFCD57, purple #772583, Open Sans, pill buttons |
 | Content | `html/data/content.json` | Game facts, Pepper's explanations, quiz, event facts |
 

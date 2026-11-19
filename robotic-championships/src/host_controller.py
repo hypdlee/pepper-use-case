@@ -10,7 +10,7 @@
 # Nothing here goes to the internet.
 import json, os, io, re, time, random, threading, unicodedata
 
-VERSION = "1.0.1"
+VERSION = "1.0.2"
 TOKEN_KEY = "Host/ControllerToken"
 KEYS = ["hostCmd", "hostTeam", "hostGame", "hostAns", "hostInfo", "Host/TabletCmd", TOKEN_KEY]
 STATE_KEY, STATE_EVT = "Host/State", "Host/Session"
@@ -197,7 +197,7 @@ class MyClass(GeneratedClass):
         self.token = None
         self.staff = {}
         self.pinFails = []
-        self.sayId = None
+        self.sayJob = None
         self.speaking = False
         self.lastSpeak = 0.0
         self.lastView = 0.0
@@ -209,6 +209,7 @@ class MyClass(GeneratedClass):
         self.dlgTry = 0
         self.dlgAt = 0.0
         self.dlgSub = False
+        self.topic = None
         self.startAt = None
         self.tuned = None
         self.appRoot = None
@@ -233,6 +234,7 @@ class MyClass(GeneratedClass):
         self.calls = self.calls and bool(self._param("Match calls", True))
         self._log("info", "[Host] v%s running. %d teams, %d programme items, content %s" % (
             VERSION, len(self.teams), len(self.schedule), "loaded" if self.content else "MISSING"))
+        self._dialogOpen()
         self._setConcepts()
         self._tune()
         self._connectTablet()
@@ -254,13 +256,7 @@ class MyClass(GeneratedClass):
         self.running = False
         self._stopTalk()
         self._untune()
-        d = self.px.get("ALDialog")
-        if d is not None and self.dlgSub:
-            self.dlgSub = False
-            try:
-                d.unsubscribe(DIALOG_SUB)
-            except Exception:
-                pass
+        self._dialogClose()
 
     # ------------------------------------------------------------------ NAOqi access
     def _p(self, name):
@@ -442,24 +438,45 @@ class MyClass(GeneratedClass):
         return out
 
     # ------------------------------------------------------------------ speech
+    # Pepper's services, reached through self.session().service(), have no post helper. A call that must not block
+    # uses _async=True and returns a future. If that is refused, the call runs in a small thread instead.
     def say(self, text, interrupt=True):
         text = clean_text(text, 400)
         if not text:
             return
         if interrupt:
             self._stopTalk()
-        a = self._p("ALAnimatedSpeech")
-        try:
-            if a is not None:
-                self.sayId = a.post.say(_s(text), {"bodyLanguageMode": "contextual"})
-            else:
-                self.sayId = self._p("ALTextToSpeech").post.say(_s(text))
-        except Exception as e:
-            self._log("warning", "[Host] speech failed (%s)" % e)
-            self.sayId = None
+        self.sayJob = self._speakAsync(_s(text))
         self.lastSpeak = self.clock()
-        self.speaking = self.sayId is not None
+        self.speaking = self.sayJob is not None
         self._log("info", "[Host] says: %s" % text)
+
+    def _speakAsync(self, text):
+        a = self._p("ALAnimatedSpeech")
+        tts = self._p("ALTextToSpeech")
+        conf = {"bodyLanguageMode": "contextual"}
+        for proxy, args in ((a, (text, conf)), (tts, (text,))):
+            if proxy is None:
+                continue
+            try:
+                return ("future", proxy.say(*args, _async=True))
+            except TypeError:
+                pass                      # this NAOqi does not know _async: use a thread
+            except Exception as e:
+                self._log("warning", "[Host] speech failed (%s)" % e)
+                continue
+            box = {"done": False}
+            def run(proxy=proxy, args=args, box=box):
+                try:
+                    proxy.say(*args)
+                except Exception as e:
+                    self._log("warning", "[Host] speech failed (%s)" % e)
+                box["done"] = True
+            th = threading.Thread(target=run)
+            th.daemon = True
+            th.start()
+            return ("thread", box)
+        return None
 
     def _stopTalk(self):
         tts = self._p("ALTextToSpeech")
@@ -468,27 +485,26 @@ class MyClass(GeneratedClass):
                 tts.stopAll()
             except Exception:
                 pass
-        if self.sayId is not None:
-            a = self._p("ALAnimatedSpeech")
+        job = getattr(self, "sayJob", None)
+        if job is not None and job[0] == "future":
             try:
-                if a is not None:
-                    a.stop(self.sayId)
+                job[1].cancel()
             except Exception:
                 pass
-        self.sayId = None
+        self.sayJob = None
         self.speaking = False
 
     def _checkSpeaking(self):
-        if self.sayId is None:
+        job = getattr(self, "sayJob", None)
+        if job is None:
             self.speaking = False
             return
-        a = self._p("ALAnimatedSpeech")
         try:
-            running = bool(a.isRunning(self.sayId)) if a is not None else False
+            running = (not job[1].isFinished()) if job[0] == "future" else (not job[1]["done"])
         except Exception:
             running = self.clock() - self.lastSpeak < 8.0
         if not running:
-            self.sayId = None
+            self.sayJob = None
         self.speaking = running
 
     def _name(self, team_name):
@@ -984,32 +1000,70 @@ class MyClass(GeneratedClass):
         self.dlgTry, self.dlgAt = 2, now
         self._call("ALDialog", "forceInput", _s("robotcmd ping"))
 
-    def _dialogRepair(self):
+    def _topicNames(self, method):
         d = self._p("ALDialog")
+        try:
+            return [_u(x) for x in (getattr(d, method)() or [])]
+        except Exception:
+            return []
+
+    @staticmethod
+    def _topicKey(n):
+        return re.sub(u"(_enu)?(\\.top)?$", u"", _u(n).replace(u"\\", u"/").split(u"/")[-1].lower()).lstrip(u"~")
+
+    def _dialogOpen(self):
+        """Load Host_enu.top, activate it and start listening. An old copy left loaded by an earlier run (the cause of
+        'topic is already loaded') is unloaded first, so every start begins clean."""
+        d = self._p("ALDialog")
+        if d is None or not self.appRoot:
+            self._log("warning", "[Host] no dialog engine or app folder: Pepper will not listen, the tablet still works")
+            return False
+        for n in self._topicNames("getAllLoadedTopics"):
+            if self._topicKey(n) == DIALOG_NAME:
+                for m in ("deactivateTopic", "unloadTopic"):
+                    try:
+                        getattr(d, m)(_s(n))
+                    except Exception:
+                        pass
+                self._log("info", "[Host] removed an old copy of the dialog left by an earlier run")
+        try:
+            self.topic = _u(d.loadTopic(_s(os.path.join(self.appRoot, u"Host", u"Host_enu.top"))))
+            d.activateTopic(_s(self.topic))
+            d.subscribe(DIALOG_SUB)
+            self.dlgSub = True
+            self._log("info", "[Host] dialog loaded and listening")
+            return True
+        except Exception as e:
+            self._log("warning", "[Host] could not start the dialog (%s)" % e)
+            return False
+
+    def _dialogClose(self):
+        d = self.px.get("ALDialog")
         if d is None:
             return
-        def names(m):
+        if self.dlgSub:
+            self.dlgSub = False
             try:
-                return [_u(x) for x in (getattr(d, m)() or [])]
+                d.unsubscribe(DIALOG_SUB)
             except Exception:
-                return []
-        key = lambda n: re.sub(u"(_enu)?(\\.top)?$", u"", n.replace(u"\\", u"/").split(u"/")[-1].lower()).lstrip(u"~")
-        loaded = [n for n in names("getAllLoadedTopics") if key(n) == DIALOG_NAME]
-        active = [n for n in names("getActivatedTopics") if key(n) == DIALOG_NAME]
-        self._log("warning", "[Host] dialog did not answer. Loaded: %s. Active: %s" % (loaded, active))
-        if not loaded and self.appRoot:
-            try:
-                loaded = [_u(d.loadTopic(_s(os.path.join(self.appRoot, u"Host", u"Host_enu.top"))))]
-            except Exception as e:
-                self._log("warning", "[Host] loadTopic failed (%s)" % e)
-        try:
-            if loaded and not active:
-                d.activateTopic(_s(loaded[0]))
-            if loaded:
-                d.subscribe(DIALOG_SUB)
-                self.dlgSub = True
-        except Exception as e:
-            self._log("warning", "[Host] dialog repair failed (%s)" % e)
+                pass
+        if self.topic:
+            owner = self._read(TOKEN_KEY)
+            if owner and self.token is not None and owner != self.token:
+                return                       # a newer Host Controller runs and uses the topic: leave it
+            for m in ("deactivateTopic", "unloadTopic"):
+                try:
+                    getattr(d, m)(_s(self.topic))
+                except Exception:
+                    pass
+            self.topic = None
+
+    def _dialogRepair(self):
+        self._log("warning", "[Host] dialog did not answer. Loaded: %s. Active: %s" % (
+            self._topicNames("getAllLoadedTopics"), self._topicNames("getActivatedTopics")))
+        self._dialogClose()
+        self._dialogOpen()
+        self._setConcepts()
 
     def _setConcepts(self):
         words = []

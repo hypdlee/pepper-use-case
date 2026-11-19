@@ -4,10 +4,8 @@
     <BehaviorDescriptions>
         <BehaviorDescription name="behavior" src="behavior_1" xar="behavior.xar" />
     </BehaviorDescriptions>
-    <Dialogs>
-        <Dialog name="Host" src="Host/Host.dlg" />
-    </Dialogs>
     <Resources>
+        <File name="host-host-enu" src="Host/Host_enu.top" />
         <File name="html-brand-readme" src="html/brand/README.txt" />
         <File name="html-clips-arena-climate-chaos" src="html/clips/arena-climate-chaos.jpg" />
         <File name="html-clips-arena-climate-chaos-2" src="html/clips/arena-climate-chaos.mp4" />
@@ -42,8 +40,5 @@
         <File name="html-js-bridge" src="html/js/bridge.js" />
         <File name="html-js-host" src="html/js/host.js" />
     </Resources>
-    <Topics>
-        <Topic name="Host_enu" src="Host/Host_enu.top" topicName="Host" language="en_US" />
-    </Topics>
     <IgnoredPaths />
 </Package>

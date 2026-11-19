@@ -30,19 +30,20 @@ class World(object):
         self.calls, self.said, self.js, self.forced, self.concepts, self.events, self.logs = [], [], [], [], [], [], []
         self.app = app
         self.dialog_alive = True
-        self.loaded, self.active, self.subs = ["Host"], ["Host"], ["box"]
-        self.speech_end = 0
+        self.loaded, self.active, self.subs = ["Host"], ["Host"], []     # an old copy left loaded by an earlier run
+        self.fresh = False
+        self.ping_fail = 0
+        self.no_async = False
+        self.stopped = -1
+        self.sent = 0
         self.tablet_cb = None
 
 class Rec(object):
     def __init__(self, name, w):
         self._n, self._w = name, w
-    @property
-    def post(self):
-        return self
     def __getattr__(self, m):
-        if m.startswith("__"):
-            raise AttributeError(m)
+        if m.startswith("__") or m == "post":       # like the robot: services from session.service() have no .post
+            raise AttributeError("'Object' object has no attribute '%s'" % m)
         def f(*a):
             self._w.calls.append((self._n, m, a))
             return None
@@ -61,21 +62,32 @@ class Mem(Rec):
     def raiseEvent(self, k, v):
         self._w.events.append(k)
 
+class Fut(object):
+    """A qi future for a sentence that takes 3 seconds (or less, if speech is stopped)."""
+    def __init__(self, w):
+        w.sent += 1
+        self.w, self.n, self.end = w, w.sent, w.t + 3
+    def isFinished(self):
+        return self.w.t >= self.end or self.w.stopped >= self.n
+    def cancel(self):
+        self.w.calls.append(("future", "cancel", ()))
+
 class Speech(Rec):
-    def say(self, text, conf=None):
+    def say(self, text, conf=None, _async=False):
         assert isinstance(text, str), "speech must be str"
+        if self._w.no_async and _async:
+            raise TypeError("say() got an unexpected keyword argument '_async'")
         self._w.said.append(text)
-        self._w.speech_end = self._w.t + 3
-        return len(self._w.said)
-    def isRunning(self, i):
-        return self._w.t < self._w.speech_end
-    def stop(self, i):
-        self._w.calls.append(("ALAnimatedSpeech", "stop", (i,)))
+        return Fut(self._w) if _async else None
 
 class TTS(Rec):
+    def say(self, text, _async=False):
+        assert isinstance(text, str)
+        self._w.said.append(text)
+        return Fut(self._w) if _async else None
     def stopAll(self):
         self._w.calls.append(("ALTextToSpeech", "stopAll", ()))
-        self._w.speech_end = 0
+        self._w.stopped = self._w.sent
 
 class Tablet(Rec):
     def executeJS(self, code):
@@ -93,8 +105,12 @@ class Dialog(Rec):
     def forceInput(self, t):
         assert isinstance(t, str)
         self._w.forced.append(t)
-        if t == "robotcmd ping" and self._w.dialog_alive and "Host" in self._w.active and self._w.subs:
-            self._w.mem["hostPong"] = "ok1"
+        if t == "robotcmd ping":
+            w = self._w
+            if w.ping_fail > 0:
+                w.ping_fail -= 1
+            elif w.dialog_alive and w.fresh and "Host" in w.active and w.subs:
+                w.mem["hostPong"] = "ok1"
     def setConcept(self, name, lang, words):
         assert all(isinstance(x, str) for x in words)
         self._w.concepts.append((name, lang, list(words)))
@@ -110,8 +126,21 @@ class Dialog(Rec):
         self._w.subs.append(n)
     def loadTopic(self, p):
         self._w.calls.append(("ALDialog", "loadTopic", (p,)))
+        if "Host" in self._w.loaded:                  # what Pepper says when an earlier run left the topic loaded
+            raise RuntimeError("LoadTopic::ALDialog A topic named %s is already loaded" % p)
         self._w.loaded.append("Host")
+        self._w.fresh = True
         return "Host"
+    def unloadTopic(self, n):
+        self._w.calls.append(("ALDialog", "unloadTopic", (n,)))
+        self._w.loaded = [x for x in self._w.loaded if x != n]
+        self._w.fresh = False
+    def deactivateTopic(self, n):
+        self._w.calls.append(("ALDialog", "deactivateTopic", (n,)))
+        self._w.active = [x for x in self._w.active if x != n]
+    def unsubscribe(self, n):
+        self._w.calls.append(("ALDialog", "unsubscribe", (n,)))
+        self._w.subs = [x for x in self._w.subs if x != n]
 
 class Aware(Rec):
     def getTrackingMode(self):
@@ -217,7 +246,7 @@ def run():
     w = World(app)
     box, ns = start(w, store=store)
     st = last_state(w)
-    check(st is not None and st["v"] == "1.0.1", "no first state pushed")
+    check(st is not None and st["v"] == "1.0.2", "no first state pushed")
     check([t["name"] for t in st["teams"]] == ["Team Falcon", "Orion, The", "ArmStrong"], "teams from CSV: %r" % [t["name"] for t in st["teams"]])
     check([t["cat"] for t in st["teams"]] == ["arena", "arena", "arm"], "team categories")
     check([x["title"] for x in st["schedule"]] == ["Opening Ceremony", "Time of Fall", "Colour Sort", "Shape Sort", "Awards Ceremony"], "schedule rows: %r" % [x["title"] for x in st["schedule"]])
@@ -227,6 +256,12 @@ def run():
     check(w.mem.get("Host/ControllerToken") == box.token, "token not written")
     check(w.tablet_cb is not None, "tablet events not connected")
     check(box.content and len(box.content["games"]) == 10, "content.json not read")
+    dc = [(c[1], c[2]) for c in w.calls if c[0] == "ALDialog"]
+    names = [x[0] for x in dc]
+    check(names.index("unloadTopic") < names.index("loadTopic") and names.count("loadTopic") == 1, "old topic not removed before loading: %r" % names)
+    check(any(x[0] == "loadTopic" and x[1][0].endswith(os.path.join("Host", "Host_enu.top")) for x in dc), "topic path")
+    check(("activateTopic", ("Host",)) in dc and ("subscribe", ("HostController",)) in dc, "topic not activated / not listening")
+    check(not any("could not start the dialog" in m for _, m in w.logs), "dialog start failed: %r" % [m for _, m in w.logs if "dialog" in m])
 
     # ---- dialog check: alive
     tick(w, box, 4.5)
@@ -283,7 +318,7 @@ def run():
     k = len(w.said)
     tab(w, box, {"cmd": "game", "game": "pour", "id": "same"}); tab(w, box, {"cmd": "game", "game": "pour", "id": "same"})
     check(len(w.said) == k + 1, "repeated tablet message not ignored")
-    w.speech_end = 0; box.speaking = False; box.lastView = 0
+    w.stopped = w.sent; box.speaking = False; box.lastView = 0
     tab(w, box, {"cmd": "view", "view": "schedule"})
     k = len(w.said); tab(w, box, {"cmd": "view", "view": "teams"})
     check(len(w.said) == k, "view lines not rate limited")
@@ -397,9 +432,9 @@ def run():
     check(not any("Attention" in s for s in w5.said), "calls made while switched off")
 
     # ---- dialog check: repair and failure
-    w6 = World(app); w6.active, w6.subs = [], []
+    w6 = World(app); w6.ping_fail = 1
     box6, _ = start(w6, store=os.path.join(tmp, "s6")); tick(w6, box6, 12)
-    check(box6.listen is True and ("ALDialog", "activateTopic", ("Host",)) in w6.calls, "dialog repair: %r" % box6.listen)
+    check(box6.listen is True and [c[1] for c in w6.calls if c[0] == "ALDialog"].count("loadTopic") == 2, "dialog repair (reload): %r" % box6.listen)
     w7 = World(app); w7.dialog_alive = False
     box7, _ = start(w7, store=os.path.join(tmp, "s7")); tick(w7, box7, 12)
     check(box7.listen is False and last_state(w7)["voice"] is False, "dead dialog not reported")
@@ -423,6 +458,24 @@ def run():
     check(box.running is False, "older controller did not step down")
     box.running = True; box.onInput_onStop()
     check(("box", "onStopped", ()) in w.calls and ("ALBasicAwareness", "setTrackingMode", ("BodyRotation",)) in w.calls, "stop did not restore tracking")
+    check("Host" in w.loaded, "an older controller unloaded the topic a newer one uses")
+    wq = World(app); boxq, _ = start(wq, store=os.path.join(tmp, "sq")); boxq.onInput_onStop()
+    check(("ALDialog", "unsubscribe", ("HostController",)) in wq.calls and "Host" not in wq.loaded and wq.subs == [], "stop left the dialog loaded: %r %r" % (wq.loaded, wq.subs))
+    wq2 = World(app); wq2.loaded, wq2.active = [], []
+    boxq2, _ = start(wq2, store=os.path.join(tmp, "sq")); tick(wq2, boxq2, 5)
+    check(boxq2.listen is True and not any(c[1] == "unloadTopic" for c in wq2.calls if c[0] == "ALDialog"), "clean start should just load")
+    # speech: a future when NAOqi knows _async, a thread when it does not; never .post
+    ws = World(app); boxs, _ = start(ws, store=os.path.join(tmp, "ss"))
+    boxs.say("Hello there.")
+    check(boxs.sayJob and boxs.sayJob[0] == "future" and boxs.speaking and ws.said[-1] == "Hello there.", "speech not started as a future")
+    ws.t += 4; boxs._checkSpeaking()
+    check(not boxs.speaking and boxs.sayJob is None, "speech end not noticed")
+    boxs.say("One"); boxs.say("Two")
+    check(("future", "cancel", ()) in ws.calls and ("ALTextToSpeech", "stopAll", ()) in ws.calls, "new sentence did not stop the old one")
+    ws.no_async = True; n0 = ws.calls.count(("thread", "start", ()))
+    boxs.say("Without async.")
+    check(boxs.sayJob and boxs.sayJob[0] == "thread" and ws.calls.count(("thread", "start", ())) == n0 + 1 and boxs.speaking, "no thread fallback")
+    check(not any("speech failed" in m for _, m in ws.logs + w.logs), "speech failed: %r" % [m for _, m in ws.logs if "speech" in m])
 
     # ---- the official team list shipped in the package (8 Arena teams, 5 Robot Arm teams; one name with accents)
     real = os.path.join(tmp, "real")

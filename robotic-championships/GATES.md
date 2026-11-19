@@ -28,3 +28,11 @@
   EVIDENCE: mutation run, survivors [] after lengthening the audit schedule
 - [ ] G13 Same check on Pepper's own tablet browser
   ABANDON: G13 needs the robot; the layout is fixed at 1280 x 800 and avoids newer CSS, but it has not been seen on the tablet itself
+
+# Round 3 (v1.0.2): robot log showed silence and a red Host box
+- [x] G14 Speech works on the robot: no .post (not available on session services); _async=True futures, thread fallback
+  EVIDENCE: strict simulator (no .post, like the robot) CONTROLLER OK on 2.7 and 3; test_package forbids .post
+- [x] G15 No "topic already loaded": no Dialog box, no topic in the manifest; the controller unloads an old copy, loads, listens, and unloads at stop
+  EVIDENCE: simulator starts with an old copy loaded and refuses a second load; start, repair, stop and newer-controller cases pass
+- [ ] G16 Confirmed on the robot
+  ABANDON: G16 needs the next Choregraphe log

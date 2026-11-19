@@ -12,6 +12,8 @@ def check(c, m):
 src = io.open(os.path.join(ROOT, "src", "host_controller.py"), encoding="utf-8").read()
 version = re.search(r'^VERSION = "([0-9.]+)"', src, re.M).group(1)
 check(all(ord(c) < 128 for c in src), "controller source must be plain ASCII (Python 2.7 on the robot)")
+check(".post" not in src, "the controller must not use .post: services from session.service() do not have it (Pepper stays silent)")
+check("_async=True" in src, "speech must be started with _async=True")
 
 # behaviour file
 xar_text = io.open(os.path.join(PKG, "behavior_1", "behavior.xar"), encoding="utf-8").read()
@@ -19,11 +21,11 @@ ns = {"c": "http://www.aldebaran-robotics.com/schema/choregraphe/project.xsd"}
 root = ET.fromstring(xar_text.encode("utf-8"))
 diagram = root.find(".//c:Diagram", ns)
 boxes = {int(b.get("id")): b for b in diagram.findall("c:Box", ns)}
-check(sorted(boxes) == [2, 3, 4], "boxes: %r" % sorted(boxes))
-check(boxes[4].get("name") == "Host Controller" and boxes[3].get("name") == "Host" and boxes[2].get("name") == "Show App", "box names")
+check(sorted(boxes) == [2, 4], "boxes: %r (no Dialog box: the controller owns the topic)" % sorted(boxes))
+check(boxes[4].get("name") == "Host Controller" and boxes[2].get("name") == "Show App", "box names")
+check("dialogFile" not in xar_text, "a Dialog box is back in the behaviour")
 code = boxes[4].find("c:script/c:content", ns).text
 check(code == src, "the controller inside behavior.xar is not src/host_controller.py: run build.py")
-check(boxes[3].find("c:dialogFile", ns).text == "../Host/Host.dlg", "dialog file path")
 def ports(b):
     ins = {int(i.get("id")) for i in b.findall("c:Input", ns)}
     outs = {int(o.get("id")) for o in b.findall("c:Output", ns)}
@@ -35,7 +37,7 @@ for io_, ii, oo, oi in links:
     okin = (oi in rootIns) if oo == 0 else (oi in ports(boxes[oo])[1])
     okout = (ii in rootOuts) if io_ == 0 else (ii in ports(boxes[io_])[0])
     check(okin and okout, "bad link %r" % ((io_, ii, oo, oi),))
-for b in (2, 3, 4):
+for b in (2, 4):
     check((b, 2, 0, 2) in links, "box %d is not started with the behaviour" % b)
 check((0, 4, 4, 4) in links and (4, 3, 0, 3) in links, "controller stop / stopped links")
 params = {p.get("name"): p for p in boxes[4].findall("c:Parameter", ns)}
@@ -48,6 +50,7 @@ for name in params:
 man = ET.parse(os.path.join(PKG, "manifest.xml")).getroot()
 teams = [l.split(",") for l in io.open(os.path.join(PKG, "html", "data", "teams.csv"), encoding="utf-8").read().splitlines() if l and not l.startswith("#")][1:]
 check(len([r for r in teams if r[2] == "arena"]) == 8 and len([r for r in teams if r[2] == "arm"]) == 5, "teams.csv should hold the 8 Arena and 5 Robot Arm teams from the organisers' sheet")
+check(man.find("contents/dialogContent") is None, "manifest must not declare the topic (the system would load it too: topic already loaded)")
 check(man.get("version") == version and man.get("uuid") == "ieee-championship-host", "manifest version/uuid")
 pml = ET.parse(os.path.join(PKG, "ChampionshipHost.pml")).getroot()
 listed = [f.get("src") for f in pml.iter("File")]
@@ -56,7 +59,7 @@ on_disk = []
 for r, _, names in os.walk(PKG):
     for n in names:
         rel = os.path.relpath(os.path.join(r, n), PKG).replace("\\", "/")
-        if rel not in ("manifest.xml", "ChampionshipHost.pml", "behavior_1/behavior.xar", "Host/Host.dlg", "Host/Host_enu.top"):
+        if rel not in ("manifest.xml", "ChampionshipHost.pml", "behavior_1/behavior.xar"):
             on_disk.append(rel)
 check(sorted(listed) == sorted(on_disk), "the .pml does not list exactly the files on disk: run build.py")
 check(not any(n.endswith((".pyc", ".DS_Store")) or "__pycache__" in n for n in on_disk), "junk files in the package")
@@ -64,6 +67,7 @@ check(not any(n.endswith((".pyc", ".DS_Store")) or "__pycache__" in n for n in o
 # dialog against controller and content
 top = io.open(os.path.join(PKG, "Host", "Host_enu.top"), encoding="utf-8").read()
 content = json.load(io.open(os.path.join(PKG, "html", "data", "content.json"), encoding="utf-8"))
+check("Host/Host_enu.top" in listed and not os.path.exists(os.path.join(PKG, "Host", "Host.dlg")), "topic file listing")
 check(top.startswith("topic: ~host()") and "language: enu" in top and "dynamic: teamnames" in top, "topic header")
 cmds = set(re.findall(r"\$hostCmd=(\w+)", top))
 handled = set(re.findall(r'cmd == "(\w+)"', src)) | set(w for t in re.findall(r'cmd in \(([^)]*)\)', src) for w in re.findall(r'"(\w+)"', t))
