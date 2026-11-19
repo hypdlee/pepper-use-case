@@ -52,3 +52,11 @@
   EVIDENCE: mutation run after tightening three tests
 - [ ] G23 Confirmed on the robot
   ABANDON: G23 needs a run on Pepper and the Choregraphe log
+
+# Round 5 (v1.1.0): the tablet redesigned as a kiosk
+- [x] G24 Bottom dock of seven big buttons replaces the small top tabs and the footer; every button at least 150 x 70
+  EVIDENCE: ui.test.js dock check; UI OK 310 checks
+- [x] G25 Every public screen fills the tablet and nothing sits under the dock: Home, Games (both), game detail, Teams (all 13 without scrolling), Scores (all 8 Arena teams without scrolling), Quiz, Help, all 12 intro scenes
+  EVIDENCE: fit_audit.js measures against the top of the dock; FIT OK. Cards checked to end above 700 px in ui.test.js
+- [x] G26 Larger type throughout (body 17 to 23 px, titles 25 to 50 px, quiz answers 31 px) and a full-screen purple intro
+  EVIDENCE: screenshots in docs/media and the repo tour GIF, reviewed at full size

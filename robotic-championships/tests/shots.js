@@ -6,8 +6,8 @@ fs.mkdirSync(OUT, { recursive: true });
 const types = { '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css', '.json': 'application/json', '.csv': 'text/csv', '.mp4': 'video/mp4', '.jpg': 'image/jpeg', '.woff': 'font/woff', '.png': 'image/png', '.txt': 'text/plain' };
 const srv = http.createServer((q, r) => { const p = path.join(ROOT, decodeURIComponent(q.url.split('?')[0])); if (!p.startsWith(ROOT) || !fs.existsSync(p) || fs.statSync(p).isDirectory()) { r.writeHead(404); r.end(); return; } r.writeHead(200, { 'Content-Type': types[path.extname(p)] || 'application/octet-stream' }); fs.createReadStream(p).pipe(r); });
 const T = Date.UTC(2026, 10, 28, 14, 20);   // Sat 15:20 Malta
-// Real team list (read by the page from teams.csv), the two fixed ceremonies, and no invented scores or matches.
-const state = { seq: 1, v: '1.0.1', now: T, voice: true, speaking: false, calls: true, teams: null,
+// Real team list and the organisers' running order (read by the page from the CSV files), and no invented scores.
+const state = { seq: 1, v: '1.1.0', now: T, voice: true, speaking: false, calls: true, teams: null,
   schedule: [ { id: 's1', day: 'sat', time: '14:00', mins: 30, title: 'Opening Ceremony', cat: 'stage', game: '', a: '', b: '', done: false },
               { id: 's4', day: 'sun', time: '18:00', mins: 45, title: 'Awards Ceremony', cat: 'stage', game: '', a: '', b: '', done: false } ],
   scores: [], alerts: [ { id: 'a1', t: T - 60000, text: 'A visitor at Pepper asked for a volunteer.', seen: false } ] };
@@ -17,7 +17,7 @@ const state = { seq: 1, v: '1.0.1', now: T, voice: true, speaking: false, calls:
   const errs = []; pg.on('pageerror', e => errs.push(e.message)); pg.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
   await pg.goto(`http://127.0.0.1:${port}/index.html`); await pg.waitForTimeout(800);
   await pg.screenshot({ path: OUT + '/0-home-preview.png' });
-  await pg.waitForTimeout(2600); state.teams = await pg.evaluate(() => HostState.teams.map((t, i) => Object.assign({}, t, { id: 't' + i }))); await pg.evaluate(s => HostUI.update(s), state); await pg.waitForTimeout(300);
+  await pg.waitForTimeout(2600); state.teams = await pg.evaluate(() => HostState.teams.map((t, i) => Object.assign({}, t, { id: 't' + i }))); state.schedule = await pg.evaluate(() => HostState.schedule); await pg.evaluate(s => HostUI.update(s), state); await pg.waitForTimeout(300);
   await pg.screenshot({ path: OUT + '/1-home-live.png' });
   const shots = [['games', null, '2-games-arena'], ['games', 'arm', '3-games-arm'], ['game', 'tof', '4-game-tof'], ['game', 'tower', '5-game-tower'], ['teams', null, '6-teams'], ['schedule', null, '7-schedule'], ['scores', null, '8-scores'], ['help', null, '9-help']];
   for (const [v, a, n] of shots) { await pg.evaluate(([v, a]) => HostUI.go(v, a), [v, a]); await pg.waitForTimeout(700); await pg.screenshot({ path: `${OUT}/${n}.png` }); }

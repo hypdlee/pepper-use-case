@@ -179,7 +179,6 @@
       var b = el('div', 'stat'); b.appendChild(el('b', null, v)); b.appendChild(el('span', null, s.label)); stats.appendChild(b);
     });
     $('tileTeams').textContent = H.teams.length ? nA + ' Arena \u00b7 ' + nM + ' Robot Arm' : 'Who is competing';
-    $('tileNext').textContent = nn.next ? 'Next: ' + nn.next.time + ' ' + nn.next.title : 'What is on';
     if (t < open) {
       $('countBox').hidden = false; $('liveBox').hidden = true;
       $('countLbl').textContent = 'The championships start in';
@@ -217,7 +216,7 @@
     $('introHead').textContent = sc.head || '';
     $('introSub').textContent = sc.kind === 'next' ? 'Programme' : (sc.sub || '');
     var dots = clear($('introDots')), i;
-    for (i = 0; i < sc.n; i += 1) { dots.appendChild(el('span', i === sc.i ? 'on' : null)); }
+    for (i = 0; i < sc.n; i += 1) { dots.appendChild(el('span', i === sc.i ? 'on' : (i < sc.i ? 'past' : null))); }
     var v = $('ivid'), big = clear($('introBig'));
     if (sc.clip) {
       big.style.display = 'none';
@@ -292,7 +291,7 @@
     each(gamesOf(H.cat), function (g) {
       var b = el('button', 'gcard'); b.setAttribute('data-game', g.id);
       var img = el('img'); img.src = 'clips/' + g.clip + '.jpg'; img.alt = ''; b.appendChild(img);
-      b.appendChild(el('div', 'gn', g.n)); b.appendChild(el('div', 'gt', g.title)); b.appendChild(el('div', 'gs', g.tagline));
+      var tx = el('div', 'gtx'); tx.appendChild(el('div', 'gn', g.n)); tx.appendChild(el('div', 'gt', g.title)); tx.appendChild(el('div', 'gs', g.tagline)); b.appendChild(tx);
       box.appendChild(b);
     });
   }

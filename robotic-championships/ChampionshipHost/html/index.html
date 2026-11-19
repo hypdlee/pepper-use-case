@@ -24,15 +24,6 @@
     </div>
   </header>
   <div class="band"></div>
-  <nav class="nav" id="nav">
-    <button data-go="home" class="on">Home</button>
-    <button data-go="games">Games</button>
-    <button data-go="teams">Teams</button>
-    <button data-go="schedule">Schedule</button>
-    <button data-go="scores">Scores</button>
-    <button data-go="quiz">Quiz</button>
-    <button data-go="help">Help</button>
-  </nav>
 
   <main id="main">
     <!-- HOME -->
@@ -43,8 +34,10 @@
             <video id="reel" muted playsinline preload="auto"></video>
             <div class="reelcap"><span id="reelKind"></span><b id="reelTitle"></b></div>
           </div>
-          <button class="introbtn" id="introBtn"><span class="play"></span>Watch Pepper's intro</button>
-          <div class="stats" id="stats"></div>
+          <div class="introrow">
+            <button class="introbtn" id="introBtn"><span class="play"></span><span class="ibt">Watch Pepper's intro<small>Two minutes: the games and all the teams</small></span></button>
+            <div class="stats" id="stats"></div>
+          </div>
         </div>
         <div class="side">
           <div id="countBox" class="count">
@@ -57,10 +50,8 @@
           </div>
           <div class="tiles">
             <button class="tile t-yellow" data-go="games" data-arg="arena"><span class="ti">Arena</span><span class="ts">4 robot games</span></button>
-            <button class="tile t-purple" data-go="games" data-arg="arm"><span class="ti">Robot Arm AI</span><span class="ts">3 AI games</span></button>
+            <button class="tile t-purple" data-go="games" data-arg="arm"><span class="ti">Robot Arm AI</span><span class="ts">Pick, sort, pour, fold</span></button>
             <button class="tile" data-go="teams"><span class="ti">Teams</span><span class="ts" id="tileTeams">Who is competing</span></button>
-            <button class="tile" data-go="schedule"><span class="ti">Schedule</span><span class="ts" id="tileNext">What is on</span></button>
-            <button class="tile" data-go="scores"><span class="ti">Scores</span><span class="ts">Leaderboards</span></button>
             <button class="tile" data-go="quiz"><span class="ti">Robot quiz</span><span class="ts">100 questions</span></button>
           </div>
           <button class="volsmall" data-go="help" data-arg="volunteer">Call a volunteer</button>
@@ -71,20 +62,19 @@
     <!-- PEPPER'S INTRO -->
     <section id="v-intro" class="view">
       <div class="ishow" id="introBox">
+        <div class="itop"><div class="idots" id="introDots"></div><button class="iskip" id="introSkip">Skip</button></div>
         <div class="ivis" id="introVis">
           <video id="ivid" muted loop playsinline preload="auto"></video>
           <div class="ibig" id="introBig"></div>
         </div>
         <div class="itext">
-          <div class="isub" id="introSub"></div>
           <h1 class="ihead" id="introHead"></h1>
-          <div class="idots" id="introDots"></div>
+          <div class="isub" id="introSub"></div>
         </div>
-        <button class="iskip" id="introSkip">Skip</button>
       </div>
     </section>
 
-    <!-- GAMES -->
+
     <section id="v-games" class="view">
       <div class="seg" id="catSeg">
         <button data-cat="arena" class="on">Arena: 4 Games</button>
@@ -92,7 +82,7 @@
       </div>
       <p class="intro" id="catIntro"></p>
       <div class="cards" id="gameCards"></div>
-      <p class="structure" id="catStructure"></p>
+      <p class="structure"><span id="catStructure"></span> <span class="rules" id="footRules"></span></p>
     </section>
 
     <!-- GAME DETAIL -->
@@ -168,6 +158,7 @@
           <h3>Pitch themes</h3>
           <ul class="themes" id="themes"></ul>
           <p id="stemText"></p>
+          <p class="hostnote">Pepper is the host at this stand for the IEEE Malta Section.</p>
         </div>
       </div>
     </section>
@@ -189,10 +180,15 @@
     </section>
   </main>
 
-  <footer class="foot">
-    <span>Pepper host for the IEEE Malta Section</span>
-    <span id="footRules"></span>
-  </footer>
+  <nav class="dock" id="nav">
+    <button data-go="home" class="on">Home</button>
+    <button data-go="games">Games</button>
+    <button data-go="teams">Teams</button>
+    <button data-go="schedule">Schedule</button>
+    <button data-go="scores">Scores</button>
+    <button data-go="quiz">Quiz</button>
+    <button data-go="help">Help</button>
+  </nav>
 
   <div id="pin" class="modal" hidden>
     <div class="pinbox">

@@ -28,7 +28,8 @@ const srv = http.createServer((q, r) => { const p = path.join(ROOT, decodeURICom
         const cs = getComputedStyle(e);
         if (e.children.length === 0 && e.textContent.trim() && e.scrollWidth > e.clientWidth + 1 && cs.overflow !== 'visible') { out.clipped.push(e.className + ': ' + e.textContent.trim().slice(0, 40)); }
         const rr = e.getBoundingClientRect();
-        if (e.children.length === 0 && e.textContent.trim() && (rr.right > 1281 || rr.bottom > 771)) {
+        const dock = document.getElementById('nav'), inDock = dock.contains(e), lim = inDock || !dock.offsetHeight ? 801 : dock.getBoundingClientRect().top + 1;
+        if (e.children.length === 0 && e.textContent.trim() && (rr.right > 1281 || rr.bottom > lim)) {
           let p = e.parentElement, inScroll = false;
           while (p) { const s = getComputedStyle(p); if (s.overflowY === 'auto' || s.overflowY === 'scroll') { inScroll = true; break; } p = p.parentElement; }
           if (!inScroll) { out.clipped.push('off-screen ' + e.className + ': ' + e.textContent.trim().slice(0, 40)); }

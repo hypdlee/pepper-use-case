@@ -9,7 +9,7 @@
   <img src="media/robot-arm-challenge.gif" alt="Robot Arm AI Challenge: colour, shape and dynamic sort, pouring, folding, tower duel" width="355">
 </p>
 
-<p align="center"><sub>Tablet tour: Home, then Pepper's intro (welcome, the two competitions, the games, all 13 official teams, what's next), then the games, teams, programme, scores and the robot quiz. Then the four Arena games and the six Robot Arm AI Challenge rounds. The game clips are simulations, used to explain the rules.</sub></p>
+<p align="center"><sub>Tablet tour, redesigned as a kiosk with a dock of big buttons: Home, then Pepper's intro (welcome, the two competitions, the games, all 13 official teams, what's next), then the games, teams, programme, scores and the robot quiz. Then the four Arena games and the six Robot Arm AI Challenge rounds. The game clips are simulations, used to explain the rules.</sub></p>
 
 **Folders:**
 - `ChampionshipHost/`: the Choregraphe project. Open `ChampionshipHost.pml`.
@@ -32,6 +32,14 @@ Everything runs on the robot. Nothing is sent to the internet.
 ![Home screen](docs/media/1-home-live.png)
 
 ![Pepper's intro](docs/media/0-intro-teams.png)
+
+## The tablet
+
+Built as a kiosk for Pepper's 1280 x 800 tablet, read standing up:
+- **A dock of seven big buttons along the bottom** (Home, Games, Teams, Schedule, Scores, Quiz, Help), where a hand reaches without stretching. Help is outlined in red, so it is easy to find.
+- **Every screen fills the tablet.** Text is at least 17 px, most of it 20 to 30 px. Buttons are at least 60 px tall.
+- **Home** shows the game clips on a loop, the big **Watch Pepper's intro** button, what is on now and next (or the countdown before the event), and shortcuts to the Arena, the Robot Arm AI Challenge, the teams and the quiz.
+- **The intro** takes over the whole screen in IEEE purple, with a progress bar along the top and the title in large yellow type.
 
 ## Pepper's intro
 

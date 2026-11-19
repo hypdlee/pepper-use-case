@@ -49,14 +49,15 @@ function state(extra) {
   ok((await pg.evaluate(() => HostState.teams.some(t => t.name === 'Troda\u00ed'))), 'accented team name read from teams.csv');
   ok((await txt('#footRules')).indexOf('v0.7') >= 0, 'rulebook version not shown');
   ok(await vis('#countBox'), 'countdown not shown before the event');
+  ok((await pg.$$eval('#nav button', e => e.length === 7 && e.every(b => b.offsetHeight >= 70 && b.offsetWidth >= 150 && b.getBoundingClientRect().bottom <= 800))), 'dock: seven buttons, each at least 150 x 70 and on screen');
   ok((await pg.$$eval('.stat', e => e.length)) === 3, 'stats');
-  await pg.click('[data-go="teams"]'); await pg.waitForTimeout(100);
+  await pg.click('#nav [data-go="teams"]'); await pg.waitForTimeout(100);
   ok((await pg.$$eval('#teamSeg button', e => e.map(x => x.textContent))).join('|') === 'All teams \u00b7 13|Arena \u00b7 8|Robot Arm AI \u00b7 5', 'team counts on the filter buttons');
   ok((await pg.$$eval('.tgh', e => e.map(x => x.textContent))).join('|') === 'Arena: 4 Games8 teams|Robot Arm AI Challenge5 teams', 'team groups: ' + (await pg.$$eval('.tgh', e => e.map(x => x.textContent))).join('|'));
   ok((await pg.$$eval('#teamGrid .team', e => e.length)) === 13, 'all 13 team cards');
   ok((await pg.evaluate(() => { const g = document.getElementById('teamGrid'); return g.scrollHeight <= g.clientHeight + 1; })), 'all 13 teams visible without scrolling');
   ok((await pg.$$eval('#teamGrid .tn', e => e.every(x => x.scrollWidth <= x.clientWidth + 1))), 'a team name is cut off');
-  ok((await pg.$$eval('#teamGrid .team', e => e.every(x => { const r = x.getBoundingClientRect(); return r.right <= 1280 && r.bottom <= 770; }))), 'a team card is off screen');
+  ok((await pg.$$eval('#teamGrid .team', e => e.every(x => { const r = x.getBoundingClientRect(); return r.right <= 1280 && r.bottom <= 700; }))), 'a team card is off screen');
   ok((await pg.$$eval('.tcards', e => e.map(c => { const tops = {}; Array.prototype.forEach.call(c.children, k => { tops[Math.round(k.getBoundingClientRect().top)] = (tops[Math.round(k.getBoundingClientRect().top)] || 0) + 1; }); return Object.keys(tops).map(t => tops[t]).join(','); }).join('|'))) === '4,4|4,1', 'cards per row (expected 4 per row)');
   await pg.evaluate(() => HostUI.go('home')); await pg.waitForTimeout(100);
   ok((await txt('#tileTeams')) === '8 Arena \u00b7 5 Robot Arm', 'teams tile in preview: ' + await txt('#tileTeams'));
@@ -66,10 +67,10 @@ function state(extra) {
   ok((await pg.$$eval('.board', e => e.every(b => b.scrollHeight <= b.clientHeight + 1 && b.getBoundingClientRect().right <= 1280))), 'a scoreboard needs scrolling or is off screen');
   ok((await pg.$$eval('#boardArena .pt', e => e.every(x => x.textContent === 'No score yet'))), 'no-score label');
   ok((await pg.$eval('#boardArena li .rk', e => getComputedStyle(e).backgroundColor)) !== 'rgb(255, 205, 87)', 'a team without a score shown as first place');
-  await pg.click('[data-go="schedule"]'); await pg.waitForTimeout(100);
+  await pg.click('#nav [data-go="schedule"]'); await pg.waitForTimeout(100);
   ok((await txt('#schedList')).indexOf('Opening Ceremony') >= 0, 'opening ceremony in schedule');
   // volunteer without robot
-  await pg.click('[data-go="help"]'); await pg.click('#volBtn'); await pg.waitForTimeout(100);
+  await pg.click('#nav [data-go="help"]'); await pg.click('#volBtn'); await pg.waitForTimeout(100);
   ok((await txt('#volDone')).indexOf('not connected') >= 0, 'volunteer without Pepper must say so');
 
   // connect a fake robot
@@ -95,13 +96,13 @@ function state(extra) {
   ok((await pg.$$eval('#gameCards .gcard', e => e.length)) === 4, 'four arena games');
   const ratio = await pg.$$eval('#gameCards .gcard img', e => e.map(i => (i.clientWidth / i.clientHeight) / (i.naturalWidth / i.naturalHeight)));
   ok(ratio.length === 4 && ratio.every(r => Math.abs(r - 1) < 0.01), 'arena card pictures are not 16:9 boxes: ' + ratio.join(','));
-  ok((await pg.$$eval('#gameCards .gcard', e => e.every(x => x.getBoundingClientRect().right <= 1280 && x.getBoundingClientRect().bottom <= 770))), 'arena cards fit on screen');
+  ok((await pg.$$eval('#gameCards .gcard', e => e.every(x => x.getBoundingClientRect().right <= 1280 && x.getBoundingClientRect().bottom <= 700))), 'arena cards fit on screen');
   ok((await sent()).some(m => m.cmd === 'view' && m.view === 'games' && m.arg === 'arena'), 'view message');
   await pg.click('[data-cat="arm"]'); await pg.waitForTimeout(150);
   ok((await pg.$$eval('#gameCards .gcard', e => e.length)) === 6, 'six arm games');
   const ratio2 = await pg.$$eval('#gameCards .gcard img', e => e.map(i => (i.clientWidth / i.clientHeight) / (i.naturalWidth / i.naturalHeight)));
   ok(ratio2.length === 6 && ratio2.every(r => Math.abs(r - 1) < 0.01), 'arm card pictures are not 16:9 boxes: ' + ratio2.join(','));
-  ok((await pg.$$eval('#gameCards .gcard', e => e.every(x => x.getBoundingClientRect().right <= 1280 && x.getBoundingClientRect().bottom <= 770))), 'arm cards fit on screen');
+  ok((await pg.$$eval('#gameCards .gcard', e => e.every(x => x.getBoundingClientRect().right <= 1280 && x.getBoundingClientRect().bottom <= 700))), 'arm cards fit on screen');
   await pg.click('[data-game="pour"]'); await pg.waitForTimeout(600);
   ok((await txt('#gtitle')) === 'Pouring', 'game detail title');
   ok((await pg.$eval('.vidwrap', v => Math.abs(v.clientWidth / v.clientHeight - 16 / 9) < 0.01)), 'video box is not 16:9');
@@ -116,26 +117,26 @@ function state(extra) {
   ok((await txt('#gtitle')) === 'Hanging Hazard' && !(await sent()).some(m => m.game === 'hh'), 'voice navigation must not ask Pepper to speak twice');
 
   // teams: text only (no markup from staff input)
-  await pg.click('[data-go="teams"]'); await pg.waitForTimeout(150);
+  await pg.click('#nav [data-go="teams"]'); await pg.waitForTimeout(150);
   ok((await pg.$$eval('#teamGrid .team', e => e.length)) === 4, 'team cards');
   ok((await pg.evaluate(() => window.__xss)) === undefined && (await pg.$$eval('#teamGrid img', e => e.length)) === 0, 'team name rendered as markup');
   await pg.click('[data-f="arena"]'); ok((await pg.$$eval('#teamGrid .team', e => e.length)) === 2, 'arena filter');
   const names = await pg.$$eval('#teamGrid .tn', e => e.map(x => x.textContent)); ok(names[0] === 'Team Falcon' && names[1] === 'Team Orion', 'teams sorted');
 
   // schedule and scores
-  await pg.click('[data-go="schedule"]'); await pg.waitForTimeout(150);
+  await pg.click('#nav [data-go="schedule"]'); await pg.waitForTimeout(150);
   ok((await pg.$$eval('#schedList .srow.now', e => e.map(x => x.textContent))).join().indexOf('Time of Fall') >= 0, 'NOW row');
   ok((await pg.$$eval('#schedList .srow.next', e => e.map(x => x.textContent))).join().indexOf('Colour Sort') >= 0, 'NEXT row');
   ok((await pg.$$eval('#schedList .srow.done', e => e.length)) === 1, 'finished row greyed');
   await pg.click('[data-day="sun"]'); ok((await txt('#schedList')).indexOf('Awards Ceremony') >= 0, 'sunday');
-  await pg.click('[data-go="scores"]'); await pg.waitForTimeout(150);
+  await pg.click('#nav [data-go="scores"]'); await pg.waitForTimeout(150);
   ok((await pg.$$eval('#boardArena .nm', e => e.map(x => x.textContent))).join('|') === 'Team Falcon|Team Orion', 'arena board ordered by points');
   ok((await pg.$$eval('#boardArm .nm', e => e.map(x => x.textContent))).join('|') === 'ArmStrong|<img src=x onerror="window.__xss=1">', 'unscored teams listed after scored ones');
   ok((await pg.$$eval('#boardArm .rk', e => e.map(x => x.textContent))).join('|') === '1|-', 'unscored teams get no rank');
   ok((await txt('.provisional')).indexOf('Official results are announced by the judges') >= 0, 'provisional note');
 
   // quiz, by touch and by voice
-  await pg.click('[data-go="quiz"]'); await pg.click('#quizStart'); await pg.waitForTimeout(150);
+  await pg.click('#nav [data-go="quiz"]'); await pg.click('#quizStart'); await pg.waitForTimeout(150);
   let q = await pg.evaluate(() => HostState.quiz);
   ok(q.order.length === 5 && new Set(q.order).size === 5, 'five different questions');
   ok((await sent()).some(m => m.cmd === 'quizq' && m.i === q.order[0] && m.opts.length === 3), 'question sent to Pepper');
@@ -158,7 +159,7 @@ function state(extra) {
   ok((await sent()).filter(m => m.cmd === 'quiza' && m.ok === true).length === 5, 'answers sent');
 
   // volunteer with robot
-  await pg.click('[data-go="home"]'); await pg.click('[data-go="help"][data-arg="volunteer"]'); await pg.waitForTimeout(150);
+  await pg.click('#nav [data-go="home"]'); await pg.click('[data-go="help"][data-arg="volunteer"]'); await pg.waitForTimeout(150);
   ok((await sent()).filter(m => m.cmd === 'volunteer').length === 1 && (await txt('#volDone')).indexOf('has been called') >= 0, 'volunteer tile');
   await pg.click('#volBtn'); ok((await sent()).filter(m => m.cmd === 'volunteer').length === 1, 'double volunteer call within a minute');
 
@@ -210,7 +211,7 @@ function state(extra) {
   await pg.evaluate(() => HostUI.go('staff')); ok(await vis('#v-home'), 'staff screen without a token');
 
   // idle: back home after 90 s without a touch
-  await pg.click('[data-go="scores"]'); await pg.evaluate(() => { HostState.lastTouch = Date.now() - 91000; }); await pg.waitForTimeout(1300);
+  await pg.click('#nav [data-go="scores"]'); await pg.evaluate(() => { HostState.lastTouch = Date.now() - 91000; }); await pg.waitForTimeout(1300);
   ok(await vis('#v-home'), 'idle return to home');
   // after the event
   await pg.evaluate(s => HostUI.update(s), state({ seq: 20, now: Date.UTC(2026, 10, 29, 20, 0) })); await pg.waitForTimeout(1200);
