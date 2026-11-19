@@ -41,7 +41,13 @@ for b in (2, 4):
     check((b, 2, 0, 2) in links, "box %d is not started with the behaviour" % b)
 check((0, 4, 4, 4) in links and (4, 3, 0, 3) in links, "controller stop / stopped links")
 params = {p.get("name"): p for p in boxes[4].findall("c:Parameter", ns)}
-check(set(params) == {"Staff PIN", "Match calls", "Greet visitors", "Intro when idle (minutes)", "Announce match starts"}, "parameters: %r" % sorted(params))
+VER = re.search(r'^VERSION = "([0-9.]+)"', src, re.M).group(1)
+show = boxes[2].find("c:script/c:content", ns).text or ""
+check("tabletService.cleanWebview()" in show and show.index("cleanWebview") < show.index("loadApplication"), "Show App must clear the tablet cache before loading the app")
+idx = io.open(os.path.join(PKG, "html", "index.html"), encoding="utf-8").read()
+for f in ("js/bridge.js", "js/host.js", "css/host.css"):
+    check(('%s?v=%s"' % (f, VER)) in idx, "index.html must request %s with the version, so the tablet cannot use an old copy" % f)
+check(set(params) == {"Staff PIN", "Match calls", "Greet visitors", "Intro when idle (minutes)", "Announce match starts", "Intro at start"}, "parameters: %r" % sorted(params))
 check(len({p.get("id") for p in params.values()} | {"1", "2", "3", "4"}) == 4 + len(params), "parameter ids clash with the box ports")
 for name in params:
     check(('"%s"' % name) in src, "parameter %s is not read by the controller" % name)

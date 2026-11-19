@@ -10,7 +10,7 @@
 # Nothing here goes to the internet.
 import json, os, io, re, time, random, threading, unicodedata
 
-VERSION = "1.1.1"
+VERSION = "1.1.2"
 TOKEN_KEY = "Host/ControllerToken"
 KEYS = ["hostCmd", "hostTeam", "hostGame", "hostAns", "hostInfo", "Host/TabletCmd", TOKEN_KEY]
 STATE_KEY, STATE_EVT = "Host/State", "Host/Session"
@@ -22,6 +22,9 @@ CALL_BEFORE_S = 600             # match call 10 minutes before (rulebook 6.5: te
 CALL_WINDOW_S = 120             # a call is only made in the first 2 minutes of that window (no late calls after a restart)
 START_WINDOW_S = 90             # "starting now" only in the first 90 s
 NU_GAP_S = 60.0
+VIEW_GAP_S = 15.0
+QUIZ_IDLE_S = 180.0           # a quiz with no answer for 3 minutes was left half way             # the same screen's line is not repeated within 15 s
+INTRO_START_S = 8.0           # Pepper gives its intro this long after the app starts (the tablet has loaded by then)
 GREET_GAP_S = 120.0           # v1.1: Pepper talks less on its own
 BLOCK_GAP_S = 600             # matches less than 10 minutes apart form one block: one call per block
 INTRO_MIN_S = 4.0             # each intro scene stays at least this long (clips at least INTRO_CLIP_S)
@@ -187,6 +190,7 @@ class MyClass(GeneratedClass):
         self.worker = None
         self.sender = None
         self.lock = threading.Lock()
+        self.seenLock = threading.Lock()
         self.jsq = []
         self.content = None
         self.teams, self.schedule, self.scores, self.alerts = [], [], [], []
@@ -205,6 +209,9 @@ class MyClass(GeneratedClass):
         self.lastSpeak = 0.0
         self.lastNu = 0.0
         self.jsLink = None
+        self.viewSaid = {}
+        self.introAtStart = False
+        self.quizAt = 0.0
         self.lastGreet = 0.0
         self.lastHuman = -1
         self.quizOn = None
@@ -239,6 +246,8 @@ class MyClass(GeneratedClass):
         self._loadData()
         self.calls = self.calls and bool(self._param("Match calls", True))
         self.introAuto = self.introAuto and self._introEvery() > 0
+        self.introAtStart = bool(self._param("Intro at start", True))
+        self.viewSaid = {}
         self.lastActivity = self.clock()
         self._log("info", "[Host] v%s running. %d teams, %d programme items, content %s" % (
             VERSION, len(self.teams), len(self.schedule), "loaded" if self.content else "MISSING"))
@@ -443,6 +452,10 @@ class MyClass(GeneratedClass):
             self.onTablet(raw)
         now = self.clock()
         self._dialogStep(now)
+        if self.introAtStart and self.startAt is not None and now - self.startAt >= INTRO_START_S:
+            self.introAtStart = False             # once per start
+            if self.intro is None and self.quizOn is None:
+                self.startIntro("start")
         self._introStep(now)
         if now - self.lastSpeakCheck >= 0.5:
             self.lastSpeakCheck = now
@@ -451,6 +464,8 @@ class MyClass(GeneratedClass):
             self.lastCallCheck = now
             self._matchCalls(now)
             self._expireStaff(now)
+            if self.quizOn is not None and now - self.quizAt > QUIZ_IDLE_S:
+                self.quizOn = None            # a quiz left half way: Pepper greets and gives the intro again
             self._introAutoCheck(now)         # first: after a quiet spell, someone arriving gets the intro, not a greeting
             self._greetCheck(now)
         self._push(False)
@@ -658,6 +673,39 @@ class MyClass(GeneratedClass):
                 self.lastNu = now
                 self.say("Sorry, I did not catch that. You can also touch my screen.")
 
+    # ------------------------------------------------------------------ one short line when a screen opens
+    def _viewLine(self, view, arg):
+        if view == "home":
+            return "Welcome! Touch Watch Pepper's intro, or pick a game."
+        if view == "games":
+            if arg == "arm":
+                return "This is the Robot Arm AI Challenge. Touch a round, and I will explain it."
+            return "These are the four Arena games. Touch one, and I will explain it."
+        if view == "teams":
+            return self._teamsLine()
+        if view == "schedule":
+            return "Here is the programme. " + self._comingUp(self.clock())
+        if view == "scores":
+            return "These are the provisional scores. The judges announce the official results."
+        if view == "quiz":
+            return "Let's play the robot quiz! Five questions. Touch Start."
+        if view == "help":
+            return "If you need help, touch the red button, and a volunteer will come to you."
+        return ""
+
+    def _viewTalk(self, view, arg):
+        """Every tap gets an answer: a short line for the screen, not repeated within VIEW_GAP_S for the same screen."""
+        if self.intro is not None:
+            return
+        line = self._viewLine(view, arg)
+        if not line:
+            return
+        key, now = view + "/" + arg, self.clock()
+        if now - self.viewSaid.get(key, -1e9) < VIEW_GAP_S:
+            return
+        self.viewSaid[key] = now
+        self.say(line)
+
     def _teamsLine(self):
         n = len(self.teams)
         if not n:
@@ -760,10 +808,15 @@ class MyClass(GeneratedClass):
             return
         mid = msg.get("id")
         if mid:
-            if mid in self.seen:
-                return
-            self.seen.append(mid)
-            self.seen = self.seen[-60:]
+            # a tap arrives twice (tablet link and robot memory, on two threads): check and record in one step
+            self.seenLock.acquire()
+            try:
+                if mid in self.seen:
+                    return
+                self.seen.append(mid)
+                self.seen = self.seen[-60:]
+            finally:
+                self.seenLock.release()
         cmd = msg.get("cmd", "")
         now = self.clock()
         self.lastActivity = now
@@ -772,7 +825,9 @@ class MyClass(GeneratedClass):
             if g is not None:
                 self.say(g.get("say", ""))
         elif cmd == "view":
-            pass                          # v1.1: Pepper no longer talks when a screen changes
+            if _u(msg.get("view", "")) != "quiz":
+                self.quizOn = None            # the visitor left the quiz
+            self._viewTalk(_u(msg.get("view", "")), _u(msg.get("arg", "")))
         elif cmd == "intro":
             self.startIntro("tablet")
         elif cmd == "intro-stop":
@@ -805,9 +860,11 @@ class MyClass(GeneratedClass):
         except Exception:
             return
         self.quizOn = int(msg.get("i"))
+        self.quizAt = self.clock()
         self.say(q["q"])                  # v1.1: the answers are on the screen; Pepper reads only the question
 
     def _quizAnswer(self, msg):
+        self.quizAt = self.clock()
         quiz = (self.content or {}).get("quiz", [])
         try:
             q = quiz[int(msg.get("i"))]

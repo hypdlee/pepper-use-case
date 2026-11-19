@@ -46,6 +46,12 @@ class MyClass(GeneratedClass):
         appName = self.packageUid()
         state = False
         if appName and tabletService:
+            # clear the tablet browser cache on every start, so the newest pages and scripts load after an update
+            try:
+                tabletService.cleanWebview()
+                self.logger.info("Tablet cache cleared")
+            except Exception as e:
+                self.logger.warning("Tablet cache not cleared (%s)" % e)
             if tabletService.loadApplication(appName):
                 self.logger.info("Successfully set application: %s" % appName)
                 tabletService.showWebview()
@@ -65,6 +71,7 @@ PARAMS = [
     ("Match calls", 0, "1", "On: ten minutes before each block of matches (and before the opening and the awards), Pepper calls the teams. Staff can also switch this on the tablet."),
     ("Greet visitors", 0, "1", "On: Pepper says hello when someone comes close (at most every 2 minutes)."),
     ("Intro when idle (minutes)", 1, "10", "Pepper gives its intro by itself after this many quiet minutes, if someone is near. 0 = only when asked. Staff can also switch this off on the tablet."),
+    ("Intro at start", 0, "1", "On: Pepper gives its intro (about 2 minutes) once, a few seconds after the app starts."),
     ("Announce match starts", 0, "0", "On: Pepper also announces every match as it starts. Off: only one call ten minutes before each block of matches."),
 ]
 
@@ -91,6 +98,14 @@ def xar():
     links = "".join('<Link inputowner="%d" indexofinput="%d" outputowner="%d" indexofoutput="%d" />' % l for l in LINKS)
     tail = '</Diagram></BehaviorKeyframe></BehaviorLayer></Timeline></Box></ChoregrapheProject>'
     return head + SHOW_APP + controller_box(code) + links + tail
+
+def stamp_index():
+    """Scripts and styles are requested with the version (host.js?v=1.1.2), so the tablet cannot reuse an old copy."""
+    p = os.path.join(PKG, "html", "index.html")
+    s = io.open(p, encoding="utf-8").read()
+    s2 = re.sub(r'(src|href)="(js/[a-z]+\.js|css/[a-z]+\.css)(\?v=[0-9.]+)?"', lambda m: '%s="%s?v=%s"' % (m.group(1), m.group(2), version()), s)
+    if s2 != s:
+        io.open(p, "w", encoding="utf-8").write(s2)
 
 def manifest():
     return ('<?xml version=\'1.0\' encoding=\'UTF-8\'?>\n<package uuid="%s" version="%s">\n <names>\n  <name lang="en_US">%s</name>\n </names>\n'
@@ -122,6 +137,7 @@ def pml():
 
 if __name__ == "__main__":
     os.makedirs(os.path.join(PKG, "behavior_1"), exist_ok=True)
+    stamp_index()
     io.open(os.path.join(PKG, "behavior_1", "behavior.xar"), "w", encoding="utf-8").write(xar())
     io.open(os.path.join(PKG, "manifest.xml"), "w", encoding="utf-8").write(manifest())
     io.open(os.path.join(PKG, "ChampionshipHost.pml"), "w", encoding="utf-8").write(pml())

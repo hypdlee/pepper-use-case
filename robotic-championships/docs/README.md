@@ -1,10 +1,10 @@
-# Pepper Championship Host (v1.1.1)
+# Pepper Championship Host (v1.1.2)
 
 Pepper as the neutral, official host of the **IEEE Robot Championships 2026** (28 and 29 November, Montekristo Estate Arena, Malta), built for the IEEE Malta Section.
 
 Pepper opens with a **two-minute intro**: who it is, the two competitions, every game with its clip, all 13 teams by name, and what is coming next. After that the tablet does most of the work. Visitors can see the games, the teams, the programme and provisional scores, and play a **robot quiz of 100 questions**. They can also call a volunteer. Pepper calls the teams ten minutes before each block of matches.
 
-Pepper talks when it has something useful to say, and stays quiet the rest of the time. Speech recognition in a loud arena is not reliable, so everything works by touch, and voice is a bonus.
+Pepper answers every tap with one short line (the same screen's line is not repeated within 15 seconds), gives its intro once at every start, and stays quiet the rest of the time. Speech recognition in a loud arena is not reliable, so everything works by touch, and voice is a bonus.
 
 Every team is treated the same way. Pepper never comments on a team, never favours one, and never states an official result: scores on the screen are marked provisional, and the judges announce the results.
 
@@ -34,6 +34,7 @@ Twelve scenes, about two minutes. The tablet goes full screen while Pepper speak
 12. Touch my screen: your turn
 
 The intro starts:
+- once at every start of the app, about 8 seconds after it starts (box parameter **Intro at start**);
 - when a visitor touches **Watch Pepper's intro** on Home, or says "intro";
 - when staff press **Start the intro now** (staff mode, Announce tab);
 - by itself after a quiet spell (10 minutes by default) if someone is standing near Pepper.
@@ -60,7 +61,7 @@ The questions cover the seven games (from the Rulebook v0.7), the event, IEEE an
 | Call a volunteer | "help", "call a volunteer", "I am lost" | A red alert on the staff screen; Pepper says a volunteer is coming |
 | Help | "toilets", "food" | Good-to-know answers (edit them in `html/data/content.json`) |
 
-If Pepper does not understand, it says so only when someone is standing at it, at most once a minute, and never during the quiz or the intro (noise in a busy hall is often heard as speech). Pepper also answers "who are you", "what time is it", "thank you" and "goodbye", and says a short hello when someone comes close (at most every 2 minutes). Moving between screens is silent. Pepper only speaks when someone asks, opens a game, starts the intro or the quiz, or when a match call is due.
+If Pepper does not understand, it says so only when someone is standing at it, at most once a minute, and never during the quiz or the intro (noise in a busy hall is often heard as speech). Pepper also answers "who are you", "what time is it", "thank you" and "goodbye", and says a short hello when someone comes close (at most every 2 minutes). Each screen has one short line, for example "These are the four Arena games. Touch one, and I will explain it." Opening a game gives its full explanation.
 
 ## Install and start
 
@@ -70,13 +71,16 @@ If Pepper does not understand, it says so only when someone is standing at it, a
    - **Match calls**: on by default.
    - **Greet visitors**: on by default.
    - **Intro when idle (minutes)**: 10 by default. 0 means the intro only plays when someone asks for it.
+   - **Intro at start**: on by default. Pepper gives its intro once, about 8 seconds after the app starts.
    - **Announce match starts**: off by default, so Pepper makes one call per block of matches. Switch it on to also announce every match as it starts.
 3. Fill in the teams and the programme (see below). You can also do this later on the tablet.
 4. Optional: put the official `logo.png` and `mascot.png` in `html/brand/` (see the README there). Without them the tablet shows the text title only.
-5. Press **Play once**. In the log you should see `[Host] v1.1.1 running. N teams, M programme items, content loaded`, `[Host] dialog loaded and listening`, and about 4 seconds later `[Host] the dialog answers: Pepper is listening`. Pepper then says hello when someone comes close.
+5. Press **Play once**. In the log you should see `[Host] v1.1.2 running. N teams, M programme items, content loaded`, `[Host] dialog loaded and listening`, and about 4 seconds later `[Host] the dialog answers: Pepper is listening`. Pepper then says hello when someone comes close.
 6. For the event, install the app on the robot (Choregraphe: Robot applications, install) so it survives a reboot.
 
-**Only one copy may run.** If the log shows two different `behavior_...` numbers, or a version that is not v1.1.1, older copies are still running and every touch is answered twice. Since v1.1.1 a new start takes over: older copies let go of the tablet and go quiet, and the tablet sends through robot memory, which older versions do not hear. A copy of v1.0.x started earlier can still hold the tablet until Pepper restarts, so **restart Pepper once** after installing v1.1.1. Also remove any older version from Robot applications, so it cannot start by itself.
+**Only one copy may run.** If the log shows two different `behavior_...` numbers, or a version older than v1.1.1, older copies are still running and every touch is answered twice. Since v1.1.1 a new start takes over: older copies let go of the tablet and go quiet, and the tablet sends through robot memory, which older versions do not hear. A copy of v1.0.x started earlier can still hold the tablet until Pepper restarts, so **restart Pepper once** after installing this version. Also remove any older version from Robot applications, so it cannot start by itself.
+
+**Fresh files on every start.** The Show App box clears the tablet browser's cache before it opens the app, and the page asks for its scripts and styles with the version number, so after an update the tablet never runs an old copy. Teams, programme and scores entered in staff mode are kept on purpose, and so is the quiz shuffle (so questions do not repeat).
 
 **Clean start.** The Host Controller loads the dialog itself. If an earlier run left a copy loaded, it removes that copy first (the log says `removed an old copy of the dialog left by an earlier run`), so the "topic is already loaded" error cannot stop it. If the tablet still shows **Voice not ready**:
 - Stop all behaviours and start the app once.

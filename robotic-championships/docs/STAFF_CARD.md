@@ -11,6 +11,7 @@
 | Update scores | Scores tab: choose the team, type the running total |
 | Make an announcement | Announce tab: type it, or tap a ready-made one |
 | Stop the match calls | Announce tab, "Turn off" |
+| Pepper says nothing when the screen is touched | Check the log shows one `v1.1.2 running` line. Stop all behaviours, restart Pepper, start the app once |
 | Pepper says everything twice | Another copy of the app is running. Stop all behaviours, then restart Pepper |
 | Play Pepper's intro now | Announce tab, "Start the intro now" (or Home, "Watch Pepper's intro") |
 | Stop the intro | "Skip" on the tablet, or say "stop" |

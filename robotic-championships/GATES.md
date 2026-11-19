@@ -70,3 +70,17 @@
   EVIDENCE: test_controller not-understood block; 2 mutations caught
 - [ ] G30 Confirmed on the robot after one restart
   ABANDON: G30 needs the next Choregraphe log
+
+# Round 7 (v1.1.2): "Pepper says nothing, no intro, no answer to taps"
+- [x] G31 Taps reach Pepper again: v1.1.1 sent taps through robot memory only; if that channel does not work on the robot, every tap was lost. Back to both channels; one tap is answered once (id check, now atomic across the two threads); stopped or replaced copies stay silent
+  EVIDENCE: ui.test.js channel check (binding+memory); test_controller duplicate and two-copies checks OK on 2.7 and 3
+- [x] G32 Every tap gets a spoken answer: one short line per screen, not repeated within 15 s, never during the intro
+  EVIDENCE: test_controller screen-line block; 2 mutations caught
+- [x] G33 Intro once at every start (8 s after launch, box parameter "Intro at start", on by default)
+  EVIDENCE: test_controller intro-at-start block; 2 mutations caught
+- [x] G34 Bug found: a quiz left half way kept Pepper in quiz mode for ever (no greeting, no automatic intro, no intro at start). Now cleared when another screen opens or after 3 minutes without an answer
+  EVIDENCE: test_controller abandoned-quiz block; 3 mutations caught
+- [x] G35 Tablet cache cleared on every start (ALTabletService.cleanWebview before loadApplication) and scripts requested with the version
+  EVIDENCE: test_package Show App and index.html checks
+- [ ] G36 Confirmed on the robot
+  ABANDON: G36 needs a run on Pepper and the Choregraphe log

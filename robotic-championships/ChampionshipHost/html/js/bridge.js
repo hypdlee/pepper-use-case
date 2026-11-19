@@ -1,11 +1,10 @@
 /* Tablet <-> Pepper link (ES5, no library required).
    Robot -> tablet: the Host Controller calls ALTabletService.executeJS("HostUI.update({...})"); with QiSession the
                     ALMemory event "Host/Session" carries the same state (older or repeated states are skipped).
-   Tablet -> robot: through QiSession + ALMemory "Host/TabletCmd" (polled by the Host Controller that is running now).
-                    Only if that is not connected: ALTabletBinding.raiseEvent(json) (ALTabletService.onJSEvent).
-                    Memory first, because copies of the app that were stopped earlier (or older versions) can stay
-                    connected to onJSEvent until the robot restarts, and would answer every tap a second time.
-                    Each message has an id; the controller ignores repeats.
+   Tablet -> robot: EVERY tap goes through BOTH channels, so one channel that does not work on a robot can never make
+                    the tablet dead: ALTabletBinding.raiseEvent(json) (ALTabletService.onJSEvent) and QiSession +
+                    ALMemory "Host/TabletCmd" (polled by the controller). Each message has an id, so the controller
+                    answers it once; a controller that was stopped or replaced ignores the tablet (v1.1.1 and later).
                     The Qi connection is retried every 5 s until it works. */
 (function (w) {
   'use strict';
@@ -17,11 +16,14 @@
     n += 1;
     msg.id = 't' + (new Date()).getTime() + '-' + n;
     var s = JSON.stringify(msg), ok = false, used = [];
-    if (B.mem) {
-      try { B.mem.insertData('Host/TabletCmd', s); ok = true; used.push('memory'); } catch (e2) { /* try the other channel */ }
+    if (hasBinding()) {
+      try { w.ALTabletBinding.raiseEvent(s); ok = true; used.push('binding'); } catch (e) { /* try the other channel */ }
     }
-    if (!ok && hasBinding()) {
-      try { w.ALTabletBinding.raiseEvent(s); ok = true; used.push('binding'); } catch (e) { /* nothing */ }
+    if (B.mem) {
+      try {
+        var p = B.mem.insertData('Host/TabletCmd', s); ok = true; used.push('memory');
+        if (p && p.then) { p.then(null, function () { B.memFail = (B.memFail || 0) + 1; }); }
+      } catch (e2) { /* nothing */ }
     }
     B.channel = used.join(' + ') || 'none';
     return ok;

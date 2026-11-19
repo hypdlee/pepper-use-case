@@ -171,7 +171,7 @@ def make(w, params=None):
         def service(self, name):
             return {"ALMemory": Mem, "ALAnimatedSpeech": Speech, "ALTextToSpeech": TTS, "ALTabletService": Tablet,
                     "ALDialog": Dialog, "ALBasicAwareness": Aware, "ALFrameManager": Frame}.get(name, Rec)(name, w)
-    P = {"Staff PIN": "2468", "Match calls": True, "Greet visitors": True, "Intro when idle (minutes)": 10, "Announce match starts": False}
+    P = {"Staff PIN": "2468", "Match calls": True, "Greet visitors": True, "Intro when idle (minutes)": 10, "Announce match starts": False, "Intro at start": False}
     P.update(params or {})
     class GeneratedClass(object):
         behaviorId = "bid"
@@ -254,7 +254,7 @@ def run():
     w = World(app)
     box, ns = start(w, store=store)
     st = last_state(w)
-    check(st is not None and st["v"] == "1.1.1", "no first state pushed")
+    check(st is not None and st["v"] == "1.1.2", "no first state pushed")
     check([t["name"] for t in st["teams"]] == ["Team Falcon", "Orion, The", "ArmStrong"], "teams from CSV: %r" % [t["name"] for t in st["teams"]])
     check([t["cat"] for t in st["teams"]] == ["arena", "arena", "arm"], "team categories")
     check([x["title"] for x in st["schedule"]] == ["Opening Ceremony", "Time of Fall", "Colour Sort", "Shape Sort", "Awards Ceremony"], "schedule rows: %r" % [x["title"] for x in st["schedule"]])
@@ -332,12 +332,18 @@ def run():
     k = len(w.said)
     tab(w, box, {"cmd": "game", "game": "pour", "id": "same"}); tab(w, box, {"cmd": "game", "game": "pour", "id": "same"})
     check(len(w.said) == k + 1, "repeated tablet message not ignored")
-    w.stopped = w.sent; box.speaking = False; box.lastView = 0
-    tab(w, box, {"cmd": "view", "view": "schedule"})
-    k = len(w.said)
-    for v in ("teams", "games", "scores", "help", "schedule"):
-        box.lastView = 0; w.stopped = w.sent; box.speaking = False; tab(w, box, {"cmd": "view", "view": v})
-    check(len(w.said) == k, "v1.1: Pepper must not talk when a screen changes: %r" % w.said[k:])
+    # every tap gets an answer: one short line per screen, not repeated within 15 s for the same screen
+    lines = {}
+    for v, a in (("home", ""), ("games", "arena"), ("games", "arm"), ("teams", ""), ("schedule", ""), ("scores", ""), ("quiz", ""), ("help", "")):
+        k = len(w.said); tab(w, box, {"cmd": "view", "view": v, "arg": a})
+        check(len(w.said) == k + 1 and len(w.said[-1]) < 200, "no short line for the %s screen: %r" % (v + "/" + a, w.said[k:]))
+        lines[v + "/" + a] = w.said[-1]
+    check(lines["teams/"].startswith("3 teams are taking part") and lines["games/arm"].startswith("This is the Robot Arm AI Challenge")
+          and "provisional" in lines["scores/"] and "red button" in lines["help/"] and lines["schedule/"].startswith("Here is the programme."), "screen lines: %r" % lines)
+    k = len(w.said); tab(w, box, {"cmd": "view", "view": "teams", "arg": ""}); tick(w, box, 10); tab(w, box, {"cmd": "view", "view": "teams", "arg": ""})
+    check(len(w.said) == k, "the same screen line was repeated within 15 s")
+    tick(w, box, 6); tab(w, box, {"cmd": "view", "view": "teams", "arg": ""})
+    check(len(w.said) == k + 1, "the screen line did not come back after 15 s")
     tab(w, box, {"cmd": "quizq", "i": 0, "opts": [2, 0, 1]})
     check(w.said[-1] == "In Time of Fall, what do the robots try to do?", "quiz question (question only): %r" % w.said[-1])
     tab(w, box, {"cmd": "quiza", "i": 0, "ok": False})
@@ -506,6 +512,36 @@ def run():
     # a match call during the intro ends the intro first
     wi.t = utc(2026, 11, 28, 13, 30) + 1; tab(wi, boxi, {"cmd": "intro"}); boxi.lastCallCheck = 0; tick(wi, boxi, 0.2)
     check(boxi.intro is None and wi.said[-1].startswith("Attention teams. In ten minutes, in the Arena: Time of Fall"), "match call during the intro: %r" % wi.said[-1:])
+    # a quiz left half way must not keep Pepper quiet for ever
+    wqz = World(app); wqz.t = utc(2026, 11, 28, 9, 0)
+    boxqz, _ = start(wqz, store=os.path.join(tmp, "sqz")); wqz.mem["hostPong"] = "ok1"; tick(wqz, boxqz, 5)
+    tab(wqz, boxqz, {"cmd": "quizq", "i": 3, "opts": [0, 1, 2]}); check(boxqz.quizOn == 3, "quiz flag not set")
+    tab(wqz, boxqz, {"cmd": "view", "view": "teams", "arg": ""}); check(boxqz.quizOn is None, "quiz flag kept after the visitor left the quiz")
+    tab(wqz, boxqz, {"cmd": "quizq", "i": 4, "opts": [0, 1, 2]}); tick(wqz, boxqz, 120)
+    tab(wqz, boxqz, {"cmd": "quiza", "i": 4, "ok": True}); tick(wqz, boxqz, 120)
+    check(boxqz.quizOn == 4, "quiz flag cleared while the visitor was still answering")
+    tick(wqz, boxqz, 70); check(boxqz.quizOn is None, "quiz flag kept after 3 minutes without an answer")
+    wqz.mem["ALBasicAwareness/HumanTracked"] = 1
+    for _ in range(12):
+        wqz.t += 60; tick(wqz, boxqz, 0.1); boxqz.lastCallCheck = 0
+    check(boxqz.intro is not None, "no automatic intro after an abandoned quiz")
+
+    # once at every start, a few seconds after launch (box parameter "Intro at start", on by default in the app)
+    wst = World(app); wst.t = utc(2026, 11, 28, 9, 0)
+    boxst, _ = start(wst, params={"Intro at start": True}, store=os.path.join(tmp, "sst")); wst.mem["hostPong"] = "ok1"
+    tick(wst, boxst, 6); check(boxst.intro is None, "intro started before the tablet had time to load")
+    tick(wst, boxst, 3); check(boxst.intro is not None and boxst.intro["i"] == 0 and wst.said[-1].startswith("Hello everyone"), "no intro at start")
+    for _ in range(1500):
+        tick(wst, boxst, 0.1)
+        if boxst.intro is None:
+            break
+    tick(wst, boxst, 30); check(boxst.intro is None, "intro at start played more than once")
+    wso = World(app); boxso, _ = start(wso, store=os.path.join(tmp, "sso")); tick(wso, boxso, 12)
+    check(boxso.intro is None, "intro at start played although the parameter is off")
+    view_k = len(wi.said); tab(wi, boxi, {"cmd": "intro"}); tab(wi, boxi, {"cmd": "view", "view": "teams", "arg": ""})
+    check(wi.said[-1].startswith("Hello everyone"), "a screen line interrupted the intro: %r" % wi.said[-1:])
+    tab(wi, boxi, {"cmd": "intro-stop"})
+
     # by itself after 10 quiet minutes, only when someone is near, and staff can switch it off
     wa = World(app); wa.t = utc(2026, 11, 28, 9, 0)
     boxa, _ = start(wa, store=os.path.join(tmp, "sa")); wa.mem["hostPong"] = "ok1"
