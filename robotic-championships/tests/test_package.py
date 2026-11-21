@@ -132,5 +132,28 @@ for p in texts:
     for w in restricted:
         check(w not in t.lower(), "restricted word in %s" % rel)
 
+
+# ---- Pepper's tablet browser is old (Android 5 WebView, about Chrome 37 to 44). Seen on the robot: CSS variables were
+#      ignored, so the purple and yellow vanished. Refuse every feature that browser does not have.
+css_text = io.open(os.path.join(PKG, "html", "css", "host.css"), encoding="utf-8").read()
+css_code = re.sub(r"/\*.*?\*/", "", css_text, flags=re.S)
+for bad, why in ((r"var\(", "CSS variables"), (r"(^|[;{\s])--[a-z]", "CSS custom properties"), (r"(^|[;{\s])(row-|column-)?gap\s*:", "flex/grid gap"),
+                 (r"display\s*:\s*(inline-)?grid", "CSS grid"), (r"position\s*:\s*sticky", "sticky"), (r"(^|[;{\s])inset\s*:", "inset"),
+                 (r"aspect-ratio", "aspect-ratio"), (r"\b(clamp|min|max)\(", "clamp/min/max"), (r":(is|where|has)\(", ":is/:where/:has"),
+                 (r"@supports", "@supports"), (r"backdrop-filter", "backdrop-filter"), (r"\bfit-content\b", "fit-content")):
+    check(not re.search(bad, css_code, re.M), "host.css uses %s, which Pepper's tablet browser does not have" % why)
+check(css_code.count("@keyframes") == css_code.count("@-webkit-keyframes"), "every @keyframes needs a @-webkit-keyframes twin")
+for prop in ("animation", "transform"):
+    n = len(re.findall(r"(^|[;{\s])%s\s*:" % prop, css_code, re.M)); nw = len(re.findall(r"-webkit-%s\s*:" % prop, css_code))
+    check(nw >= n, "every %s needs a -webkit-%s twin (%d vs %d)" % (prop, prop, n, nw))
+for name in ("host.js", "bridge.js"):
+    js = io.open(os.path.join(PKG, "html", "js", name), encoding="utf-8").read()
+    js_code = re.sub(r"//[^\n]*|/\*.*?\*/", "", js, flags=re.S)
+    for bad in (r"\.includes\(", r"\.startsWith\(", r"\.endsWith\(", r"Object\.assign", r"\bfetch\(", r"\.closest\(", r"Array\.from", r"\.append\(",
+                r"\.prepend\(", r"padStart", r"padEnd", r"Object\.values", r"Object\.entries", r"\.find\(", r"findIndex", r"\.repeat\(", r"\.fill\(",
+                r"=>", r"\blet\s", r"\bconst\s", r"`", r"\.replaceAll\(", r"\.flat\(", r"IntersectionObserver", r"\.dataset\b", r"\bclass\s+[A-Z]",
+                r"\.catch\(", r"\.finally\(", r"async\s", r"\bawait\s", r"\.toggle\([^,)]*,"):
+        check(not re.search(bad, js_code), "%s uses %s, which Pepper's tablet browser does not have" % (name, bad))
+
 print("PACKAGE OK" if not FAILS else "%d FAILURES" % len(FAILS))
 sys.exit(1 if FAILS else 0)

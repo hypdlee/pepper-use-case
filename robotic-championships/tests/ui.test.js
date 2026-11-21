@@ -43,6 +43,12 @@ function state(extra) {
 
   // preview mode (no robot): content and the CSV files are read by the page itself
   ok((await txt('#status')) === 'Preview', 'status in preview: ' + await txt('#status'));
+  // a tablet that reports a smaller screen: the page scales to fit instead of being cut off
+  await pg.setViewportSize({ width: 1024, height: 640 }); await pg.waitForTimeout(200);
+  const fitR = await pg.evaluate(() => { const r = document.getElementById('app').getBoundingClientRect(); return [Math.round(r.right), Math.round(r.bottom)]; });
+  ok(fitR[0] <= 1025 && fitR[1] <= 641 && fitR[0] >= 1020, 'page scales to a 1024 x 640 screen: ' + fitR);
+  await pg.setViewportSize({ width: 1280, height: 800 }); await pg.waitForTimeout(200);
+  ok((await pg.$eval('#app', a => a.style.transform)) === '', 'no scaling at 1280 x 800');
   // a tap goes through both channels, so one broken channel cannot make the tablet dead
   const ch = await pg.evaluate(() => {
     const got = []; window.ALTabletBinding = { raiseEvent: () => got.push('binding') };
@@ -245,7 +251,14 @@ function state(extra) {
     ok((await txt('#introHead')) === sc.head.replace('{n}', '4'), 'intro title, scene ' + sc.id);
     ok((await pg.$$eval('#introDots span', e => e.length)) === 12 && (await pg.$$eval('#introDots span.on', e => e.length)) === 1, 'progress dots, scene ' + sc.id);
     if (sc.clip) { ok((await pg.$eval('#ivid', v => v.getAttribute('data-src'))) === 'clips/' + sc.clip + '.mp4' && !(await vis('#introBig')), 'intro clip, scene ' + sc.id); }
-    else { ok(await vis('#introBig'), 'intro panel, scene ' + sc.id); }
+    else {
+      ok(await vis('#introBig') && !(await vis('#ivid')), 'intro panel without the video behind it (seen on the robot), scene ' + sc.id);
+      const ctr = await pg.evaluate(() => { const b = document.getElementById('introBig'), r = b.getBoundingClientRect(); let top = 1e9, bot = -1e9;
+        Array.prototype.forEach.call(b.children, c => { if (c.className === 'ib-mascot') { return; } const q = c.getBoundingClientRect(); top = Math.min(top, q.top); bot = Math.max(bot, q.bottom); });
+        return Math.abs((top + bot) / 2 - (r.top + r.bottom) / 2); });
+      ok(ctr < 40, 'intro panel content is centred, scene ' + sc.id + ' (off by ' + Math.round(ctr) + ' px)');
+      ok((await pg.$eval('#introBig', b => getComputedStyle(b).backgroundColor)) === 'rgb(119, 37, 131)', 'intro panel is IEEE purple, scene ' + sc.id);
+    }
     ok((await pg.evaluate(() => { const b = document.getElementById('introBig'); return Array.prototype.every.call(b.querySelectorAll('*'), e => e.getBoundingClientRect().right <= b.getBoundingClientRect().right + 1 && e.getBoundingClientRect().bottom <= b.getBoundingClientRect().bottom + 1); })), 'intro panel content spills out, scene ' + sc.id);
     if (sc.kind === 'teams') { ok((await pg.$$eval('.ib-col div', e => e.length)) === 4, 'team names in the intro'); }
   }
@@ -285,7 +298,15 @@ function state(extra) {
   await pg.evaluate(s => HostUI.update(s), state({ seq: 300 }));
   await pg.evaluate(() => HostUI.staff({ ok: true, token: 'tok9' })); await pg.click('[data-st="announce"]');
   await pg.click('[data-act="intro-start"]'); ok((await sent()).some(m => m.cmd === 'intro-start' && m.token === 'tok9'), 'staff intro start');
-  await pg.click('[data-act="intro-auto"]'); ok((await sent()).some(m => m.cmd === 'intro-auto' && m.on === false && m.token === 'tok9'), 'staff automatic intro off');
+  await pg.click('[data-act="intro-auto"]');
+  await pg.click('[data-st="system"]');
+  await pg.click('[data-act="clock-tablet"]');
+  ok((await sent()).some(m => m.cmd === 'set-clock' && /^\d{4}-\d{2}-\d{2}$/.test(m.date) && /^\d{2}:\d{2}$/.test(m.time) && m.token === 'tok9'), "staff: use the tablet's time");
+  await pg.fill('#cDate', '2026-11-28'); await pg.fill('#cTime', '13:45'); await pg.click('[data-act="clock-set"]');
+  ok((await sent()).some(m => m.cmd === 'set-clock' && m.date === '2026-11-28' && m.time === '13:45'), 'staff: set the clock by hand');
+  const nBad = (await sent()).length; await pg.fill('#cTime', 'quarter to two'); await pg.click('[data-act="clock-set"]');
+  ok((await sent()).length === nBad, 'staff: a wrong time is not sent');
+  await pg.click('[data-st="announce"]'); ok((await sent()).some(m => m.cmd === 'intro-auto' && m.on === false && m.token === 'tok9'), 'staff automatic intro off');
   await pg.evaluate(() => HostUI.staffClosed());
 
   // ---- v1.1: without a robot, the page plays the intro by itself

@@ -84,3 +84,17 @@
   EVIDENCE: test_package Show App and index.html checks
 - [ ] G36 Confirmed on the robot
   ABANDON: G36 needs a run on Pepper and the Choregraphe log
+
+# Round 8 (v1.2.0): photo of the robot's tablet
+- [x] G37 Root cause of the "bad UI" on the robot: Pepper's tablet browser has no CSS variables; every colour was a variable, so purple, yellow, dark buttons and the Skip button vanished and the intro clip showed through. All colours written out
+  EVIDENCE: test_package fails on the v1.1.2 stylesheet ("host.css uses CSS variables") and passes now
+- [x] G38 Compatibility check for the old browser: no CSS variables, gap, grid, sticky, inset, aspect-ratio, clamp/min/max, :is/:where/:has, @supports; every animation and transform has a -webkit- twin; no ES6 or newer DOM APIs in the scripts
+  EVIDENCE: test_package compatibility block, PACKAGE OK
+- [x] G39 Intro panels: video hidden (not only paused) on scenes without a clip; content centred; panel IEEE purple; progress bar white for scenes already shown
+  EVIDENCE: ui.test.js per-scene checks (5 panel scenes); reverting either fix fails 5 checks
+- [x] G40 Page scales to fit if the tablet reports another size
+  EVIDENCE: ui.test.js 1024 x 640 check
+- [x] G41 Pepper's clock was about 11 hours wrong on the robot: staff can set it (tablet time or typed), every timer moves with it, kept after a restart, needs a staff login
+  EVIDENCE: test_controller clock block; ui.test.js clock buttons
+- [ ] G42 Confirmed on the robot's tablet
+  ABANDON: G42 needs a photo of the tablet running v1.2.0

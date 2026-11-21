@@ -22,6 +22,15 @@
   function each(list, fn) { for (var i = 0; i < list.length; i += 1) { fn(list[i], i); } }
   function now() { return (new Date()).getTime() + H.clockSkew; }
   function pad(n) { return (n < 10 ? '0' : '') + n; }
+  // The page is laid out for 1280 x 800. If a tablet reports another size, scale the whole page to fit instead of cutting it.
+  function fitScreen() {
+    var app = $('app'); if (!app) { return; }
+    var k = Math.min((w.innerWidth || 1280) / 1280, (w.innerHeight || 800) / 800), tr = Math.abs(k - 1) > 0.01 ? 'scale(' + k + ')' : '';
+    app.style.webkitTransformOrigin = '0 0'; app.style.transformOrigin = '0 0';
+    app.style.webkitTransform = tr; app.style.transform = tr;
+  }
+  H.fitScreen = fitScreen;
+  function maltaDate(t) { var m = new Date(t + MALTA_OFFSET); return m.getUTCFullYear() + '-' + pad(m.getUTCMonth() + 1) + '-' + pad(m.getUTCDate()); }
   function maltaClock(t) { var m = new Date(t + MALTA_OFFSET); return pad(m.getUTCHours()) + ':' + pad(m.getUTCMinutes()); }
   function send(msg) { if (w.Bridge && w.Bridge.canSend()) { return w.Bridge.send(msg); } return false; }
   function staffSend(msg) { msg.token = H.staffToken; return send(msg); }
@@ -219,13 +228,15 @@
     for (i = 0; i < sc.n; i += 1) { dots.appendChild(el('span', i === sc.i ? 'on' : (i < sc.i ? 'past' : null))); }
     var v = $('ivid'), big = clear($('introBig'));
     if (sc.clip) {
-      big.style.display = 'none';
+      big.style.display = 'none'; v.style.display = 'block';
       var src = 'clips/' + sc.clip + '.mp4';
       if (v.getAttribute('data-src') !== src) { v.setAttribute('data-src', src); v.poster = 'clips/' + sc.clip + '.jpg'; v.src = src; try { var p = v.play(); if (p && p.then) { p.then(null, function () {}); } } catch (e) { /* ignore */ } }
       return;
     }
+    // Android's tablet browser can draw a video above the page: a scene without a clip hides the video completely
     try { v.pause(); } catch (e) { /* ignore */ }
-    big.style.display = 'block';
+    v.style.display = 'none';
+    big.style.display = '';
     if (sc.kind === 'title') {
       var img = el('img', 'ib-mascot'); img.src = 'brand/mascot.png'; img.alt = ''; img.onerror = function () { img.style.display = 'none'; }; big.appendChild(img);
       var t = el('div', 'ib-title'); t.appendChild(d.createTextNode('IEEE Robot Championships ')); t.appendChild(el('em', null, '2026')); big.appendChild(t);
@@ -636,9 +647,17 @@
     } else if (H.staffTab === 'system') {
       var lines = ['Version: ' + (H.version || 'unknown'), 'Link: ' + (w.Bridge ? w.Bridge.channel : 'none') + (H.linked ? ', Pepper connected' : ', no link'),
         'Voice: ' + (H.voice === true ? 'ready' : (H.voice === false ? 'NOT READY (stop all behaviours on Pepper, start the app once)' : 'being checked')),
-        'Teams: ' + H.teams.length + '. Schedule items: ' + H.schedule.length + '. Scores: ' + H.scores.length + '.',
-        'Robot clock (Malta): ' + maltaClock(now())];
+        'Teams: ' + H.teams.length + '. Schedule items: ' + H.schedule.length + '. Scores: ' + H.scores.length + '.'];
       each(lines, function (x) { box.appendChild(el('p', 'note', x)); });
+      // Pepper's clock drives the programme, now and next, and the match calls: check it when you set up
+      var ck = el('div', 'form clockbox');
+      ck.appendChild(el('p', 'clocknow', "Pepper's clock: " + maltaDate(now()) + '  ' + maltaClock(now()) + (H.clockFix ? '  (corrected by ' + H.clockFix + ' min)' : '')));
+      var tab = (new Date()).getTime();
+      ck.appendChild(button("Use the tablet's time: " + maltaClock(tab), 'pill primary', 'data-act', 'clock-tablet'));
+      ck.appendChild(input('Date', 'cDate', maltaDate(now()), 170)); ck.appendChild(input('Time', 'cTime', maltaClock(now()), 110));
+      ck.appendChild(button('Set the clock', 'pill', 'data-act', 'clock-set'));
+      if (H.clockFix) { ck.appendChild(button('Undo the correction', 'pill ghost', 'data-act', 'clock-reset')); }
+      box.appendChild(ck);
       box.appendChild(button('Reload teams.csv and schedule.csv', 'pill', 'data-act', 'reload'));
       box.appendChild(el('p', 'note', 'Reload replaces the teams and the schedule with the files, and keeps scores and alerts. Staff mode closes by itself after 5 minutes without a touch.'));
     }
@@ -667,6 +686,12 @@
     if (a === 'announce') { var x = val('aText'); if (x) { staffSend({ cmd: 'announce', text: x.slice(0, 300) }); $('aText').value = ''; } return; }
     if (a === 'calls') { staffSend({ cmd: 'calls', on: !H.calls }); return; }
     if (a === 'intro-start') { staffSend({ cmd: 'intro-start' }); return; }
+    if (a === 'clock-tablet') { var tt = (new Date()).getTime(); staffSend({ cmd: 'set-clock', date: maltaDate(tt), time: maltaClock(tt) }); toast('Clock set to ' + maltaClock(tt)); return; }
+    if (a === 'clock-reset') { staffSend({ cmd: 'set-clock', reset: true }); return; }
+    if (a === 'clock-set') {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(val('cDate')) || !/^\d{1,2}:\d{2}$/.test(val('cTime'))) { toast('Date like 2026-11-28, time like 13:45.'); return; }
+      staffSend({ cmd: 'set-clock', date: val('cDate'), time: val('cTime') }); toast('Clock set to ' + val('cTime')); return;
+    }
     if (a === 'intro-auto') { staffSend({ cmd: 'intro-auto', on: !H.introAuto }); return; }
     if (a === 'reload') { staffSend({ cmd: 'reload' }); }
   }
@@ -734,7 +759,7 @@
       if (typeof s.calls === 'boolean') { H.calls = s.calls; }
       H.voice = s.voice === true ? true : (s.voice === false ? false : null);
       H.speaking = !!s.speaking; H.version = s.v || H.version;
-      if (typeof s.introAuto === 'boolean') { H.introAuto = s.introAuto; } if (typeof s.introEvery === 'number') { H.introEvery = s.introEvery; }
+      if (typeof s.introAuto === 'boolean') { H.introAuto = s.introAuto; } if (typeof s.introEvery === 'number') { H.introEvery = s.introEvery; } if (typeof s.clockFix === 'number') { H.clockFix = s.clockFix; }
       if (s.intro) { if (localIntro) { w.clearInterval(localIntro); localIntro = null; } H.intro = s.intro; if (H.view !== 'intro') { go('intro'); return; } renderIntro(); renderHeader(); return; }
       if (!s.intro && H.intro && !localIntro) { H.intro = null; if (H.view === 'intro') { go('home'); return; } }
       if (H.view === 'game' || H.view === 'quiz') { renderHeader(); } else { render(); }
@@ -772,6 +797,7 @@
   w.setInterval(tick, 1000);
   H.lastTouch = (new Date()).getTime();
   try { $('reel').addEventListener('ended', nextReel, false); $('reel').addEventListener('error', function () { w.setTimeout(nextReel, 4000); }, false); } catch (e) { /* ignore */ }
+  fitScreen(); try { w.addEventListener('resize', fitScreen, false); } catch (e) { /* ignore */ }
   if (w.Bridge) { w.Bridge.onchange = renderHeader; w.Bridge.connect(); }
   render();
 })(window, document);

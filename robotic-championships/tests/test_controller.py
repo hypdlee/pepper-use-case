@@ -254,7 +254,7 @@ def run():
     w = World(app)
     box, ns = start(w, store=store)
     st = last_state(w)
-    check(st is not None and st["v"] == "1.1.2", "no first state pushed")
+    check(st is not None and st["v"] == "1.2.0", "no first state pushed")
     check([t["name"] for t in st["teams"]] == ["Team Falcon", "Orion, The", "ArmStrong"], "teams from CSV: %r" % [t["name"] for t in st["teams"]])
     check([t["cat"] for t in st["teams"]] == ["arena", "arena", "arm"], "team categories")
     check([x["title"] for x in st["schedule"]] == ["Opening Ceremony", "Time of Fall", "Colour Sort", "Shape Sort", "Awards Ceremony"], "schedule rows: %r" % [x["title"] for x in st["schedule"]])
@@ -609,6 +609,33 @@ def run():
     check(len(w8.said) == k + 1, "greeting not rate limited (2 minutes)")
     w8.mem["ALBasicAwareness/HumanTracked"] = -1; tick(w8, box8, 95); w8.mem["ALBasicAwareness/HumanTracked"] = 5; tick(w8, box8, 5.2)
     check(len(w8.said) == k + 2, "no greeting after the 2 minute pause")
+
+    # ---- Pepper's clock was 11 hours wrong on the robot: staff correct it, every timer moves with it, it survives a restart
+    wc = World(app); wc.t = utc(2026, 11, 21, 5, 35)          # Pepper thinks it is 06:35 in Malta, it is really 17:52
+    boxc, _ = start(wc, store=os.path.join(tmp, "sclk")); wc.mem["hostPong"] = "ok1"; tick(wc, boxc, 3)
+    tab(wc, boxc, {"cmd": "staff-login", "pin": "2468"})
+    tc = json.loads(wc.js[-1][len("try{HostUI.staff("):-len(")}catch(e){}")])["token"]
+    act_before = boxc.lastActivity
+    tab(wc, boxc, {"cmd": "set-clock", "date": "2026-11-21", "time": "17:52", "token": tc})
+    check(abs(boxc.clock() - utc(2026, 11, 21, 16, 52)) < 2, "clock not corrected: %s" % boxc.clock())
+    check(ns["malta_hhmm"](boxc.clock()) == "17:52", "Malta time after the correction")
+    check(boxc.lastActivity - act_before > 11 * 3600 - 60, "timers did not move with the clock")
+    boxc._flushJs(); st = json.loads(wc.mem["Host/State"])
+    check(abs(st["now"] / 1000.0 - utc(2026, 11, 21, 16, 52)) < 2 and st["clockFix"] == 677, "tablet not told the corrected time: %r" % st.get("clockFix"))
+    tab(wc, boxc, {"cmd": "calls", "on": True, "token": tc}); check(boxc.calls is True, "staff session expired because of the clock correction")
+    n = len(wc.said); tick(wc, boxc, 2); check(boxc.intro is None, "the clock jump started the intro")
+    boxc.onInput_onStop()
+    boxc2, _ = start(wc, store=os.path.join(tmp, "sclk")); wc.mem["hostPong"] = "ok1"; tick(wc, boxc2, 1)
+    check(ns["malta_hhmm"](boxc2.clock()) == "17:53" or ns["malta_hhmm"](boxc2.clock()) == "17:52", "clock correction lost after a restart: %s" % ns["malta_hhmm"](boxc2.clock()))
+    tab(wc, boxc2, {"cmd": "staff-login", "pin": "2468"})
+    tc2 = json.loads(wc.js[-1][len("try{HostUI.staff("):-len(")}catch(e){}")])["token"]
+    tab(wc, boxc2, {"cmd": "set-clock", "date": "21/11/2026", "time": "nonsense", "token": tc2})
+    check(ns["malta_hhmm"](boxc2.clock()) in ("17:52", "17:53"), "a bad date changed the clock")
+    tab(wc, boxc2, {"cmd": "set-clock", "date": "2026-11-21", "time": "17:52"})
+    tab(wc, boxc2, {"cmd": "set-clock", "reset": True, "token": "wrong"})
+    check(boxc2.clockOffset != 0, "the clock changed without a staff login")
+    tab(wc, boxc2, {"cmd": "set-clock", "reset": True, "token": tc2}); check(boxc2.clockOffset == 0, "undo the correction")
+    boxc2.onInput_onStop()
 
     # ---- two copies running (Play pressed twice): only the newest answers, the other lets go of the tablet
     wd = World(app); wd.mem["hostPong"] = "ok1"

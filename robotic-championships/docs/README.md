@@ -1,4 +1,4 @@
-# Pepper Championship Host (v1.1.2)
+# Pepper Championship Host (v1.2.0)
 
 Pepper as the neutral, official host of the **IEEE Robot Championships 2026** (28 and 29 November, Montekristo Estate Arena, Malta), built for the IEEE Malta Section.
 
@@ -16,11 +16,17 @@ Everything runs on the robot. Nothing is sent to the internet.
 
 ## The tablet
 
+**Built for Pepper's own tablet browser.** Pepper's tablet runs an old Android browser. It ignores modern CSS such as colour variables, flex gaps and grid. Up to v1.1.2 every colour was written as a CSS variable, so on the robot the purple and yellow simply disappeared (white text on white, the Skip button invisible, a clip showing through the intro). From v1.2.0 every colour is written out, and `tests/test_package.py` refuses any CSS or JavaScript feature that browser lacks. If a tablet reports a screen other than 1280 x 800, the page scales itself to fit.
+
 Built as a kiosk for Pepper's 1280 x 800 tablet, read standing up:
 - **A dock of seven big buttons along the bottom** (Home, Games, Teams, Schedule, Scores, Quiz, Help), where a hand reaches without stretching. Help is outlined in red, so it is easy to find.
 - **Every screen fills the tablet.** Text is at least 17 px, most of it 20 to 30 px. Buttons are at least 60 px tall.
 - **Home** shows the game clips on a loop, the big **Watch Pepper's intro** button, what is on now and next (or the countdown before the event), and shortcuts to the Arena, the Robot Arm AI Challenge, the teams and the quiz.
 - **The intro** takes over the whole screen in IEEE purple, with a progress bar along the top and the title in large yellow type.
+
+## Pepper's clock
+
+Pepper's clock drives the programme, "now" and "next", and the match calls. On the robot we tested, the clock was about 11 hours wrong. **Check it when you set up:** staff mode, System tab, "Pepper's clock". Touch **Use the tablet's time**, or type the date and time (Malta) and touch **Set the clock**. Pepper keeps the correction after a restart. **Undo the correction** removes it.
 
 ## Pepper's intro
 
@@ -75,7 +81,7 @@ If Pepper does not understand, it says so only when someone is standing at it, a
    - **Announce match starts**: off by default, so Pepper makes one call per block of matches. Switch it on to also announce every match as it starts.
 3. Fill in the teams and the programme (see below). You can also do this later on the tablet.
 4. Optional: put the official `logo.png` and `mascot.png` in `html/brand/` (see the README there). Without them the tablet shows the text title only.
-5. Press **Play once**. In the log you should see `[Host] v1.1.2 running. N teams, M programme items, content loaded`, `[Host] dialog loaded and listening`, and about 4 seconds later `[Host] the dialog answers: Pepper is listening`. Pepper then says hello when someone comes close.
+5. Press **Play once**. In the log you should see `[Host] v1.2.0 running. N teams, M programme items, content loaded`, `[Host] dialog loaded and listening`, and about 4 seconds later `[Host] the dialog answers: Pepper is listening`. Pepper then says hello when someone comes close.
 6. For the event, install the app on the robot (Choregraphe: Robot applications, install) so it survives a reboot.
 
 **Only one copy may run.** If the log shows two different `behavior_...` numbers, or a version older than v1.1.1, older copies are still running and every touch is answered twice. Since v1.1.1 a new start takes over: older copies let go of the tablet and go quiet, and the tablet sends through robot memory, which older versions do not hear. A copy of v1.0.x started earlier can still hold the tablet until Pepper restarts, so **restart Pepper once** after installing this version. Also remove any older version from Robot applications, so it cannot start by itself.

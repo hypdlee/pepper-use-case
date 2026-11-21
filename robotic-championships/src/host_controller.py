@@ -8,9 +8,9 @@
 #   - Calls the two teams 10 minutes before each scheduled match, and announces matches as they start (staff can turn this off).
 #   - Every team is treated the same way. Pepper never comments on a team and never states an official result.
 # Nothing here goes to the internet.
-import json, os, io, re, time, random, threading, unicodedata
+import json, os, io, re, time, random, threading, unicodedata, calendar
 
-VERSION = "1.1.2"
+VERSION = "1.2.0"
 TOKEN_KEY = "Host/ControllerToken"
 KEYS = ["hostCmd", "hostTeam", "hostGame", "hostAns", "hostInfo", "Host/TabletCmd", TOKEN_KEY]
 STATE_KEY, STATE_EVT = "Host/State", "Host/Session"
@@ -183,6 +183,7 @@ class MyClass(GeneratedClass):
         GeneratedClass.__init__(self)
         self.clock = time.time
         self.sleep = time.sleep
+        self.clockOffset = 0.0        # staff can correct Pepper's clock (System tab); kept in state.json
 
     def onLoad(self):
         self.px = {}
@@ -243,7 +244,11 @@ class MyClass(GeneratedClass):
         self.startAt = self.clock()
         self.appRoot = self._appRoot()
         self.content = self._loadContent()
+        if getattr(self, "_baseClock", None) is None:
+            self._baseClock = self.clock
+            self.clock = lambda: self._baseClock() + self.clockOffset
         self._loadData()
+        self.startAt = self.clock()
         self.calls = self.calls and bool(self._param("Match calls", True))
         self.introAuto = self.introAuto and self._introEvery() > 0
         self.introAtStart = bool(self._param("Intro at start", True))
@@ -401,11 +406,16 @@ class MyClass(GeneratedClass):
         self.alerts = (st.get("alerts") if isinstance(st.get("alerts"), list) else [])[-50:]
         self.calls = bool(st.get("calls", True))
         self.introAuto = bool(st.get("introAuto", True))
+        try:
+            self.clockOffset = float(st.get("clockOffset", 0.0))
+        except Exception:
+            self.clockOffset = 0.0
         self.announced = st.get("announced") if isinstance(st.get("announced"), dict) else {}
 
     def _save(self):
         data = {"teams": self.teams, "schedule": self.schedule, "scores": self.scores, "alerts": self.alerts[-50:],
-                "calls": self.calls, "introAuto": self.introAuto, "edited": self.edited, "announced": self.announced, "saved": self.clock()}
+                "calls": self.calls, "introAuto": self.introAuto, "edited": self.edited, "announced": self.announced, "saved": self.clock(),
+                "clockOffset": self.clockOffset}
         try:
             if not os.path.isdir(STORE_DIR):
                 os.makedirs(STORE_DIR)
@@ -706,6 +716,39 @@ class MyClass(GeneratedClass):
         self.viewSaid[key] = now
         self.say(line)
 
+    # ------------------------------------------------------------------ Pepper's clock
+    def _setClock(self, msg):
+        """Staff correct Pepper's clock: {"date": "2026-11-28", "time": "13:52"} in Malta time, or {"reset": true}.
+        Every timer is moved by the same amount, so nothing fires or expires because of the correction."""
+        if msg.get("reset"):
+            target = None
+        else:
+            try:
+                y, mo, d = [int(x) for x in _u(msg.get("date", "")).split("-")]
+                hh, mm = [int(x) for x in _u(msg.get("time", "")).split(":")]
+                target = calendar.timegm((y, mo, d, hh, mm, 0, 0, 0, 0)) - MALTA_UTC_OFFSET_S
+            except Exception:
+                self._log("warning", "[Host] clock not set: date or time not understood")
+                return False
+            if not (2026 <= y <= 2030):
+                return False
+        old = self.clockOffset
+        new = 0.0 if target is None else float(target - self._baseClock())
+        delta = new - old
+        self.clockOffset = new
+        for name in ("startAt", "lastActivity", "lastSpeak", "lastGreet", "lastNu", "lastCallCheck", "quizAt"):
+            v = getattr(self, name, None)
+            if isinstance(v, (int, float)) and v:
+                setattr(self, name, v + delta)
+        for tok in list(self.staff.keys()):
+            self.staff[tok] += delta
+        for k in list(self.viewSaid.keys()):
+            self.viewSaid[k] += delta
+        if self.intro is not None and isinstance(self.intro.get("t0"), (int, float)):
+            self.intro["t0"] += delta
+        self._log("info", "[Host] clock corrected by %d minutes, Malta time is now %s" % (int(round(new / 60.0)), malta_hhmm(self.clock())))
+        return True
+
     def _teamsLine(self):
         n = len(self.teams)
         if not n:
@@ -849,7 +892,7 @@ class MyClass(GeneratedClass):
             self._staffLogin(_u(msg.get("pin", "")), now)
         elif cmd == "staff-logout":
             self.staff.pop(_u(msg.get("token", "")), None)
-        elif cmd.startswith("team-") or cmd.startswith("sched-") or cmd.startswith("score-") or cmd in ("announce", "calls", "reload", "alert-seen", "intro-start", "intro-auto"):
+        elif cmd.startswith("team-") or cmd.startswith("sched-") or cmd.startswith("score-") or cmd in ("announce", "calls", "reload", "alert-seen", "intro-start", "intro-auto", "set-clock"):
             self._staffCmd(cmd, msg, now)
 
     def _quizQuestion(self, msg):
@@ -1012,6 +1055,9 @@ class MyClass(GeneratedClass):
             self.startIntro("staff")
         elif cmd == "intro-auto":
             self.introAuto = bool(msg.get("on"))
+        elif cmd == "set-clock":
+            if not self._setClock(msg):
+                changed = False
         elif cmd == "announce":
             text = clean_text(msg.get("text", ""), 300)
             changed = False
@@ -1342,7 +1388,8 @@ class MyClass(GeneratedClass):
     def _state(self):
         return {"v": VERSION, "teams": self.teams, "schedule": self.schedule, "scores": self.scores, "alerts": self.alerts[-20:],
                 "calls": self.calls, "voice": self.listen, "speaking": self.speaking,
-                "intro": self._introSceneState(), "introAuto": self.introAuto, "introEvery": self._introEvery()}
+                "intro": self._introSceneState(), "introAuto": self.introAuto, "introEvery": self._introEvery(),
+                "clockFix": int(round(self.clockOffset / 60.0))}
 
     def _push(self, force):
         st = self._state()
