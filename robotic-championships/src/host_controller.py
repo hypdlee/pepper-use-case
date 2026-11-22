@@ -10,7 +10,7 @@
 # Nothing here goes to the internet.
 import json, os, io, re, time, random, threading, unicodedata, calendar
 
-VERSION = "1.2.0"
+VERSION = "1.2.1"
 TOKEN_KEY = "Host/ControllerToken"
 KEYS = ["hostCmd", "hostTeam", "hostGame", "hostAns", "hostInfo", "Host/TabletCmd", TOKEN_KEY]
 STATE_KEY, STATE_EVT = "Host/State", "Host/Session"

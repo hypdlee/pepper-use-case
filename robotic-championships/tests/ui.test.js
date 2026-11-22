@@ -58,7 +58,9 @@ function state(extra) {
     delete window.ALTabletBinding; return both + '|' + only;
   });
   ok(ch === 'binding+memory|binding', 'tablet channels: ' + ch);
-  ok((await pg.evaluate(() => HostState.schedule.length)) === 56, 'the official running order (56 items) not read in preview');
+  ok(await pg.evaluate(() => { const c = HostState.content, all = JSON.stringify(c) + JSON.stringify(HostState.schedule);
+    return !/maze|wrap.and.pack/i.test(all); }), 'no maze and no Wrap and Pack anywhere in the content or the programme');
+  ok((await pg.evaluate(() => HostState.schedule.length)) === 55, 'the official running order (55 items) not read in preview');
   ok((await pg.evaluate(() => HostState.schedule.filter(x => x.title === 'Time of Fall').length)) === 16 && (await pg.evaluate(() => HostState.schedule[6].a === 'Troda\u00ed' && HostState.schedule[6].b === 'BRIS - SWERVY')), 'Time of Fall matches from the running order');
   ok((await pg.evaluate(() => HostState.teams.filter(t => t.cat === 'arena').length)) === 8 && (await pg.evaluate(() => HostState.teams.filter(t => t.cat === 'arm').length)) === 5, 'official teams from teams.csv (8 + 5)');
   ok((await pg.evaluate(() => HostState.teams.some(t => t.name === 'Troda\u00ed'))), 'accented team name read from teams.csv');

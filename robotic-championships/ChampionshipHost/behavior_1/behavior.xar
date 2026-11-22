@@ -45,7 +45,7 @@ class MyClass(GeneratedClass):
             self.onSuccess()
         else:
             self.isRunning = False
-            self.onFailure()]]></content></script><Input name="onLoad" type="1" type_size="1" nature="0" inner="1" tooltip="Signal sent when diagram is loaded." id="1" /><Input name="onStart" type="1" type_size="1" nature="2" inner="0" tooltip="Box behavior starts when a signal is received on this input." id="2" /><Output name="onSuccess" type="1" type_size="1" nature="1" inner="0" tooltip="Signal sent when box behavior is finished successfully." id="3" /><Output name="onFailure" type="1" type_size="1" nature="1" inner="0" tooltip="Signal sent when box behavior is finished unsuccessfully." id="4" /></Box><Box name="Host Controller" id="4" localization="8" tooltip="Host Controller v1.2.0. Pepper's voice and memory as the neutral host of the IEEE Robot Championships 2026: answers what the dialog heard, keeps the tablet up to date, holds teams, programme, provisional scores and volunteer calls, and calls teams 10 minutes before their match. Nothing goes to the internet." x="300" y="120"><bitmap>media/images/box/box-python-script.png</bitmap><script language="4"><content><![CDATA[# Host Controller: Pepper as the neutral host of the IEEE Robot Championships 2026 (Choregraphe 2.5, NAOqi 2.5, Python 2.7).
+            self.onFailure()]]></content></script><Input name="onLoad" type="1" type_size="1" nature="0" inner="1" tooltip="Signal sent when diagram is loaded." id="1" /><Input name="onStart" type="1" type_size="1" nature="2" inner="0" tooltip="Box behavior starts when a signal is received on this input." id="2" /><Output name="onSuccess" type="1" type_size="1" nature="1" inner="0" tooltip="Signal sent when box behavior is finished successfully." id="3" /><Output name="onFailure" type="1" type_size="1" nature="1" inner="0" tooltip="Signal sent when box behavior is finished unsuccessfully." id="4" /></Box><Box name="Host Controller" id="4" localization="8" tooltip="Host Controller v1.2.1. Pepper's voice and memory as the neutral host of the IEEE Robot Championships 2026: answers what the dialog heard, keeps the tablet up to date, holds teams, programme, provisional scores and volunteer calls, and calls teams 10 minutes before their match. Nothing goes to the internet." x="300" y="120"><bitmap>media/images/box/box-python-script.png</bitmap><script language="4"><content><![CDATA[# Host Controller: Pepper as the neutral host of the IEEE Robot Championships 2026 (Choregraphe 2.5, NAOqi 2.5, Python 2.7).
 #
 # What it does
 #   - Speaks for Pepper (ALAnimatedSpeech, with gestures) and keeps the tablet up to date (ALTabletService.executeJS).
@@ -57,7 +57,7 @@ class MyClass(GeneratedClass):
 # Nothing here goes to the internet.
 import json, os, io, re, time, random, threading, unicodedata, calendar
 
-VERSION = "1.2.0"
+VERSION = "1.2.1"
 TOKEN_KEY = "Host/ControllerToken"
 KEYS = ["hostCmd", "hostTeam", "hostGame", "hostAns", "hostInfo", "Host/TabletCmd", TOKEN_KEY]
 STATE_KEY, STATE_EVT = "Host/State", "Host/Session"

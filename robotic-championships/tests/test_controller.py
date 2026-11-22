@@ -254,7 +254,7 @@ def run():
     w = World(app)
     box, ns = start(w, store=store)
     st = last_state(w)
-    check(st is not None and st["v"] == "1.2.0", "no first state pushed")
+    check(st is not None and st["v"] == "1.2.1", "no first state pushed")
     check([t["name"] for t in st["teams"]] == ["Team Falcon", "Orion, The", "ArmStrong"], "teams from CSV: %r" % [t["name"] for t in st["teams"]])
     check([t["cat"] for t in st["teams"]] == ["arena", "arena", "arm"], "team categories")
     check([x["title"] for x in st["schedule"]] == ["Opening Ceremony", "Time of Fall", "Colour Sort", "Shape Sort", "Awards Ceremony"], "schedule rows: %r" % [x["title"] for x in st["schedule"]])

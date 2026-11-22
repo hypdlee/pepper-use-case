@@ -86,9 +86,7 @@ def build(path):
         elif "Arena R1" in act:
             out.append([day, start, 60, "Arena round 1", "arena", "", "", ""])
         elif "semi-finals" in act:
-            out.append([day, start, 30, "Arena semi-finals", "arena", "", "", ""])
-            if "Wrap and Pack" in act:
-                out.append([day, start, m, "Wrap and Pack (optional)", "arm", "", "", ""])
+            out.append([day, start, 30, "Arena semi-finals", "arena", "", "", ""])   # Wrap and Pack is no longer played
         elif seg == "Tower Duel":
             out.append([day, start, m, "Tower Construction Duel (final)", "arm", "tower", "", ""])
         elif seg == "Arena Game 4":

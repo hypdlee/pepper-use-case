@@ -14,7 +14,7 @@ concept:(arena) [arena "the arena" "arena games" "four games" "4 games" "robot g
 concept:(arm) ["robot arm" "robot arms" "arm challenge" "the arm challenge" "robot arm challenge" "robot arm ai challenge" "ai challenge" "the arms"]
 concept:(games) [games "the games" "what games" "which games" "what can i watch" "how do the games work"]
 concept:(g_tof) ["time of fall" "tug of war"]
-concept:(g_chaos) ["climate chaos" "the chaos game" "chaos" "the maze" "rescue game"]
+concept:(g_chaos) ["climate chaos" "the chaos game" "chaos" "rescue game" "the rescue"]
 concept:(g_wil) ["weight in line" "weights in line" "the weights" "weight game"]
 concept:(g_hh) ["hanging hazard" "rugby balls" "rugby game"]
 concept:(g_colour) ["colour sort" "color sort" "colour sorting" "color sorting"]

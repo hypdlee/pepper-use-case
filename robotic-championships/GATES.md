@@ -98,3 +98,11 @@
   EVIDENCE: test_controller clock block; ui.test.js clock buttons
 - [ ] G42 Confirmed on the robot's tablet
   ABANDON: G42 needs a photo of the tablet running v1.2.0
+
+# Round 9 (v1.2.1): no maze in Climate CHAOS, no Wrap and Pack
+- [x] G43 Organisers' decision (Nov 2026): Climate CHAOS has no maze; Wrap and Pack is not played. Note: the published Rulebook v0.7 (Final Draft) still says "maze" (4.10.2) and lists Wrap-and-Pack as an optional, recognition-only game (5.8.1); the ieeemalta.org page still lists "Wrap a Pack"
+  EVIDENCE: user instruction 22 Nov 2026; rulebook read the same day
+- [x] G44 Climate CHAOS clip: maze walls removed from every frame (tools/remove_maze.py); robot, towers, survivors, sinkholes, cars, floods, safe zone and fire kept; same format (H.264 baseline, 1280 x 720)
+  EVIDENCE: frames reviewed at full size and as a sheet of 8; tablet screen screenshot
+- [x] G45 Text: no "maze" and no "Wrap and Pack" in the content, quiz, intro, voice topic or programme (55 items); 4 quiz questions replaced, still 100
+  EVIDENCE: ui.test.js "no maze and no Wrap and Pack anywhere"; grep over the project finds none

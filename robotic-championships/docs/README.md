@@ -1,4 +1,4 @@
-# Pepper Championship Host (v1.2.0)
+# Pepper Championship Host (v1.2.1)
 
 Pepper as the neutral, official host of the **IEEE Robot Championships 2026** (28 and 29 November, Montekristo Estate Arena, Malta), built for the IEEE Malta Section.
 
@@ -81,7 +81,7 @@ If Pepper does not understand, it says so only when someone is standing at it, a
    - **Announce match starts**: off by default, so Pepper makes one call per block of matches. Switch it on to also announce every match as it starts.
 3. Fill in the teams and the programme (see below). You can also do this later on the tablet.
 4. Optional: put the official `logo.png` and `mascot.png` in `html/brand/` (see the README there). Without them the tablet shows the text title only.
-5. Press **Play once**. In the log you should see `[Host] v1.2.0 running. N teams, M programme items, content loaded`, `[Host] dialog loaded and listening`, and about 4 seconds later `[Host] the dialog answers: Pepper is listening`. Pepper then says hello when someone comes close.
+5. Press **Play once**. In the log you should see `[Host] v1.2.1 running. N teams, M programme items, content loaded`, `[Host] dialog loaded and listening`, and about 4 seconds later `[Host] the dialog answers: Pepper is listening`. Pepper then says hello when someone comes close.
 6. For the event, install the app on the robot (Choregraphe: Robot applications, install) so it survives a reboot.
 
 **Only one copy may run.** If the log shows two different `behavior_...` numbers, or a version older than v1.1.1, older copies are still running and every touch is answered twice. Since v1.1.1 a new start takes over: older copies let go of the tablet and go quiet, and the tablet sends through robot memory, which older versions do not hear. A copy of v1.0.x started earlier can still hold the tablet until Pepper restarts, so **restart Pepper once** after installing this version. Also remove any older version from Robot applications, so it cannot start by itself.
@@ -109,7 +109,7 @@ Two details are handled on purpose:
 - **`schedule.csv`** has the columns `day (sat or sun), time (HH:MM, Malta time), minutes, title, category (arena, arm or stage), game, side_a, side_b, done`.
   - For the Arena, `side_a` is the red corner and `side_b` the blue corner.
   - `game` links an item to its clip: `tof`, `chaos`, `wil`, `hh`, `colour`, `shape`, `dynamic`, `pour`, `fold` or `tower`.
-  - The file already holds the organisers' **running order** (56 items): the Opening Ceremony, the robot catwalk and team spotlight, the eight AI for Humanity pitches, all 16 Time of Fall matches with their red and blue corners, every Robot Arm round with its teams, the eight Climate CHAOS runs, Sunday's knockout and finals, and the Awards Ceremony. Speeches, crew notes and breaks are left out.
+  - The file already holds the organisers' **running order** (55 items): the Opening Ceremony, the robot catwalk and team spotlight, the eight AI for Humanity pitches, all 16 Time of Fall matches with their red and blue corners, every Robot Arm round with its teams, the eight Climate CHAOS runs, Sunday's knockout and finals, and the Awards Ceremony. Speeches, crew notes and breaks are left out.
   - When the sheet changes, run `python3 tools/import_running_order.py <workbook.xlsx>` to rebuild `schedule.csv`.
 
 While there are no teams, Pepper says the list is coming soon and refers to the red and blue corners. Nothing breaks.
