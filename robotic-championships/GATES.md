@@ -106,3 +106,13 @@
   EVIDENCE: frames reviewed at full size and as a sheet of 8; tablet screen screenshot
 - [x] G45 Text: no "maze" and no "Wrap and Pack" in the content, quiz, intro, voice topic or programme (55 items); 4 quiz questions replaced, still 100
   EVIDENCE: ui.test.js "no maze and no Wrap and Pack anywhere"; grep over the project finds none
+
+# Round 10 (v1.2.2): what Pepper says
+- [x] G46 Facts in every spoken game explanation and the 52 rule questions of the quiz checked against Rulebook v0.7 (Final Draft): Time of Fall chain, pit, 60 s; Climate CHAOS towers 50/100/150, safe zone, washout, 5 min; Weight in Line rings, 30 points max; Hanging Hazard 8 min, hanging weights, knocked out loses; knockout of eight, Hanging Hazard final; bins (cube red, cylinder blue, dodecahedron green, hexagonal prism yellow); Dynamic Sort; 5 min rounds; Pouring 125 g, 3 runs; Folding 4 cloths, 2 folds; Tower Duel 5 points per block, red blocks from 6 high, 15 min, whistle every 30 s
+  EVIDENCE: rulebook read 22 Nov 2026; Tower Duel line reworded to match it
+- [x] G47 Pronunciation step before speech (IEEE, Ctrl, CHAOS, symbols); a sweep over 130 spoken lines finds none left
+  EVIDENCE: test_controller pronunciation block, on Python 2.7 and 3. Python 2 found a real bug in the first version (a pattern that removed digits); fixed
+- [x] G48 Staff "Say every team name" to listen before the event, needs a staff login
+  EVIDENCE: test_controller and ui.test.js
+- [ ] G49 Team names heard on the robot
+  ABANDON: G49 needs a person to listen on Pepper (names may need "Say it as")

@@ -641,6 +641,7 @@
       each(quick, function (q) { var b = button(q, 'pill', 'data-quick', q); b.style.height = 'auto'; b.style.padding = '12px 20px'; b.style.textAlign = 'left'; box.appendChild(b); });
       var ic = el('div', 'form'); ic.appendChild(el('span', null, "Pepper's intro (about 2 minutes). By itself after " + H.introEvery + ' quiet minutes when someone is near: ' + (H.introAuto && H.introEvery > 0 ? 'ON' : 'OFF') + '  '));
       ic.appendChild(button('Start the intro now', 'pill primary', 'data-act', 'intro-start'));
+      ic.appendChild(button('Say every team name', 'pill', 'data-act', 'say-teams'));
       ic.appendChild(button(H.introAuto ? 'Stop the automatic intro' : 'Allow the automatic intro', 'pill', 'data-act', 'intro-auto')); box.appendChild(ic);
       var c = el('div', 'form'); c.appendChild(el('span', null, 'Match calls: one call ten minutes before each block of matches, and before the opening and the awards. Now: ' + (H.calls ? 'ON' : 'OFF') + '  '));
       c.appendChild(button(H.calls ? 'Turn off' : 'Turn on', 'pill', 'data-act', 'calls')); box.appendChild(c);
@@ -686,6 +687,7 @@
     if (a === 'announce') { var x = val('aText'); if (x) { staffSend({ cmd: 'announce', text: x.slice(0, 300) }); $('aText').value = ''; } return; }
     if (a === 'calls') { staffSend({ cmd: 'calls', on: !H.calls }); return; }
     if (a === 'intro-start') { staffSend({ cmd: 'intro-start' }); return; }
+    if (a === 'say-teams') { staffSend({ cmd: 'say-teams' }); toast('Listen: if a name sounds wrong, set its "Say it as" in the Teams tab.'); return; }
     if (a === 'clock-tablet') { var tt = (new Date()).getTime(); staffSend({ cmd: 'set-clock', date: maltaDate(tt), time: maltaClock(tt) }); toast('Clock set to ' + maltaClock(tt)); return; }
     if (a === 'clock-reset') { staffSend({ cmd: 'set-clock', reset: true }); return; }
     if (a === 'clock-set') {

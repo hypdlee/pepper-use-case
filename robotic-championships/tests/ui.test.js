@@ -299,6 +299,7 @@ function state(extra) {
   // ---- v1.1: staff can start the intro and switch the automatic intro off
   await pg.evaluate(s => HostUI.update(s), state({ seq: 300 }));
   await pg.evaluate(() => HostUI.staff({ ok: true, token: 'tok9' })); await pg.click('[data-st="announce"]');
+  await pg.click('[data-act="say-teams"]'); ok((await sent()).some(m => m.cmd === 'say-teams' && m.token === 'tok9'), 'staff: say every team name');
   await pg.click('[data-act="intro-start"]'); ok((await sent()).some(m => m.cmd === 'intro-start' && m.token === 'tok9'), 'staff intro start');
   await pg.click('[data-act="intro-auto"]');
   await pg.click('[data-st="system"]');

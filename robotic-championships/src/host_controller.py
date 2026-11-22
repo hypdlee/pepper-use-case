@@ -10,7 +10,7 @@
 # Nothing here goes to the internet.
 import json, os, io, re, time, random, threading, unicodedata, calendar
 
-VERSION = "1.2.1"
+VERSION = "1.2.2"
 TOKEN_KEY = "Host/ControllerToken"
 KEYS = ["hostCmd", "hostTeam", "hostGame", "hostAns", "hostInfo", "Host/TabletCmd", TOKEN_KEY]
 STATE_KEY, STATE_EVT = "Host/State", "Host/Session"
@@ -52,6 +52,19 @@ except NameError:
     def _u(x):
         return x.decode("utf-8", "replace") if isinstance(x, bytes) else str(x)
 
+
+# How Pepper's English voice should say things it would otherwise spell out or misread. Only the speech changes;
+# the screen keeps the normal spelling. Team names can also get a "say as" in teams.csv or in staff mode.
+SAY_FIX = [
+    (r"\bIEEE\b", "I triple E"), (r"\bCHAOS\b", "Chaos"), (r"\bCtrl\b", "Control"), (r"\bLiDAR\b", "lidar"),
+    (r"\bPick-and-Place\b", "Pick and Place"), (r"\b0s and 1s\b", "zeros and ones"), (r"\bvs\.?(?=\s)", "versus"),
+    (u"\\s+\u00b7\\s+", u", "), (u"\\s+[-\u2013]\\s+", u" "), (r"\s*&\s*", " and "), (r"\+(?=\d)", ""),   # u"": Python 2 re has no \u
+]
+
+def speakable(text):
+    for pat, rep in SAY_FIX:
+        text = re.sub(pat, rep, text)
+    return text
 
 def clean_text(x, n):
     """Text from a person (staff, a CSV file) made safe to speak and to show: no control characters, no speech
@@ -503,7 +516,7 @@ class MyClass(GeneratedClass):
             return
         if interrupt:
             self._stopTalk()
-        self.sayJob = self._speakAsync(_s(text))
+        self.sayJob = self._speakAsync(_s(speakable(text)))
         self.lastSpeak = self.clock()
         self.speaking = self.sayJob is not None
         self._log("info", "[Host] says: %s" % text)
@@ -892,7 +905,7 @@ class MyClass(GeneratedClass):
             self._staffLogin(_u(msg.get("pin", "")), now)
         elif cmd == "staff-logout":
             self.staff.pop(_u(msg.get("token", "")), None)
-        elif cmd.startswith("team-") or cmd.startswith("sched-") or cmd.startswith("score-") or cmd in ("announce", "calls", "reload", "alert-seen", "intro-start", "intro-auto", "set-clock"):
+        elif cmd.startswith("team-") or cmd.startswith("sched-") or cmd.startswith("score-") or cmd in ("announce", "calls", "reload", "alert-seen", "intro-start", "intro-auto", "set-clock", "say-teams"):
             self._staffCmd(cmd, msg, now)
 
     def _quizQuestion(self, msg):
@@ -1050,6 +1063,10 @@ class MyClass(GeneratedClass):
                     a["seen"] = True
         elif cmd == "calls":
             self.calls = bool(msg.get("on"))
+        elif cmd == "say-teams":
+            changed = False                # staff listen to every name before the event, and fix any with "say as"
+            names = [self._name(t["name"]) for t in self.teams]
+            self.say("Our teams: %s." % ", ".join(names) if names else "There are no teams on the list yet.")
         elif cmd == "intro-start":
             changed = False
             self.startIntro("staff")

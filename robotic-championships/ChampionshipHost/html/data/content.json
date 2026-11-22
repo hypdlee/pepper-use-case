@@ -1,5 +1,5 @@
 {
-  "version": "1.2.1",
+  "version": "1.2.2",
   "rulebook": "Rulebook v0.7 (final draft)",
   "event": {
     "name": "IEEE Robot Championships 2026",
@@ -201,7 +201,7 @@
         "Once a tower is 6 blocks high, red blocks may be thrown at the other tower.",
         "15 minutes. A team may give one spoken idea per 30 second window."
       ],
-      "say": "The final is the Tower Construction Duel. The two best teams build the tallest tower they can. Once a tower is six blocks high, the arms may throw red blocks at the other tower. The people may only give a short idea when the judge blows the whistle."
+      "say": "The final is the Tower Construction Duel. The two best teams build the tallest tower they can. Once a tower is six blocks high, the arms may throw red blocks at the other tower. The team may only speak to its arms when the whistle blows, every thirty seconds, with one short instruction."
     }
   ],
   "quiz": [

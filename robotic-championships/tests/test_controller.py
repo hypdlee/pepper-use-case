@@ -2,7 +2,7 @@
 # Runs the Host Controller exactly as stored inside behavior.xar against a fake NAOqi. Works on Python 3 and 2.7:
 #   python3 tests/test_controller.py      (also starts the Python 2.7 run when PY27 exists)
 from __future__ import print_function
-import json, sys, os, io, shutil, tempfile, subprocess, calendar
+import json, sys, os, io, re, shutil, tempfile, subprocess, calendar
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -254,7 +254,7 @@ def run():
     w = World(app)
     box, ns = start(w, store=store)
     st = last_state(w)
-    check(st is not None and st["v"] == "1.2.1", "no first state pushed")
+    check(st is not None and st["v"] == "1.2.2", "no first state pushed")
     check([t["name"] for t in st["teams"]] == ["Team Falcon", "Orion, The", "ArmStrong"], "teams from CSV: %r" % [t["name"] for t in st["teams"]])
     check([t["cat"] for t in st["teams"]] == ["arena", "arena", "arm"], "team categories")
     check([x["title"] for x in st["schedule"]] == ["Opening Ceremony", "Time of Fall", "Colour Sort", "Shape Sort", "Awards Ceremony"], "schedule rows: %r" % [x["title"] for x in st["schedule"]])
@@ -472,7 +472,7 @@ def run():
     for _ in range(140):
         wb.t += 60; tick(wb, boxb, 0.1); boxb.lastCallCheck = 0
     calls = [x for x in wb.said if x.startswith("Attention")]
-    check(len(calls) == 2 and calls[1] == "Attention teams. In ten minutes, in the Arena: Climate CHAOS. First up: Team Falcon. Please get ready.",
+    check(len(calls) == 2 and calls[1] == "Attention teams. In ten minutes, in the Arena: Climate Chaos. First up: Team Falcon. Please get ready.",
           "second block / short stage items: %r" % calls)
 
     # ---- Pepper's intro
@@ -482,7 +482,7 @@ def run():
     wi.speech_s = 9   # a long first sentence: the scene must wait for Pepper to finish
     dlg(wi, boxi, "intro")
     check(boxi.intro is not None and boxi.intro["i"] == 0 and any('HostUI.go("intro","")' in j for j in wi.js), "intro did not start by voice")
-    check(wi.said[-1].startswith("Hello everyone, and welcome to the IEEE Robot Championships 2026"), "intro scene 1: %r" % wi.said[-1])
+    check(wi.said[-1].startswith("Hello everyone, and welcome to the I triple E Robot Championships 2026"), "intro scene 1: %r" % wi.said[-1])
     st = last_state(wi)["intro"]
     check(st["i"] == 0 and st["n"] == len(scenes) == 12 and st["kind"] == "title" and st["head"] == "Hello! I am Pepper", "intro state: %r" % st)
     tick(wi, boxi, 7)
@@ -637,6 +637,34 @@ def run():
     tab(wc, boxc2, {"cmd": "set-clock", "reset": True, "token": tc2}); check(boxc2.clockOffset == 0, "undo the correction")
     boxc2.onInput_onStop()
 
+    # ---- pronunciation: Pepper's voice would spell out IEEE, Ctrl and CHAOS, and read symbols aloud
+    sp = ns["speakable"]
+    for a, b in (("the IEEE Robot Championships", "the I triple E Robot Championships"), ("Ctrl Alt Defeat", "Control Alt Defeat"),
+                 ("Climate CHAOS", "Climate Chaos"), ("BRIS - SWERVY", "BRIS SWERVY"), ("Tower C +150", "Tower C 150"),
+                 ("Red: A vs Blue: B", "Red: A versus Blue: B"), ("cat & dog", "cat and dog"), (u"8 Arena \u00b7 5 Robot Arm", u"8 Arena, 5 Robot Arm"), (u"a \u2013 b", u"a b"), ("There are 2 teams", "There are 2 teams"),
+                 ("What is a LiDAR?", "What is a lidar?"), ("Pick-and-Place", "Pick and Place"), ("IEEEE", "IEEEE")):
+        check(sp(a) == b, "speakable(%r) = %r, want %r" % (a, sp(a), b))
+    wsp = World(app); boxsp, _ = start(wsp, store=os.path.join(tmp, "ssp")); wsp.mem["hostPong"] = "ok1"; tick(wsp, boxsp, 3)
+    for v, a in (("home", ""), ("games", "arena"), ("games", "arm"), ("teams", ""), ("schedule", ""), ("scores", ""), ("quiz", ""), ("help", "")):
+        tab(wsp, boxsp, {"cmd": "view", "view": v, "arg": a})
+    for g in boxsp.content["games"]:
+        tab(wsp, boxsp, {"cmd": "game", "game": g["id"]})
+    tab(wsp, boxsp, {"cmd": "intro"})
+    for _ in range(1500):
+        tick(wsp, boxsp, 0.1)
+        if boxsp.intro is None:
+            break
+    for i in range(len(boxsp.content["quiz"])):
+        tab(wsp, boxsp, {"cmd": "quizq", "i": i, "opts": [0, 1, 2]})
+    bad = [x for x in wsp.said if re.search(r"\bIEEE\b|\bCHAOS\b|\bCtrl\b|\u00b7| - |&|\+\d|\bvs\b|\u2014", x)]
+    print("spoken lines checked:", len(wsp.said)); check(len(wsp.said) > 60 and not bad, "Pepper would misread: %r" % bad[:5])
+    tab(wsp, boxsp, {"cmd": "staff-login", "pin": "2468"})
+    tsp = json.loads(wsp.js[-1][len("try{HostUI.staff("):-len(")}catch(e){}")])["token"]
+    tab(wsp, boxsp, {"cmd": "say-teams", "token": tsp})
+    check(wsp.said[-1].startswith("Our teams: ") and all(sp(boxsp._name(t["name"])) in wsp.said[-1] for t in boxsp.teams), "say every team name: %r" % wsp.said[-1])
+    n = len(wsp.said); tab(wsp, boxsp, {"cmd": "say-teams", "token": "wrong"}); check(len(wsp.said) == n, "say-teams without a staff login")
+    boxsp.onInput_onStop()
+
     # ---- two copies running (Play pressed twice): only the newest answers, the other lets go of the tablet
     wd = World(app); wd.mem["hostPong"] = "ok1"
     boxA, _ = start(wd, store=os.path.join(tmp, "sdA")); tick(wd, boxA, 5)
@@ -702,7 +730,7 @@ def run():
     dlg(wr, boxr, "team", hostTeam="electro nexus")
     check(wr.said[-1] == "There are 2 teams with that name: Electro Nexus in the Arena and ElectroNexus in the Robot Arm AI Challenge.", "look-alike names: %r" % wr.said[-1])
     dlg(wr, boxr, "team", hostTeam="bris swervy")
-    check(wr.said[-1] == "BRIS - SWERVY competes in the Arena. Their next match: Time of Fall, at 15:20.", "punctuation in a name: %r" % wr.said[-1])
+    check(wr.said[-1] == "BRIS SWERVY competes in the Arena. Their next match: Time of Fall, at 15:20.", "punctuation in a name: %r" % wr.said[-1])
     dlg(wr, boxr, "team", hostTeam="bua")
     check("could not find" in wr.said[-1], "a 3-letter fragment matched a team")
     dlg(wr, boxr, "team", hostTeam="indiarm")

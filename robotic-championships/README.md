@@ -1,4 +1,4 @@
-<h1 align="center">Robotic championships: Pepper Championship Host (v1.2.1)</h1>
+<h1 align="center">Robotic championships: Pepper Championship Host (v1.2.2)</h1>
 
 <p align="center">
   <img src="media/tablet-tour.gif" alt="Pepper tablet tour: home, Pepper's intro with the games and all 13 teams, then games, teams, schedule, scores and the quiz" width="720">
@@ -42,6 +42,14 @@ Built as a kiosk for Pepper's 1280 x 800 tablet, read standing up:
 - **Every screen fills the tablet.** Text is at least 17 px, most of it 20 to 30 px. Buttons are at least 60 px tall.
 - **Home** shows the game clips on a loop, the big **Watch Pepper's intro** button, what is on now and next (or the countdown before the event), and shortcuts to the Arena, the Robot Arm AI Challenge, the teams and the quiz.
 - **The intro** takes over the whole screen in IEEE purple, with a progress bar along the top and the title in large yellow type.
+
+## What Pepper says
+
+Every line Pepper can speak (130 in the tests: the intro, each game, each screen, all 100 quiz questions) was checked against the Rulebook v0.7 (Final Draft) and the organisers' corrections (no maze, no Wrap and Pack).
+
+Pepper's English voice reads text literally, so a pronunciation step runs just before it speaks (the screen keeps the normal spelling): IEEE becomes "I triple E", Ctrl becomes "Control", CHAOS becomes "Chaos", and symbols such as the middle dot, " - ", "&" and "+150" are not read aloud. A test fails if any spoken line still contains them.
+
+**Listen before the event.** Team names are the one thing only a person can check: HRIGA, BUA Robotics, BRIS SWERVY, Trodai (with its accent), thumbi and Indiarm may not sound the way the teams say them. In staff mode, Announce tab, touch **Say every team name**. If a name sounds wrong, set its **Say it as** in the Teams tab (for example "Hriga" or "Tro dee").
 
 ## Pepper's clock
 
@@ -100,7 +108,7 @@ If Pepper does not understand, it says so only when someone is standing at it, a
    - **Announce match starts**: off by default, so Pepper makes one call per block of matches. Switch it on to also announce every match as it starts.
 3. Fill in the teams and the programme (see below). You can also do this later on the tablet.
 4. Optional: put the official `logo.png` and `mascot.png` in `html/brand/` (see the README there). Without them the tablet shows the text title only.
-5. Press **Play once**. In the log you should see `[Host] v1.2.1 running. N teams, M programme items, content loaded`, `[Host] dialog loaded and listening`, and about 4 seconds later `[Host] the dialog answers: Pepper is listening`. Pepper then says hello when someone comes close.
+5. Press **Play once**. In the log you should see `[Host] v1.2.2 running. N teams, M programme items, content loaded`, `[Host] dialog loaded and listening`, and about 4 seconds later `[Host] the dialog answers: Pepper is listening`. Pepper then says hello when someone comes close.
 6. For the event, install the app on the robot (Choregraphe: Robot applications, install) so it survives a reboot.
 
 **Only one copy may run.** If the log shows two different `behavior_...` numbers, or a version older than v1.1.1, older copies are still running and every touch is answered twice. Since v1.1.1 a new start takes over: older copies let go of the tablet and go quiet, and the tablet sends through robot memory, which older versions do not hear. A copy of v1.0.x started earlier can still hold the tablet until Pepper restarts, so **restart Pepper once** after installing this version. Also remove any older version from Robot applications, so it cannot start by itself.

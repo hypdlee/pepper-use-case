@@ -11,6 +11,7 @@
 | Update scores | Scores tab: choose the team, type the running total |
 | Make an announcement | Announce tab: type it, or tap a ready-made one |
 | Stop the match calls | Announce tab, "Turn off" |
+| A team name sounds wrong | Announce tab, "Say every team name" to listen. Teams tab, "Say it as" to fix it |
 | The clock on the tablet is wrong | Staff mode, System tab: "Use the tablet's time", or type the time and "Set the clock". Do this when you set up |
 | Pepper says nothing when the screen is touched | Check the log shows one `v1.1.2 running` line. Stop all behaviours, restart Pepper, start the app once |
 | Pepper says everything twice | Another copy of the app is running. Stop all behaviours, then restart Pepper |
