@@ -9,14 +9,16 @@ check(pml.get("name") == "Pepper Care Companion", "pml name")
 files = [(f.get("name"), f.get("src")) for f in pml.find("Resources")]
 names = [n for n, _ in files]
 check(len(names) == len(set(names)), "duplicate resource names in the pml")
+USER_MUSIC = open(PKG + "/music/README.md", encoding="utf-8").read()  # songs the user supplies, not in the repo
 for n, src in files:
+    if src.startswith("music/") and src.endswith(".mp3") and os.path.basename(src) in USER_MUSIC: continue
     check(os.path.isfile(os.path.join(PKG, src)), "pml lists a missing file: " + src)
 listed = set(src for _, src in files)
 for top in ("html", "music", "behavior_1"):
     for dp, dn, fn in os.walk(os.path.join(PKG, top)):
         for f in fn:
             rel = os.path.relpath(os.path.join(dp, f), PKG)
-            if rel == "behavior_1/behavior.xar": continue
+            if rel in ("behavior_1/behavior.xar", "music/README.md", "music/.gitignore"): continue
             check(rel in listed, "file not listed in the pml: " + rel)
 for bd in pml.find("BehaviorDescriptions"):
     check(os.path.isfile(os.path.join(PKG, bd.get("src"), bd.get("xar"))), "behaviour file missing")
@@ -38,6 +40,7 @@ check("url(" not in css, "css references a file")
 xar = open(PKG + "/behavior_1/behavior.xar", encoding="utf-8").read()
 for ref in set(re.findall(r'value="(/\.\./music/[^"]+|/[\w.-]+\.(?:ogg|pmt))"', xar)):
     p = os.path.normpath(os.path.join(PKG, "behavior_1", ref.lstrip("/")))
+    if ref.startswith("/../music/") and os.path.basename(ref) in USER_MUSIC: continue  # user-supplied song, see music/README.md
     check(os.path.isfile(p) or os.path.isfile(os.path.join(PKG, "behavior_1", ref.lstrip("/"))), "map references a missing file: " + ref)
 for stale in ("uni-malta", "University of Malta", "test-148bbb", "FYPPepper"):
     for dp, dn, fn in os.walk(PKG):
