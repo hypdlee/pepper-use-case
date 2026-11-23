@@ -41,13 +41,14 @@ const srv = http.createServer((q, r) => { const p = path.join(ROOT, decodeURICom
     report.push({ name, publicView, clipped: r.clipped, scroll: r.scroll });
   }
   await pg.evaluate(() => HostUI.go('home')); await audit('home', true);
-  // Pepper's intro: every scene, with the real 13 teams and the longest "next" line
+  // Pepper's intro: every scene, with the real teams from teams.csv and the longest "next" line
   const scenes = await pg.evaluate(() => HostState.content.intro);
+  const nAll = String(teams.length), nAr = String(teams.filter(t => t.cat === 'arena').length), nArm = String(teams.length - teams.filter(t => t.cat === 'arena').length);
   for (let i = 0; i < scenes.length; i++) {
     const sc = scenes[i];
-    const sub = sc.kind === 'next' ? 'Next: Tower Construction Duel (final), Sunday 16:45, then Hanging Hazard (final)' : (sc.sub || '').replace(/\{n\}/g, '13').replace(/\{na\}/g, '8').replace(/\{nm\}/g, '5');
+    const sub = sc.kind === 'next' ? 'Next: Tower Construction Duel (final), Sunday 16:45, then Hanging Hazard (final)' : (sc.sub || '').replace(/\{n\}/g, nAll).replace(/\{na\}/g, nAr).replace(/\{nm\}/g, nArm);
     await pg.evaluate(s => HostUI.update(s), { seq: 10 + i, v: '1.1.0', now: T, voice: true, speaking: true, calls: true, teams, schedule: sched, scores, alerts: [],
-      intro: { i, n: scenes.length, id: sc.id, kind: sc.kind, clip: sc.clip || '', head: sc.head.replace(/\{n\}/g, '13'), sub } });
+      intro: { i, n: scenes.length, id: sc.id, kind: sc.kind, clip: sc.clip || '', head: sc.head.replace(/\{n\}/g, nAll), sub } });
     await audit('intro-' + (i + 1) + '-' + sc.id, true);
   }
   await pg.evaluate(s => HostUI.update(s), { seq: 40, v: '1.1.0', now: T, voice: true, speaking: false, calls: true, teams, schedule: sched, scores, alerts: [], intro: null });

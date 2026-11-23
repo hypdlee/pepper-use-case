@@ -9,7 +9,7 @@
   <img src="media/robot-arm-challenge.gif" alt="Robot Arm AI Challenge: colour, shape and dynamic sort, pouring, folding, Tower Duel" width="355">
 </p>
 
-<p align="center"><sub>Tablet tour, redesigned as a kiosk with a dock of big buttons: Home, then Pepper's intro (welcome, the two competitions, the games, all 13 official teams, what's next), then the games, teams, programme, scores and the robot quiz. Then the four Arena games and the six Robot Arm AI Challenge rounds. The game clips are simulations, used to explain the rules.</sub></p>
+<p align="center"><sub>Tablet tour, redesigned as a kiosk with a dock of big buttons: Home, then Pepper's intro (welcome, the two competitions, the games, all 12 official teams, what's next), then the games, teams, programme, scores and the robot quiz. Then the four Arena games and the six Robot Arm AI Challenge rounds. The game clips are simulations, used to explain the rules.</sub></p>
 
 **Folders:**
 - `ChampionshipHost/`: the Choregraphe project. Open `ChampionshipHost.pml`.
@@ -21,7 +21,7 @@
 
 Pepper as the neutral, official host of the **IEEE Robot Championships 2026** (28 and 29 November, Montekristo Estate Arena, Malta), built for the IEEE Malta Section.
 
-Pepper opens with a **two-minute intro**: who it is, the two competitions, every game with its clip, all 13 teams by name, and what is coming next. After that the tablet does most of the work. Visitors can see the games, the teams, the programme and provisional scores, and play a **robot quiz of 100 questions**. They can also call a volunteer. Pepper calls the teams ten minutes before each block of matches.
+Pepper opens with a **two-minute intro**: who it is, the two competitions, every game with its clip, all 12 teams by name, and what is coming next. After that the tablet does most of the work. Visitors can see the games, the teams, the programme and provisional scores, and play a **robot quiz of 100 questions**. They can also call a volunteer. Pepper calls the teams ten minutes before each block of matches.
 
 Pepper answers every tap with one short line (the same screen's line is not repeated within 15 seconds), gives its intro once at every start, and stays quiet the rest of the time. Speech recognition in a loud arena is not reliable, so everything works by touch, and voice is a bonus.
 
@@ -49,7 +49,7 @@ Every line Pepper can speak (130 in the tests: the intro, each game, each screen
 
 Pepper's English voice reads text literally, so a pronunciation step runs just before it speaks (the screen keeps the normal spelling): IEEE becomes "I triple E", Ctrl becomes "Control", CHAOS becomes "Chaos", and symbols such as the middle dot, " - ", "&" and "+150" are not read aloud. A test fails if any spoken line still contains them.
 
-**Listen before the event.** Team names are the one thing only a person can check: HRIGA, BUA Robotics, BRIS SWERVY, Trodai (with its accent), thumbi and Indiarm may not sound the way the teams say them. In staff mode, Announce tab, touch **Say every team name**. If a name sounds wrong, set its **Say it as** in the Teams tab (for example "Hriga" or "Tro dee").
+**Listen before the event.** Team names are the one thing only a person can check: HRIGA, BUA Robotics, BRIS SWERVY, Trodai (with its accent), thumbi, JARVIS, TORC and Indiarm may not sound the way the teams say them. In staff mode, Announce tab, touch **Say every team name**. If a name sounds wrong, set its **Say it as** in the Teams tab (for example "Hriga" or "Tro dee").
 
 ## Pepper's clock
 
@@ -62,7 +62,7 @@ Twelve scenes, about two minutes. The tablet goes full screen while Pepper speak
 1. Hello, I am Pepper
 2. Two competitions: 8 teams in the Arena, 5 in the Robot Arm AI Challenge
 3. to 9. Every game, each with its clip: Time of Fall, Climate CHAOS, Weight in Line, Hanging Hazard, Pick and Place, the two-arm rounds, Tower Construction Duel
-10. Meet the teams: all 13 names, Arena and Robot Arm side by side
+10. Meet the teams: all 12 names, Arena and Robot Arm side by side
 11. What's next, from the real programme
 12. Touch my screen: your turn
 
@@ -125,10 +125,10 @@ The tablet keeps working either way.
 
 Both files are in `html/data/` and open in Excel or any text editor. Lines starting with `#` are notes.
 
-`teams.csv` already holds the official teams from the organisers' sheet (Teams & Settings): **8 Arena teams** (Trodaí, HRIGA, Hornet, BUA Robotics, Genesis, Ctrl Alt Defeat, Electro Nexus, BRIS - SWERVY) and **5 Robot Arm teams** (thumbi, Autonomous Alliance, Bua AI, Indiarm, ElectroNexus). The sheet has no countries, so that column is empty. The tablet shows the two competitions separately, each with its own count, and Pepper says "13 teams are taking part: 8 teams in the Arena and 5 teams in the Robot Arm AI Challenge."
+`teams.csv` already holds the official teams from the organisers' sheet (Teams & Settings): **8 Arena teams** (Trodaí, HRIGA, Hornet, BUA Robotics, Genesis, Ctrl Alt Defeat, Electro Nexus, BRIS - SWERVY) and **4 Robot Arm teams** (thumbi, JARVIS, TORC, Indiarm; updated 23 Nov 2026). The sheet has no countries, so that column is empty. The tablet shows the two competitions separately, each with its own count, and Pepper says "12 teams are taking part: 8 teams in the Arena and 4 teams in the Robot Arm AI Challenge."
 
 Two details are handled on purpose:
-- **Similar names.** "Electro Nexus" (Arena) and "ElectroNexus" (Robot Arm) sound the same. If someone asks for that name, Pepper names both and says which competition each is in.
+- **Similar names.** If two teams' names sound the same (for example "Electro Nexus" and "ElectroNexus"), Pepper names both and says which competition each is in.
 - **Accents.** Pepper recognises "Trodaí" with or without the accent. If it pronounces a name wrongly, add a "say it as" spelling in staff mode or in the `say_as` column.
 
 - **`teams.csv`** has the columns `name, country, category (arena or arm), say_as`.

@@ -55,7 +55,7 @@ for name in params:
 # manifest and project file
 man = ET.parse(os.path.join(PKG, "manifest.xml")).getroot()
 teams = [l.split(",") for l in io.open(os.path.join(PKG, "html", "data", "teams.csv"), encoding="utf-8").read().splitlines() if l and not l.startswith("#")][1:]
-check(len([r for r in teams if r[2] == "arena"]) == 8 and len([r for r in teams if r[2] == "arm"]) == 5, "teams.csv should hold the 8 Arena and 5 Robot Arm teams from the organisers' sheet")
+check(len([r for r in teams if r[2] == "arena"]) == 8 and len([r for r in teams if r[2] == "arm"]) == 4, "teams.csv should hold the 8 Arena and 4 Robot Arm teams (organisers' update, 23 Nov 2026)")
 check(man.find("contents/dialogContent") is None, "manifest must not declare the topic (the system would load it too: topic already loaded)")
 check(man.get("version") == version and man.get("uuid") == "ieee-championship-host", "manifest version/uuid")
 pml = ET.parse(os.path.join(PKG, "ChampionshipHost.pml")).getroot()
@@ -125,6 +125,8 @@ for p in texts:
     if rel.replace("\\", "/") == "ChampionshipHost/html/data/teams.csv":
         rows = [l for l in t.splitlines() if l and not l.startswith("#")]
         check(all(l.count(",") == 3 for l in rows), "teams.csv: every row needs 4 columns")
+    elif rel.replace("\\", "/") == "ChampionshipHost/html/data/schedule.csv":
+        pass        # the organisers' official running order names the teams in each match
     elif all(r[0] in t for r in teams):
         pass        # a full, equal list of every team (the docs) is neutral
     else:

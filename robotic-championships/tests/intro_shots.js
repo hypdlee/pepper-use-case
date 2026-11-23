@@ -17,7 +17,8 @@ const srv = http.createServer((q, r) => { const p = path.join(ROOT, decodeURICom
   const content = JSON.parse(fs.readFileSync(path.join(ROOT, 'data/content.json'), 'utf8'));
   for (let i = 0; i < content.intro.length; i++) {
     const sc = content.intro[i];
-    const fill = t => String(t || '').replace('{n}', '13').replace('{na}', '8').replace('{nm}', '5');
+    const na = teams.filter(t => t.cat === 'arena').length, nm = teams.length - na;   // from teams.csv, like Pepper
+    const fill = t => String(t || '').replace('{n}', String(teams.length)).replace('{na}', String(na)).replace('{nm}', String(nm));
     const intro = { i, n: content.intro.length, id: sc.id, kind: sc.kind, clip: sc.clip || '', head: fill(sc.head), sub: sc.kind === 'next' ? 'Coming up next, at 15:20: Time of Fall in the Arena.' : fill(sc.sub) };
     await pg.evaluate(s => HostUI.update(s), Object.assign({ seq: 2 + i, intro }, base)); await pg.waitForTimeout(500);
     await pg.screenshot({ path: `${OUT}/${String(i + 1).padStart(2, '0')}-${sc.id}.png` });

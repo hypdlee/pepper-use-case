@@ -714,21 +714,21 @@ def run():
     boxr, nsr = start(wr, store=os.path.join(tmp, "sr"))
     arena = [t["name"] for t in boxr.teams if t["cat"] == "arena"]
     arms = [t["name"] for t in boxr.teams if t["cat"] == "arm"]
-    check(len(arena) == 8 and len(arms) == 5, "official list: %d arena, %d arm" % (len(arena), len(arms)))
-    check(u"Troda\u00ed" in arena and "BRIS - SWERVY" in arena and "thumbi" in arms, "official names: %r %r" % (arena, arms))
+    check(len(arena) == 8 and len(arms) == 4, "official list: %d arena, %d arm" % (len(arena), len(arms)))
+    check(u"Troda\u00ed" in arena and "BRIS - SWERVY" in arena and arms == ["thumbi", "JARVIS", "TORC", "Indiarm"], "official names: %r %r" % (arena, arms))
     st = last_state(wr)
-    check(len(st["teams"]) == 13 and any(t["name"] == u"Troda\u00ed" for t in st["teams"]), "accented name lost on the way to the tablet")
+    check(len(st["teams"]) == 12 and any(t["name"] == u"Troda\u00ed" for t in st["teams"]), "accented name lost on the way to the tablet")
     words = wr.concepts[-1][2]
-    check("trodai" in words and "bris swervy" in words and "ctrl alt defeat" in words and "electro nexus" in words and "electronexus" in words,
+    check("trodai" in words and "bris swervy" in words and "ctrl alt defeat" in words and "electro nexus" in words and "jarvis" in words and "torc" in words and "electronexus" not in words,
           "dialog words: %r" % words)
     check(all(isinstance(x, str) and all(ord(c) < 128 for c in x) for x in words), "dialog words must be plain letters")
     dlg(wr, boxr, "teams")
-    check(wr.said[-1] == "13 teams are taking part: 8 teams in the Arena and 5 teams in the Robot Arm AI Challenge.", "teams line: %r" % wr.said[-1])
+    check(wr.said[-1] == "12 teams are taking part: 8 teams in the Arena and 4 teams in the Robot Arm AI Challenge.", "teams line: %r" % wr.said[-1])
     dlg(wr, boxr, "team", hostTeam="trodai")
     check(wr.said[-1].startswith(u"Troda\u00ed competes in the Arena".encode("utf-8") if str is bytes else u"Troda\u00ed competes in the Arena"),
           "accented team: %r" % wr.said[-1])
     dlg(wr, boxr, "team", hostTeam="electro nexus")
-    check(wr.said[-1] == "There are 2 teams with that name: Electro Nexus in the Arena and ElectroNexus in the Robot Arm AI Challenge.", "look-alike names: %r" % wr.said[-1])
+    check(wr.said[-1].startswith("Electro Nexus competes in the Arena."), "one team with that name now: %r" % wr.said[-1])
     dlg(wr, boxr, "team", hostTeam="bris swervy")
     check(wr.said[-1] == "BRIS SWERVY competes in the Arena. Their next match: Time of Fall, at 15:20.", "punctuation in a name: %r" % wr.said[-1])
     dlg(wr, boxr, "team", hostTeam="bua")
@@ -741,6 +741,9 @@ def run():
     check(len([t for t in boxr.teams if t["name"] == "Indiarm"]) == 2, "the same name in the other competition was refused")
     tab(wr, boxr, {"cmd": "team-save", "team": {"name": "indiarm", "cat": "arm"}, "token": tokr})
     check(len([t for t in boxr.teams if t["name"].lower() == "indiarm"]) == 2 and "already on the list" in wr.js[-1], "duplicate in the same competition accepted")
+    tab(wr, boxr, {"cmd": "team-save", "team": {"name": "ElectroNexus", "cat": "arm"}, "token": tokr})     # a look-alike of an Arena team
+    dlg(wr, boxr, "team", hostTeam="electro nexus")
+    check(wr.said[-1] == "There are 2 teams with that name: Electro Nexus in the Arena and ElectroNexus in the Robot Arm AI Challenge.", "look-alike names: %r" % wr.said[-1])
     fx = [t for t in boxr.teams if t["name"] == u"Troda\u00ed"][0]
     tab(wr, boxr, {"cmd": "score-save", "teamId": fx["id"], "points": 42, "token": tokr})
     dlg(wr, boxr, "scores")
