@@ -1,7 +1,7 @@
 <h1 align="center">Robotic championships: Pepper Championship Host (v1.2.2)</h1>
 
 <p align="center">
-  <img src="media/tablet-tour.gif" alt="Pepper tablet tour: home, Pepper's intro with the games and all 13 teams, then games, teams, schedule, scores and the quiz" width="720">
+  <img src="media/tablet-tour.gif" alt="Pepper tablet tour: home, Pepper's intro with the games and all 12 teams, then games, teams, schedule, scores and the quiz" width="720">
 </p>
 
 <p align="center">
