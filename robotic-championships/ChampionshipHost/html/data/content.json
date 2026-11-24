@@ -1,13 +1,13 @@
 {
-  "version": "1.2.2",
+  "version": "1.3.0",
   "rulebook": "Rulebook v0.7 (final draft)",
   "event": {
     "name": "IEEE Robot Championships 2026",
-    "place": "Montekristo Estate Arena, Malta",
+    "place": "Montekristo Estate, Malta",
     "dates": "28 and 29 November 2026",
     "opening": "2026-11-28T14:00:00+01:00",
     "awards": "2026-11-29T18:00:00+01:00",
-    "organisers": "IEEE Malta Section and IEEE Computer Society Malta Chapter",
+    "organisers": "IEEE Malta Section",
     "mission": "Advancing Technology for Humanity",
     "stats": [
       {
@@ -30,19 +30,36 @@
       "Disaster response and humanitarian aid",
       "Smart cities and future infrastructure"
     ],
-    "stem": "Visit the interactive STEM area for hands-on science, engineering and robotics activities.",
     "info": [
       {
         "q": "Toilets",
-        "a": "Please ask a volunteer at the information desk."
+        "a": "The toilets are along the bottom of the hall. Touch Map on my screen to see where.",
+        "screen": false
       },
       {
         "q": "Food and drinks",
-        "a": "Please ask a volunteer at the information desk."
+        "a": "The canteen is along the bottom of the hall, next to the toilets. Touch Map on my screen to see where.",
+        "screen": false
       },
       {
         "q": "Lost child or lost item",
-        "a": "Please go to the information desk."
+        "a": "Please go to the Information Point, along the bottom of the hall."
+      }
+    ],
+    "travel": "Montekristo Estate, Malta. Allow time for traffic and follow the event signs. Teams check in at the Registration Desk.",
+    "shuttle": "Hotel shuttle from The Victoria Hotel, Sliema: Saturday at 10:15 sharp. Sunday and the return times will be announced.",
+    "qr": [
+      {
+        "img": "img/qr-tickets.png",
+        "label": "Tickets"
+      },
+      {
+        "img": "img/qr-directions.png",
+        "label": "Directions"
+      },
+      {
+        "img": "img/qr-site.png",
+        "label": "Championship page"
       }
     ]
   },
@@ -50,15 +67,15 @@
     "arena": {
       "title": "Arena: 4 Games",
       "short": "Arena",
-      "intro": "Teams of up to three drive robots they built themselves, up to 20 kilograms and 80 by 80 centimetres, in a 6 by 6 metre arena.",
+      "intro": "In Arena A, teams of up to three drive robots they built themselves: up to 20 kilograms, 80 by 80 centimetres and 50 centimetres tall, in a 6 by 6 metre arena.",
       "structure": "Qualifying: Time of Fall, Climate CHAOS and Weight in Line. The best eight teams go to the knockout: Weight in Line for the quarter and semi finals, then Hanging Hazard for third place and the final.",
-      "say": "In the Arena, teams of up to three drive robots they built themselves, in a six by six metre arena. There are four games. The best eight teams go on to the knockout, and the final is Hanging Hazard."
+      "say": "In Arena A, teams of up to three drive robots they built themselves, in a six by six metre arena. There are four games. The best eight teams go on to the knockout, and the final is Hanging Hazard."
     },
     "arm": {
       "title": "Robot Arm AI Challenge",
       "short": "Robot Arm AI",
-      "intro": "New for 2026. Teams of two build two robot arms and teach them with AI. During a scored run nobody may control them: the arms see and decide on their own.",
-      "structure": "Game 1, Pick and Place: Colour Sort, Shape Sort and Dynamic Sort. Game 2, Two-Arm Coordination: Pouring and Folding. The two best teams meet in the final, the Tower Construction Duel.",
+      "intro": "New for 2026, in Arena B. Teams of two build two robot arms and teach them with AI. During a scored run nobody may control them: the arms see and decide on their own.",
+      "structure": "Game 1, Pick-and-Place: Colour Sort, Shape Sort and Dynamic Sort. Game 2, Two-Arm Coordination: Pouring and Folding. The two best teams meet in the final, the Tower Construction Duel.",
       "say": "The Robot Arm AI Challenge is new this year. Teams of two teach two robot arms with artificial intelligence. During a run, nobody is allowed to control them. The arms look, decide and act on their own."
     }
   },
@@ -763,7 +780,7 @@
         "In a submarine"
       ],
       "ok": 0,
-      "why": "Montekristo Estate Arena, Malta."
+      "why": "Montekristo Estate, Malta."
     },
     {
       "q": "How many teams compete in the Arena?",
@@ -1292,11 +1309,99 @@
       "say": "{next}"
     },
     {
+      "id": "map",
+      "kind": "map",
+      "head": "Find your way",
+      "sub": "Touch Map to find anything",
+      "say": "To find your way: the two arenas are in the centre of the hall, the stage is at the top, and the Robot Pit and the STEM Activities are on the left. Touch Map on my screen to find anything."
+    },
+    {
       "id": "invite",
       "kind": "invite",
       "head": "Touch my screen",
       "sub": "Your turn",
-      "say": "Touch my screen to explore the games, find your team, or try my robot quiz. Enjoy the championships!"
+      "say": "Touch my screen to explore the games, find your team, find your way, or try my robot quiz. Enjoy the championships!"
     }
-  ]
+  ],
+  "venue": {
+    "source": "Official venue map and area descriptions, ieeemalta.org, 24 Nov 2026",
+    "official_map": "img/venue-map.jpg",
+    "areas": [
+      {
+        "id": "arena",
+        "name": "Arena A: Arena 4 Games",
+        "zones": [
+          "z-arena"
+        ],
+        "text": "Competition space for the Arena 4 Games: Time of Fall, Climate CHAOS, Weight in Line and Hanging Hazard.",
+        "say": "Arena A, with the four Arena games, is in the centre of the hall, below the stage."
+      },
+      {
+        "id": "arm",
+        "name": "Arena B: Robot Arm Arena",
+        "zones": [
+          "z-arm"
+        ],
+        "text": "Competition space for the Robot Arm AI Challenge: Pick-and-Place, the Two-Arm tasks and the Tower Construction Duel.",
+        "say": "Arena B, the Robot Arm Arena, is in the centre of the hall, next to Arena A."
+      },
+      {
+        "id": "stage",
+        "name": "Stage and Catwalk",
+        "zones": [
+          "z-stage",
+          "z-back"
+        ],
+        "text": "The opening ceremony, announcements and the awards happen here. Backstage is behind the stage.",
+        "say": "The stage and the catwalk are at the top of the hall. The opening ceremony and Awards Night happen there."
+      },
+      {
+        "id": "pit",
+        "name": "Robot Pit",
+        "zones": [
+          "z-pit"
+        ],
+        "text": "The area for the teams and their robots. Follow the organisers' instructions for access.",
+        "say": "The Robot Pit is on the left side of the hall. It is the area for the teams and their robots."
+      },
+      {
+        "id": "stem",
+        "name": "STEM Activities",
+        "zones": [
+          "z-stem"
+        ],
+        "text": "Hands-on science, technology, engineering and robotics activities for visitors and families.",
+        "say": "The STEM Activities are on the left side of the hall, next to the Robot Pit. Everyone is welcome to try them."
+      },
+      {
+        "id": "carpet",
+        "name": "Red Carpet Interviews",
+        "zones": [
+          "z-carpet"
+        ],
+        "text": "The area for interviews, photos and media moments.",
+        "say": "The red carpet interview area is along the bottom of the hall."
+      },
+      {
+        "id": "info",
+        "name": "Info Point and Registration",
+        "zones": [
+          "z-info",
+          "z-reg"
+        ],
+        "text": "Ask at the Information Point for help. Teams check in at the Registration Desk when they arrive.",
+        "say": "The Information Point and the Registration Desk are along the bottom of the hall. Teams check in at the Registration Desk."
+      },
+      {
+        "id": "facilities",
+        "name": "Toilets and Canteen",
+        "zones": [
+          "z-wc",
+          "z-food"
+        ],
+        "text": "Toilets and the canteen are along the lower part of the venue. A passage to the hall is below Arena B.",
+        "say": "The toilets and the canteen are along the bottom of the hall."
+      }
+    ]
+  }
 }

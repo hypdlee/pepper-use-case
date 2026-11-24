@@ -7,7 +7,7 @@
 <meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=1280, height=800, user-scalable=no">
 <title>IEEE Robot Championships 2026: Pepper host</title>
-<link rel="stylesheet" href="css/host.css?v=1.2.2">
+<link rel="stylesheet" href="css/host.css?v=1.3.0">
 </head>
 <body>
 <div id="app">
@@ -16,7 +16,7 @@
       <img id="logo" class="logo" src="brand/logo.png" alt="" onerror="this.style.display='none'">
       <div class="wordmark">
         <div class="wm1">IEEE Robot Championships <b>2026</b></div>
-        <div class="wm2">Malta &middot; 28&ndash;29 November &middot; Montekristo Estate Arena</div>
+        <div class="wm2">Malta &middot; 28&ndash;29 November &middot; Montekristo Estate</div>
       </div>
     </div>
     <div class="topright">
@@ -58,6 +58,38 @@
             <button class="tile" data-go="quiz"><span class="ti">Robot quiz</span><span class="ts">100 questions</span></button>
           </div>
           <button class="volsmall" data-go="help" data-arg="volunteer">Call a volunteer</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- VENUE MAP -->
+    <section id="v-map" class="view">
+      <div class="mapv">
+        <div class="mapl">
+          <div class="seg small" id="mapSeg"><button data-m="plan" class="on">Simple plan</button><button data-m="official" id="mapOfficialBtn" hidden>Official map</button></div>
+          <div class="mapbox">
+            <svg id="plan" class="plan" viewBox="0 0 760 520" width="760" height="520" xmlns="http://www.w3.org/2000/svg">
+              <rect x="0" y="0" width="760" height="520" rx="22" class="floor"/>
+              <g id="z-back" class="zone z-grey"><rect x="250" y="10" width="260" height="36" rx="10"/><text x="380" y="34">Backstage</text></g>
+              <g id="z-stage" class="zone z-stage"><rect x="250" y="52" width="260" height="70" rx="12"/><rect x="352" y="118" width="56" height="40" rx="8"/><text x="380" y="94">Stage and Catwalk</text></g>
+              <g id="z-pit" class="zone z-grey"><rect x="12" y="52" width="170" height="186" rx="14"/><text x="97" y="150">Robot Pit</text></g>
+              <g id="z-stem" class="zone z-green"><rect x="12" y="248" width="170" height="174" rx="14"/><text x="97" y="332">STEM</text><text x="97" y="358">Activities</text></g>
+              <g id="z-arena" class="zone z-yellow"><rect x="196" y="170" width="264" height="252" rx="16"/><text x="328" y="290" class="big">Arena A</text><text x="328" y="318">Arena 4 Games</text></g>
+              <g id="z-arm" class="zone z-purple"><rect x="474" y="170" width="274" height="186" rx="16"/><text x="611" y="258" class="big">Arena B</text><text x="611" y="286">Robot Arm</text></g>
+              <g id="z-pass" class="zone z-pass"><rect x="560" y="364" width="120" height="58" rx="10"/><text x="620" y="390">Passage</text><text x="620" y="410">to the hall</text></g>
+              <g id="z-wc" class="zone z-grey"><rect x="12" y="434" width="118" height="74" rx="12"/><text x="71" y="477">Toilets</text></g>
+              <g id="z-food" class="zone z-grey"><rect x="138" y="434" width="118" height="74" rx="12"/><text x="197" y="477">Canteen</text></g>
+              <g id="z-carpet" class="zone z-red"><rect x="264" y="434" width="190" height="74" rx="12"/><text x="359" y="466">Red carpet</text><text x="359" y="490">interviews</text></g>
+              <g id="z-info" class="zone z-soft"><rect x="462" y="434" width="132" height="74" rx="12"/><text x="528" y="477">Info point</text></g>
+              <g id="z-reg" class="zone z-soft"><rect x="602" y="434" width="146" height="74" rx="12"/><text x="675" y="466">Registration</text><text x="675" y="490">desk</text></g>
+            </svg>
+            <img id="mapimg" class="mapimg" alt="Official venue map" hidden>
+          </div>
+          <p class="mapnote" id="mapNote">Simplified plan based on the official venue map. Positions are approximate.</p>
+        </div>
+        <div class="mapr">
+          <div class="maplist" id="mapList"></div>
+          <div class="mapdesc" id="mapDesc"></div>
         </div>
       </div>
     </section>
@@ -151,17 +183,20 @@
         <div class="helpcol">
           <button class="volunteer" id="volBtn"><span class="vt">Call a volunteer</span><span class="vs">A volunteer will come to Pepper</span></button>
           <div id="volDone" class="voldone" hidden>A volunteer has been called. Please wait here with Pepper.</div>
-          <h3>Good to know</h3>
-          <dl class="info" id="infoList"></dl>
+          <h3>Getting here</h3>
+          <p id="travelText"></p>
+          <p id="shuttleText"></p>
+          <div class="qrrow" id="qrRow"></div>
+          <p class="hostnote">Pepper is the host at this stand for the IEEE Malta Section.</p>
         </div>
         <div class="helpcol">
           <h3>About the championships</h3>
           <p id="aboutText"></p>
           <p class="mission" id="missionText"></p>
-          <h3>Pitch themes</h3>
+          <h3>Good to know</h3>
+          <dl class="info" id="infoList"></dl>
+          <h3>AI pitch themes</h3>
           <ul class="themes" id="themes"></ul>
-          <p id="stemText"></p>
-          <p class="hostnote">Pepper is the host at this stand for the IEEE Malta Section.</p>
         </div>
       </div>
     </section>
@@ -190,6 +225,7 @@
     <button data-go="schedule">Schedule</button>
     <button data-go="scores">Scores</button>
     <button data-go="quiz">Quiz</button>
+    <button data-go="map">Map</button>
     <button data-go="help">Help</button>
   </nav>
 
@@ -203,7 +239,7 @@
   </div>
   <div id="toast" class="toast" hidden></div>
 </div>
-<script src="js/bridge.js?v=1.2.2"></script>
-<script src="js/host.js?v=1.2.2"></script>
+<script src="js/bridge.js?v=1.3.0"></script>
+<script src="js/host.js?v=1.3.0"></script>
 </body>
 </html>

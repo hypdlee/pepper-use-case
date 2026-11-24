@@ -62,7 +62,7 @@ Q = [
     # ---- the event
     ("What is the name of the championship mascot?", "3-e", "R2", "Bolt", "Meet 3-e!"),
     ("When are the IEEE Robot Championships 2026?", "28 and 29 November", "1 and 2 January", "In the summer", "Saturday 28 and Sunday 29 November 2026."),
-    ("Where are the championships held?", "Montekristo Estate, Malta", "On the Moon", "In a submarine", "Montekristo Estate Arena, Malta."),
+    ("Where are the championships held?", "Montekristo Estate, Malta", "On the Moon", "In a submarine", "Montekristo Estate, Malta."),
     ("How many teams compete in the Arena?", "Eight", "Eighty", "Two", "Eight Arena teams."),
     ("How many teams compete in the Robot Arm AI Challenge?", "Five", "Fifty", "One", "Five Robot Arm teams."),
     ("How many games are there in total?", "Seven", "Seventy", "Three", "Four Arena games and three Robot Arm games."),

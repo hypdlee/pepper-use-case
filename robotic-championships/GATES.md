@@ -116,3 +116,17 @@
   EVIDENCE: test_controller and ui.test.js
 - [ ] G49 Team names heard on the robot
   ABANDON: G49 needs a person to listen on Pepper (names may need "Say it as")
+
+# Round 11 (v1.3.0): everything from the championship page
+- [x] G50 Teams: the site's list and spellings (8 Arena incl. Wally and BRIS; 4 Robot Arm: Torc, IndiArm, Thumbi Arm, Jarvis MCAST); photo slots named as on the site
+  EVIDENCE: test_controller official names; ui.test.js 12 cards, 4 per row
+- [x] G51 Programme: the site's official agenda (Sat 14:00, 15:30 both arenas; Sun 10:30; Awards Night 18:00), durations from the running order; both arenas shown and spoken as NOW at the same time
+  EVIDENCE: test_controller "both arenas now"; ui.test.js two NOW rows and home panel
+- [x] G52 Venue map: drawn plan after the official map's layout, 8 areas from the site, tap or voice lights the area and Pepper says where it is; Official map button when html/img/venue-map.jpg exists; "Find your way" intro scene (13 scenes)
+  EVIDENCE: test_controller where-is (8 areas, voice and tap); ui.test.js map block; stand-in image check of the Official map switch
+- [x] G53 Help: getting here, hotel shuttle, QR codes for tickets, directions and the championship page (decoded back to the right addresses)
+  EVIDENCE: zxing decode of the three PNGs; ui.test.js QR images load
+- [x] G54 Kept: no maze and no Wrap a Pack (user's decision 24 Nov 2026, although the site and Rulebook v0.8 still list them); no care wording
+  EVIDENCE: ui.test.js no-maze check; test_package care-word check
+- [ ] G55 Official map image, team photos and the 3-e mascot added
+  ABANDON: G55 the workspace cannot download from ieeemalta.org; the user will add the files (slots are ready)

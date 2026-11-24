@@ -30,6 +30,16 @@ concept:(quiz) [quiz "the quiz" "a quiz" "play the quiz" "play a quiz" "test me"
 concept:(help) [help "i need help" "help me" "call a volunteer" volunteer "a volunteer" "i am lost" "i lost my" "lost child" "i cannot find my"]
 concept:(toilet) [toilet toilets bathroom restroom "the toilet" "where is the toilet" "where are the toilets"]
 concept:(food) [food drinks "a drink" "something to eat" "where can i eat" coffee snacks "the cafe"]
+concept:(where) ["where is" "where are" "where's" "how do i get to" "how do i find" "where can i find" "show me" "take me to" "find"]
+concept:(p_pit) ["robot pit" "the robot pit" "the pit" pits "the pits"]
+concept:(p_stem) [stem "stem activities" "the stem activities" "stem area" "the stem area" "science activities" "hands on activities"]
+concept:(p_stage) [stage "the stage" catwalk "the catwalk" backstage]
+concept:(p_carpet) ["red carpet" "the red carpet" interviews "the interviews" "interview area" "the interview area"]
+concept:(p_info) ["information point" "the information point" "info point" "the info point" "information desk" "the information desk" registration "the registration" "registration desk" "the registration desk" "check in"]
+concept:(p_arena) ["arena a" "the arena" arena "the arena games"]
+concept:(p_arm) ["arena b" "robot arm arena" "the robot arm arena" "the robot arms" "the arm arena"]
+concept:(p_canteen) [canteen "the canteen"]
+concept:(map) [map "the map" "a map" "venue map" "the venue map" "floor plan" "where am i" "where is everything" "show me around"]
 concept:(time) ["what time is it" "the time" "what is the time" "tell me the time"]
 concept:(who) ["who are you" "what are you" "what is your name" "are you a robot" "what's your name"]
 concept:(about) ["what is this event" "what is this" "about the championships" "tell me about the championships" "what is the robot championship" "what is happening here" ieee "what is ieee"]
@@ -69,8 +79,17 @@ u:(~ans2) $hostAns=2 $hostCmd=ans
 u:(~ans3) $hostAns=3 $hostCmd=ans
 u:(~nextq) $hostAns=next $hostCmd=ans
 u:(~help) $hostCmd=help
-u:(~toilet) $hostInfo=0 $hostCmd=info
-u:(~food) $hostInfo=1 $hostCmd=info
+u:({~where} ~p_pit) $hostPlace=pit $hostCmd=place
+u:({~where} ~p_stem) $hostPlace=stem $hostCmd=place
+u:({~where} ~p_stage) $hostPlace=stage $hostCmd=place
+u:({~where} ~p_carpet) $hostPlace=carpet $hostCmd=place
+u:({~where} ~p_info) $hostPlace=info $hostCmd=place
+u:(~where ~p_arena) $hostPlace=arena $hostCmd=place
+u:(~where ~p_arm) $hostPlace=arm $hostCmd=place
+u:({~where} ~p_canteen) $hostPlace=facilities $hostCmd=place
+u:({~where} ~map) $hostPlace=none $hostCmd=place
+u:(~toilet) $hostPlace=facilities $hostCmd=place
+u:(~food) $hostPlace=facilities $hostCmd=place
 u:(~time) $hostCmd=time
 u:(~who) $hostCmd=who
 u:(~about) $hostCmd=about

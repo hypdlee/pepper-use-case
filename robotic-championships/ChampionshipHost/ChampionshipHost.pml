@@ -36,6 +36,9 @@
         <File name="html-fonts-open-sans-latin-600-normal" src="html/fonts/open-sans-latin-600-normal.woff" />
         <File name="html-fonts-open-sans-latin-700-normal" src="html/fonts/open-sans-latin-700-normal.woff" />
         <File name="html-fonts-open-sans-latin-800-normal" src="html/fonts/open-sans-latin-800-normal.woff" />
+        <File name="html-img-qr-directions" src="html/img/qr-directions.png" />
+        <File name="html-img-qr-site" src="html/img/qr-site.png" />
+        <File name="html-img-qr-tickets" src="html/img/qr-tickets.png" />
         <File name="html-index" src="html/index.html" />
         <File name="html-js-bridge" src="html/js/bridge.js" />
         <File name="html-js-host" src="html/js/host.js" />

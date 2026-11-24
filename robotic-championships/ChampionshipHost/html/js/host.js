@@ -100,16 +100,18 @@
     s.sort(function (a, b) { return startOf(a) - startOf(b); });
     return s;
   }
+  // Both arenas play at the same time, so "now" can be more than one item: all of them are returned in .all
   function nowNext(t) {
-    var cur = null, nxt = null;
+    var all = [], nxt = null;
     each(sortedSchedule(), function (it) {
       var s = startOf(it), e = s + (it.mins || 15) * 60000;
       if (it.done) { return; }
-      if (!cur && s <= t && t < e) { cur = it; }
+      if (s <= t && t < e) { all.push(it); }
       if (!nxt && s > t) { nxt = it; }
     });
-    return { now: cur, next: nxt };
+    return { now: all[0] || null, all: all, next: nxt };
   }
+  function isNow(nn, it) { for (var i = 0; i < nn.all.length; i++) { if (nn.all[i].id === it.id) { return true; } } return false; }
   H.nowNext = nowNext;
   function teamsOf(cat) {
     var out = [];
@@ -145,6 +147,7 @@
   function go(view, arg) {
     if (view === 'games' && arg) { H.cat = arg; }
     if (view === 'game') { H.game = arg; }
+    if (view === 'map') { H.mapSel = arg || ''; if (arg) { H.mapMode = 'plan'; } }   // only the plan can light an area up
     if (H.view === 'game' && view !== 'game') { stopVideo(); }
     if (H.view === 'quiz' && view !== 'quiz') { H.quiz = null; }
     if (view === 'staff' && !H.staffToken) { view = 'home'; }
@@ -175,6 +178,7 @@
     if (H.view === 'scores') { renderScores(); }
     if (H.view === 'quiz') { renderQuiz(); }
     if (H.view === 'help') { renderHelp(); }
+    if (H.view === 'map') { renderMap(); }
     if (H.view === 'staff') { renderStaff(); }
   }
 
@@ -197,7 +201,8 @@
     } else if (t < end) {
       $('countBox').hidden = true; $('liveBox').hidden = false;
       fillLive($('liveNow'), 'NOW', nn.now, 'Between matches. Look around the STEM area!');
-      fillLive($('liveNext'), 'NEXT', nn.next, 'More soon. Check the schedule.');
+      if (nn.all.length > 1) { fillLive($('liveNext'), 'NOW', nn.all[1], ''); }      // both arenas at once
+      else { fillLive($('liveNext'), 'NEXT', nn.next, 'More soon. Check the schedule.'); }
     } else {
       $('countBox').hidden = false; $('liveBox').hidden = true;
       $('countLbl').textContent = 'Thank you for coming to the IEEE Robot Championships 2026!';
@@ -256,9 +261,15 @@
       big.appendChild(cols);
     } else if (sc.kind === 'next') {
       big.appendChild(el('div', 'ib-next', sc.sub || ''));
+    } else if (sc.kind === 'map') {
+      var pl = $('plan').cloneNode(true);                       // the same plan as the Map screen, without duplicate ids
+      pl.removeAttribute('id'); pl.setAttribute('class', 'plan ib-plan');
+      each(pl.querySelectorAll('[id]'), function (z) { z.removeAttribute('id'); });
+      each(pl.querySelectorAll('.zone'), function (z) { z.setAttribute('class', (z.getAttribute('class') || '').replace(/\s*\bhi\b/g, '')); });
+      big.appendChild(pl);
     } else {
       big.appendChild(el('div', 'ib-title', 'Explore the championships'));
-      big.appendChild(el('div', 'ib-line', 'Games \u00b7 Teams \u00b7 Schedule \u00b7 Scores \u00b7 Robot quiz'));
+      big.appendChild(el('div', 'ib-line', 'Games \u00b7 Teams \u00b7 Schedule \u00b7 Map \u00b7 Robot quiz'));
     }
   }
   var localIntro = null;
@@ -285,11 +296,11 @@
   function skipIntro() { if (localIntro) { stopLocalIntro(); return; } if (!send({ cmd: 'intro-stop' })) { H.intro = null; go('home'); } }
 
   function fillLive(box, tag, it, empty) {
-    clear(box);
+    clear(box); box.className = 'liveitem' + (tag === 'NEXT' ? ' next' : '');   // NOW is yellow, NEXT is white
     box.appendChild(el('span', 'tag', tag));
     if (!it) { box.appendChild(d.createTextNode(empty)); return; }
     box.appendChild(d.createTextNode(it.time + '  ' + it.title));
-    var sub = sideText(it); if (sub) { box.appendChild(el('span', 'sub', sub)); }
+    var sub = sideText(it) || ({ arena: 'Arena A', arm: 'Arena B: Robot Arm' })[it.cat] || ''; if (sub) { box.appendChild(el('span', 'sub', sub)); }
   }
 
   function gamesOf(cat) { var out = []; each(H.content.games, function (g) { if (g.cat === cat) { out.push(g); } }); return out; }
@@ -336,6 +347,59 @@
     openGame(list[(i + 1) % list.length].id, false);
   }
 
+  // Team photos from the organisers: img/teams/<slug>.jpg or .png, named like the official site's files
+  // (lower case, accented and other letters dropped, spaces as '-': 'Trodai' with its accent -> troda, 'Thumbi Arm' -> thumbi-arm).
+  function teamSlug(name) {
+    return String(name).toLowerCase().replace(/[^a-z0-9 \-]/g, '').replace(/[\s\-]+/g, '-').replace(/^-|-$/g, '');
+  }
+  function teamPhoto(card, name) {
+    var im = d.createElement('img'), tries = ['jpg', 'png'], k = 0;
+    im.className = 'tph'; im.alt = '';
+    im.onerror = function () { k += 1; if (k < tries.length) { im.src = 'img/teams/' + teamSlug(name) + '.' + tries[k]; } else if (im.parentNode) { im.parentNode.className = 'team'; im.parentNode.removeChild(im); } };
+    im.src = 'img/teams/' + teamSlug(name) + '.' + tries[0];
+    card.className = 'team withph'; card.appendChild(im);
+  }
+  H.teamSlug = teamSlug;
+
+  /* ---------- venue map ---------- */
+  // The drawn plan follows the official map's layout. When the organisers' map image is in the app (img/venue-map.jpg),
+  // an "Official map" button shows it; the drawn plan stays, because it can highlight each area.
+  function officialMap() {
+    if (H.officialTried || !H.content || !H.content.venue) { return; }
+    H.officialTried = true;
+    var im = new Image();
+    im.onload = function () { H.hasOfficial = true; $('mapimg').src = im.src; if (H.view === 'map') { renderMap(); } };
+    im.src = H.content.venue.official_map + '?v=' + (H.content.version || '');
+  }
+  function renderMap() {
+    var v = H.content.venue, plan = $('plan'), sel = null;
+    if (!v) { return; }
+    officialMap();
+    var official = H.hasOfficial && H.mapMode === 'official';
+    $('mapOfficialBtn').hidden = !H.hasOfficial; $('mapSeg').style.display = H.hasOfficial ? '' : 'none';   // nothing to switch to without the official image
+    each(d.querySelectorAll('#mapSeg button'), function (b) { b.className = b.getAttribute('data-m') === (official ? 'official' : 'plan') ? 'on' : ''; });
+    $('mapimg').hidden = !official; plan.style.display = official ? 'none' : 'block';
+    $('mapNote').textContent = official ? 'Official venue map from the organisers.' : 'Simplified plan based on the official venue map. Positions are approximate.';
+    var hi = {};
+    each(v.areas, function (a) {
+      if (a.id === H.mapSel) { sel = a; each(a.zones, function (z) { hi[z] = true; }); }
+      each(a.zones, function (z) { var g = $(z); if (g) { g.setAttribute('data-place', a.id); } });
+    });
+    each(plan.querySelectorAll('.zone'), function (g) {      // SVG: setAttribute, not className (old browsers)
+      var c = (g.getAttribute('class') || '').replace(/\s*\bhi\b/g, '');
+      g.setAttribute('class', hi[g.id] ? c + ' hi' : c);
+    });
+    plan.setAttribute('class', sel ? 'plan hl' : 'plan');
+    var list = clear($('mapList'));
+    each(v.areas, function (a) {
+      var b = el('button', 'mapbtn' + (a.id === H.mapSel ? ' on' : ''), a.name); b.setAttribute('data-place', a.id); list.appendChild(b);
+    });
+    var desc = clear($('mapDesc'));
+    if (sel) { desc.appendChild(el('b', null, sel.name)); desc.appendChild(d.createTextNode(sel.text)); }
+    else { desc.appendChild(el('b', null, 'Find your way')); desc.appendChild(d.createTextNode('Touch a place on the map or in the list, and Pepper will show you where it is.')); }
+  }
+  H.renderMap = renderMap;
+
   function renderTeams() {
     var nA = teamsOf('arena').length, nM = teamsOf('arm').length;
     each(d.querySelectorAll('#teamSeg button'), function (b) {
@@ -352,7 +416,7 @@
       h.appendChild(el('span', null, plural(list.length, 'team', 'teams'))); sec.appendChild(h);
       var cards = el('div', 'tcards');
       each(list, function (t) {
-        var c = el('div', 'team'); c.appendChild(el('div', 'tn', t.name));
+        var c = el('div', 'team'); teamPhoto(c, t.name); c.appendChild(el('div', 'tn', t.name));
         var row = el('div', 'trow'); row.appendChild(el('span', 'tk ' + t.cat, t.cat === 'arm' ? 'Robot Arm AI' : 'Arena'));
         if (t.country) { row.appendChild(el('span', 'tc', t.country)); }
         c.appendChild(row); cards.appendChild(c); shown += 1;
@@ -373,7 +437,7 @@
       if (it.day !== H.day) { return; }
       any = true;
       var cls = 'srow', badge = null;
-      if (nn.now && nn.now.id === it.id) { cls += ' now'; badge = 'NOW'; }
+      if (isNow(nn, it)) { cls += ' now'; badge = 'NOW'; }
       else if (nn.next && nn.next.id === it.id) { cls += ' next'; badge = 'NEXT'; }
       else if (it.done || startOf(it) + (it.mins || 15) * 60000 <= t) { cls += ' done'; }
       var r = el('div', cls); r.appendChild(el('div', 'st', it.time));
@@ -393,7 +457,7 @@
     box.scrollTop = focus ? Math.max(0, focus.offsetTop - 8) : 0;
     if (!any) {
       var e = el('div', 'empty'); e.appendChild(el('b', null, 'The match times will appear here.'));
-      e.appendChild(d.createTextNode('Saturday: Opening Ceremony at 14:00. Sunday: Awards Ceremony at 18:00. Ask a volunteer for the latest times.'));
+      e.appendChild(d.createTextNode('Saturday: Official Opening Ceremony at 14:00, games from 15:30. Sunday: games from 10:30, Awards Night at 18:00. Ask a volunteer for the latest times.'));
       box.appendChild(e);
     }
   }
@@ -498,11 +562,14 @@
   /* ---------- help ---------- */
   function renderHelp() {
     var ev = H.content.event, dl = clear($('infoList'));
-    each(ev.info, function (x) { dl.appendChild(el('dt', null, x.q)); dl.appendChild(el('dd', null, x.a)); });
+    each(ev.info, function (x) { if (x.screen === false) { return; } dl.appendChild(el('dt', null, x.q)); dl.appendChild(el('dd', null, x.a)); });   // toilets and food: on the Map
     $('aboutText').textContent = ev.about;
     $('missionText').textContent = 'IEEE: ' + ev.mission;
     var th = clear($('themes')); each(ev.themes, function (x) { th.appendChild(el('li', null, x)); });
-    $('stemText').textContent = ev.stem;
+    $('travelText').textContent = ev.travel || '';
+    $('shuttleText').textContent = ev.shuttle || '';
+    var qr = clear($('qrRow'));
+    each(ev.qr || [], function (x) { var f = el('div', 'qr'); var im = el('img'); im.src = x.img; im.alt = ''; f.appendChild(im); f.appendChild(el('span', null, x.label)); qr.appendChild(f); });
     $('volDone').hidden = !(H.volunteerAt && now() - H.volunteerAt < 10 * 60000);
   }
   function callVolunteer() {
@@ -717,6 +784,8 @@
     if ((a = attr(t, 'data-cat'))) { H.cat = a.v; renderGames(); send({ cmd: 'view', view: 'games', arg: a.v }); return; }
     if ((a = attr(t, 'data-game'))) { openGame(a.v, false); return; }
     if ((a = attr(t, 'data-f'))) { H.teamFilter = a.v; renderTeams(); return; }
+    if ((a = attr(t, 'data-place'))) { H.mapSel = a.v; H.mapMode = 'plan'; renderMap(); send({ cmd: 'place', place: a.v }); return; }
+    if ((a = attr(t, 'data-m'))) { H.mapMode = a.v; renderMap(); return; }
     if ((a = attr(t, 'data-day'))) { H.day = a.v; renderSchedule(); return; }
     if ((a = attr(t, 'data-ans'))) { answer(parseInt(a.v, 10)); return; }
     if ((a = attr(t, 'data-st'))) { H.staffTab = a.v; H.staffEdit = null; renderStaff(); return; }

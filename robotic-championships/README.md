@@ -1,7 +1,7 @@
-<h1 align="center">Robotic championships: Pepper Championship Host (v1.2.2)</h1>
+<h1 align="center">Robotic championships: Pepper Championship Host (v1.3.0)</h1>
 
 <p align="center">
-  <img src="media/tablet-tour.gif" alt="Pepper tablet tour: home, Pepper's intro with the games and all 12 teams, then games, teams, schedule, scores and the quiz" width="720">
+  <img src="media/tablet-tour.gif" alt="Pepper tablet tour: home, Pepper's intro with the games, all 12 teams and the venue map, then games, teams, schedule, map, quiz and help" width="720">
 </p>
 
 <p align="center">
@@ -9,17 +9,17 @@
   <img src="media/robot-arm-challenge.gif" alt="Robot Arm AI Challenge: colour, shape and dynamic sort, pouring, folding, Tower Duel" width="355">
 </p>
 
-<p align="center"><sub>Tablet tour, redesigned as a kiosk with a dock of big buttons: Home, then Pepper's intro (welcome, the two competitions, the games, all 12 official teams, what's next), then the games, teams, programme, scores and the robot quiz. Then the four Arena games and the six Robot Arm AI Challenge rounds. The game clips are simulations, used to explain the rules.</sub></p>
+<p align="center"><sub>Tablet tour: Home with both arenas live, Pepper's intro (welcome, the two competitions, the games, all 12 official teams, the venue map), then the games, teams, programme, venue map, robot quiz and help with QR codes. Then the four Arena games and the six Robot Arm AI Challenge rounds. The game clips are simulations, used to explain the rules.</sub></p>
 
 **Folders:**
 - `ChampionshipHost/`: the Choregraphe project. Open `ChampionshipHost.pml`.
 - `docs/`: this guide, a one-page `STAFF_CARD.md` for volunteers, and screenshots.
 - `src/`: the Host Controller source, built into the project with `build.py`.
 - `tests/`: all checks, including a fit check of every screen and every intro scene at 1280 x 800; run `bash tests/run_all.sh`.
-- `tools/`: the 100 quiz questions, the running-order importer, and the script that cut the neutral clips.
+- `tools/`: the 100 quiz questions, the running-order importer, the QR codes, and the scripts that made the clips.
 - `GATES.md`: what is verified and what still needs the robot.
 
-Pepper as the neutral, official host of the **IEEE Robot Championships 2026** (28 and 29 November, Montekristo Estate Arena, Malta), built for the IEEE Malta Section.
+Pepper as the neutral, official host of the **IEEE Robot Championships 2026** (28 and 29 November, Montekristo Estate, Malta), built for the IEEE Malta Section.
 
 Pepper opens with a **two-minute intro**: who it is, the two competitions, every game with its clip, all 12 teams by name, and what is coming next. After that the tablet does most of the work. Visitors can see the games, the teams, the programme and provisional scores, and play a **robot quiz of 100 questions**. They can also call a volunteer. Pepper calls the teams ten minutes before each block of matches.
 
@@ -38,7 +38,7 @@ Everything runs on the robot. Nothing is sent to the internet.
 **Built for Pepper's own tablet browser.** Pepper's tablet runs an old Android browser. It ignores modern CSS such as colour variables, flex gaps and grid. Up to v1.1.2 every colour was written as a CSS variable, so on the robot the purple and yellow simply disappeared (white text on white, the Skip button invisible, a clip showing through the intro). From v1.2.0 every colour is written out, and `tests/test_package.py` refuses any CSS or JavaScript feature that browser lacks. If a tablet reports a screen other than 1280 x 800, the page scales itself to fit.
 
 Built as a kiosk for Pepper's 1280 x 800 tablet, read standing up:
-- **A dock of seven big buttons along the bottom** (Home, Games, Teams, Schedule, Scores, Quiz, Help), where a hand reaches without stretching. Help is outlined in red, so it is easy to find.
+- **A dock of eight big buttons along the bottom** (Home, Games, Teams, Schedule, Scores, Quiz, Map, Help), where a hand reaches without stretching. Help is outlined in red, so it is easy to find.
 - **Every screen fills the tablet.** Text is at least 17 px, most of it 20 to 30 px. Buttons are at least 60 px tall.
 - **Home** shows the game clips on a loop, the big **Watch Pepper's intro** button, what is on now and next (or the countdown before the event), and shortcuts to the Arena, the Robot Arm AI Challenge, the teams and the quiz.
 - **The intro** takes over the whole screen in IEEE purple, with a progress bar along the top and the title in large yellow type.
@@ -47,9 +47,31 @@ Built as a kiosk for Pepper's 1280 x 800 tablet, read standing up:
 
 Every line Pepper can speak (130 in the tests: the intro, each game, each screen, all 100 quiz questions) was checked against the Rulebook v0.7 (Final Draft) and the organisers' corrections (no maze, no Wrap and Pack).
 
-Pepper's English voice reads text literally, so a pronunciation step runs just before it speaks (the screen keeps the normal spelling): IEEE becomes "I triple E", Ctrl becomes "Control", CHAOS becomes "Chaos", and symbols such as the middle dot, " - ", "&" and "+150" are not read aloud. A test fails if any spoken line still contains them.
+Pepper's English voice reads text literally, so a pronunciation step runs just before it speaks (the screen keeps the normal spelling): IEEE becomes "I triple E", CHAOS becomes "Chaos", and symbols such as the middle dot, " - ", "&" and "+150" are not read aloud. A test fails if any spoken line still contains them.
 
-**Listen before the event.** Team names are the one thing only a person can check: HRIGA, BUA Robotics, BRIS SWERVY, Trodai (with its accent), thumbi, JARVIS, TORC and Indiarm may not sound the way the teams say them. In staff mode, Announce tab, touch **Say every team name**. If a name sounds wrong, set its **Say it as** in the Teams tab (for example "Hriga" or "Tro dee").
+**Listen before the event.** Team names are the one thing only a person can check: BRIS, Wally, Hornet, Trodai (with its accent), Genesis, HRIGA, BUA Robotics, Electro Nexus, Torc, IndiArm, Thumbi Arm and Jarvis MCAST may not sound the way the teams say them. IndiArm is already set to be said as "Indi Arm" and Jarvis MCAST as "Jarvis Em cast". In staff mode, Announce tab, touch **Say every team name**. If a name sounds wrong, set its **Say it as** in the Teams tab (for example "Hriga" or "Tro dee").
+
+## Venue map
+
+**Map** in the dock opens the venue plan: the stage and backstage at the top, Arena A (the four Arena games) and Arena B (Robot Arm) in the centre, the Robot Pit and STEM Activities on the left, the passage to the hall below Arena B, and toilets, canteen, red carpet interviews, Information Point and Registration Desk along the bottom. Touch an area, on the plan or in the list, and it lights up, the organisers' description appears and Pepper says where it is in one sentence. Visitors can also ask: "where is the robot pit", "where are the toilets", "where is registration", "show me the map".
+
+The drawn plan follows the layout of the official venue map on the championship page; positions are approximate. **To add the official map**, save it from the site as `html/img/venue-map.jpg`: an **Official map** button then appears next to **Simple plan**. The drawn plan stays, because it is the one that can light up an area. Pepper's intro has a "Find your way" scene with the plan.
+
+## Files you can add from the championship page
+
+This workspace could not download images from ieeemalta.org, so these three are slots that fill themselves as soon as the files are there. Save them from the site into the project and run Play again:
+
+| File | Where it goes | What it does |
+|---|---|---|
+| The venue map (`venue-map.jpg`) | `html/img/venue-map.jpg` | An **Official map** button appears on the Map screen |
+| The 12 team photos (`bris.jpg`, `troda.jpg`, `thumbi-arm.png` ...) | `html/img/teams/`, names unchanged | Each team card shows its photo |
+| The 3-e mascot (`hero_Pose_Wave_front`) | `html/brand/mascot.png` | 3-e waves on Pepper's welcome scene |
+
+Nothing breaks while they are missing.
+
+## Getting here and tickets
+
+The Help screen has the travel details from the site (Montekristo Estate, the hotel shuttle from The Victoria Hotel, Sliema, on Saturday at 10:15) and three QR codes that visitors scan with their phone: **Tickets** (biljett.mt), **Directions** (Google Maps) and the **Championship page**. The codes are pictures in the app (`tools/make_qr.py`), so they work without internet on the robot.
 
 ## Pepper's clock
 
@@ -108,7 +130,7 @@ If Pepper does not understand, it says so only when someone is standing at it, a
    - **Announce match starts**: off by default, so Pepper makes one call per block of matches. Switch it on to also announce every match as it starts.
 3. Fill in the teams and the programme (see below). You can also do this later on the tablet.
 4. Optional: put the official `logo.png` and `mascot.png` in `html/brand/` (see the README there). Without them the tablet shows the text title only.
-5. Press **Play once**. In the log you should see `[Host] v1.2.2 running. N teams, M programme items, content loaded`, `[Host] dialog loaded and listening`, and about 4 seconds later `[Host] the dialog answers: Pepper is listening`. Pepper then says hello when someone comes close.
+5. Press **Play once**. In the log you should see `[Host] v1.3.0 running. N teams, M programme items, content loaded`, `[Host] dialog loaded and listening`, and about 4 seconds later `[Host] the dialog answers: Pepper is listening`. Pepper then says hello when someone comes close.
 6. For the event, install the app on the robot (Choregraphe: Robot applications, install) so it survives a reboot.
 
 **Only one copy may run.** If the log shows two different `behavior_...` numbers, or a version older than v1.1.1, older copies are still running and every touch is answered twice. Since v1.1.1 a new start takes over: older copies let go of the tablet and go quiet, and the tablet sends through robot memory, which older versions do not hear. A copy of v1.0.x started earlier can still hold the tablet until Pepper restarts, so **restart Pepper once** after installing this version. Also remove any older version from Robot applications, so it cannot start by itself.
@@ -125,7 +147,7 @@ The tablet keeps working either way.
 
 Both files are in `html/data/` and open in Excel or any text editor. Lines starting with `#` are notes.
 
-`teams.csv` already holds the official teams from the organisers' sheet (Teams & Settings): **8 Arena teams** (Trodaí, HRIGA, Hornet, BUA Robotics, Genesis, Ctrl Alt Defeat, Electro Nexus, BRIS - SWERVY) and **4 Robot Arm teams** (thumbi, JARVIS, TORC, Indiarm; updated 23 Nov 2026). The sheet has no countries, so that column is empty. The tablet shows the two competitions separately, each with its own count, and Pepper says "12 teams are taking part: 8 teams in the Arena and 4 teams in the Robot Arm AI Challenge."
+`teams.csv` holds the official teams as listed on the championship page (ieeemalta.org, 24 Nov 2026): **8 Arena teams** (BRIS, Wally, Hornet, Trodaí, Genesis, HRIGA, BUA Robotics, Electro Nexus) and **4 Robot Arm teams** (Torc, IndiArm, Thumbi Arm, Jarvis MCAST). **Team photos:** copy the organisers' photos into `html/img/teams/`, named as on the site (bris.jpg, troda.jpg, thumbi-arm.png, jarvis-mcast.png and so on). Each team card then shows its photo; without one, the card simply has no photo.
 
 Two details are handled on purpose:
 - **Similar names.** If two teams' names sound the same (for example "Electro Nexus" and "ElectroNexus"), Pepper names both and says which competition each is in.
@@ -136,8 +158,8 @@ Two details are handled on purpose:
 - **`schedule.csv`** has the columns `day (sat or sun), time (HH:MM, Malta time), minutes, title, category (arena, arm or stage), game, side_a, side_b, done`.
   - For the Arena, `side_a` is the red corner and `side_b` the blue corner.
   - `game` links an item to its clip: `tof`, `chaos`, `wil`, `hh`, `colour`, `shape`, `dynamic`, `pour`, `fold` or `tower`.
-  - The file already holds the organisers' **running order** (55 items): the Opening Ceremony, the robot catwalk and team spotlight, the eight AI for Humanity pitches, all 16 Time of Fall matches with their red and blue corners, every Robot Arm round with its teams, the eight Climate CHAOS runs, Sunday's knockout and finals, and the Awards Ceremony. Speeches, crew notes and breaks are left out.
-  - When the sheet changes, run `python3 tools/import_running_order.py <workbook.xlsx>` to rebuild `schedule.csv`.
+  - The file holds the **official agenda from the championship page** (24 Nov 2026), whose start times are confirmed: Saturday 14:00 Official Opening Ceremony, 15:30 games in both arenas (Arena A: Time of Fall and Climate CHAOS; Arena B: Pick-and-Place); Sunday 10:30 games resume (Arena A: Weight in Line and Hanging Hazard, the final; Arena B: Two-Arm Challenge and Tower Construction Duel, the final), 17:00 end of the competition, 18:00 Awards Night 2026. How long each block lasts comes from the organisers' running order. The site says individual match times are not confirmed yet, so Pepper calls each block, not each match.
+  - When the final running order arrives, run `python3 tools/import_running_order.py <workbook.xlsx>` to rebuild `schedule.csv` with every match, or add the matches on the tablet in staff mode.
 
 While there are no teams, Pepper says the list is coming soon and refers to the red and blue corners. Nothing breaks.
 

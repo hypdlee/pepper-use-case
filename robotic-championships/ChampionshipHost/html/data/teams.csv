@@ -1,16 +1,18 @@
 # Teams for the Pepper host. One line per team. Lines starting with # are notes and are ignored.
 # category: arena or arm.  say_as (optional): how Pepper should pronounce the name, if it gets it wrong.
 # Example: Team Falcon,Croatia,arena,Team Fal-con
+# Team list and spellings from the official championship page (ieeemalta.org), 24 Nov 2026.
+# Photos: html/img/teams/<name in lower case, letters and digits, spaces as ->.jpg (bris.jpg, thumbi-arm.jpg, troda.jpg).
 name,country,category,say_as
-Trodaí,,arena,
-HRIGA,,arena,
+BRIS,,arena,
+Wally,,arena,
 Hornet,,arena,
-BUA Robotics,,arena,
+Trodaí,,arena,
 Genesis,,arena,
-Ctrl Alt Defeat,,arena,
+HRIGA,,arena,
+BUA Robotics,,arena,
 Electro Nexus,,arena,
-BRIS - SWERVY,,arena,
-thumbi,,arm,
-JARVIS,,arm,
-TORC,,arm,
-Indiarm,,arm,
+Torc,,arm,
+IndiArm,,arm,Indi Arm
+Thumbi Arm,,arm,
+Jarvis MCAST,,arm,Jarvis Em cast

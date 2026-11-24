@@ -254,7 +254,7 @@ def run():
     w = World(app)
     box, ns = start(w, store=store)
     st = last_state(w)
-    check(st is not None and st["v"] == "1.2.2", "no first state pushed")
+    check(st is not None and st["v"] == "1.3.0", "no first state pushed")
     check([t["name"] for t in st["teams"]] == ["Team Falcon", "Orion, The", "ArmStrong"], "teams from CSV: %r" % [t["name"] for t in st["teams"]])
     check([t["cat"] for t in st["teams"]] == ["arena", "arena", "arm"], "team categories")
     check([x["title"] for x in st["schedule"]] == ["Opening Ceremony", "Time of Fall", "Colour Sort", "Shape Sort", "Awards Ceremony"], "schedule rows: %r" % [x["title"] for x in st["schedule"]])
@@ -315,7 +315,18 @@ def run():
     for c in ("hello", "who", "about", "thanks", "bye", "arena", "arm", "games"):
         k = len(w.said); dlg(w, box, c); check(len(w.said) == k + 1, "dialog command %s did not speak" % c)
     dlg(w, box, "info", hostInfo="0")
-    check(w.said[-1] == "Please ask a volunteer at the information desk.", "info line")
+    check(w.said[-1] == "The toilets are along the bottom of the hall. Touch Map on my screen to see where.", "info line: %r" % w.said[-1])
+    # where is ...? (venue map from the official site): voice shows the map with the area and says where it is
+    for pid, opening in (("pit", "The Robot Pit is on the left side"), ("stage", "The stage and the catwalk are at the top"), ("facilities", "The toilets and the canteen"),
+                       ("info", "The Information Point and the Registration Desk"), ("arena", "Arena A, with the four Arena games"), ("arm", "Arena B, the Robot Arm Arena"),
+                       ("stem", "The STEM Activities"), ("carpet", "The red carpet interview area")):
+        dlg(w, box, "place", hostPlace=pid)
+        check(w.said[-1].startswith(opening) and 'HostUI.go("map","%s")' % pid in "".join(w.js[-4:]), "where is %s: %r" % (pid, w.said[-1]))
+    dlg(w, box, "place", hostPlace="none")
+    check(w.said[-1].startswith("Here is the venue map") and 'HostUI.go("map","")' in "".join(w.js[-4:]), "map by voice")
+    tick(w, box, 16); k = len(w.said); tab(w, box, {"cmd": "place", "place": "pit", "id": "pl1"}); check(len(w.said) == k + 1 and w.said[-1].startswith("The Robot Pit"), "map tap")
+    tab(w, box, {"cmd": "place", "place": "pit", "id": "pl2"}); check(len(w.said) == k + 1, "the same map tap repeated within 15 s")
+    tick(w, box, 16); tab(w, box, {"cmd": "view", "view": "map", "arg": "", "id": "pl3"}); check(w.said[-1].startswith("Here is the venue map"), "map screen line")
     check(all(w.mem.get(k) == "" for k in ("hostCmd", "hostGame", "hostTeam", "hostAns")), "dialog keys not cleared")
 
     # ---- volunteer
@@ -484,7 +495,7 @@ def run():
     check(boxi.intro is not None and boxi.intro["i"] == 0 and any('HostUI.go("intro","")' in j for j in wi.js), "intro did not start by voice")
     check(wi.said[-1].startswith("Hello everyone, and welcome to the I triple E Robot Championships 2026"), "intro scene 1: %r" % wi.said[-1])
     st = last_state(wi)["intro"]
-    check(st["i"] == 0 and st["n"] == len(scenes) == 12 and st["kind"] == "title" and st["head"] == "Hello! I am Pepper", "intro state: %r" % st)
+    check(st["i"] == 0 and st["n"] == len(scenes) == 13 and st["kind"] == "title" and st["head"] == "Hello! I am Pepper", "intro state: %r" % st)
     tick(wi, boxi, 7)
     check(boxi.intro["i"] == 0, "scene left while Pepper was still talking")
     wi.speech_s = 3; tick(wi, boxi, 3)
@@ -496,11 +507,12 @@ def run():
             break
         if boxi.intro["i"] != seen[-1]:
             seen.append(boxi.intro["i"])
-    check(seen == list(range(12)) and boxi.intro is None, "intro scenes not shown in order: %r" % seen)
-    said = wi.said[-12:]
+    check(seen == list(range(13)) and boxi.intro is None, "intro scenes not shown in order: %r" % seen)
+    said = wi.said[-13:]
     check(said[1] == "This weekend, 3 university teams compete in two competitions: 2 teams in the Arena, and 1 teams in the new Robot Arm AI Challenge.", "event scene: %r" % said[1])
     check(said[9] == "Please give a big welcome to our Arena teams: Orion, The and Team Falcon. And to our Robot Arm teams: Arm Strong.", "teams scene: %r" % said[9])
     check(said[10].startswith("Coming up next, at 14:40: Time of Fall in the Arena"), "next scene: %r" % said[10])
+    check(said[11].startswith("To find your way: the two arenas are in the centre of the hall"), "map scene: %r" % said[11])
     check(not any("{" in x for x in said), "a template was not filled: %r" % [x for x in said if "{" in x])
     check(any('HostUI.go("home","")' in j for j in wi.js[-3:]) and last_state(wi)["intro"] is None, "intro end did not return home")
     tab(wi, boxi, {"cmd": "intro"}); tick(wi, boxi, 1)
@@ -649,6 +661,8 @@ def run():
         tab(wsp, boxsp, {"cmd": "view", "view": v, "arg": a})
     for g in boxsp.content["games"]:
         tab(wsp, boxsp, {"cmd": "game", "game": g["id"]})
+    for ar in boxsp.content["venue"]["areas"]:
+        dlg(wsp, boxsp, "place", hostPlace=ar["id"])
     tab(wsp, boxsp, {"cmd": "intro"})
     for _ in range(1500):
         tick(wsp, boxsp, 0.1)
@@ -657,7 +671,7 @@ def run():
     for i in range(len(boxsp.content["quiz"])):
         tab(wsp, boxsp, {"cmd": "quizq", "i": i, "opts": [0, 1, 2]})
     bad = [x for x in wsp.said if re.search(r"\bIEEE\b|\bCHAOS\b|\bCtrl\b|\u00b7| - |&|\+\d|\bvs\b|\u2014", x)]
-    print("spoken lines checked:", len(wsp.said)); check(len(wsp.said) > 60 and not bad, "Pepper would misread: %r" % bad[:5])
+    print("spoken lines checked:", len(wsp.said)); check(len(wsp.said) > 70 and not bad, "Pepper would misread: %r" % bad[:5])
     tab(wsp, boxsp, {"cmd": "staff-login", "pin": "2468"})
     tsp = json.loads(wsp.js[-1][len("try{HostUI.staff("):-len(")}catch(e){}")])["token"]
     tab(wsp, boxsp, {"cmd": "say-teams", "token": tsp})
@@ -715,11 +729,12 @@ def run():
     arena = [t["name"] for t in boxr.teams if t["cat"] == "arena"]
     arms = [t["name"] for t in boxr.teams if t["cat"] == "arm"]
     check(len(arena) == 8 and len(arms) == 4, "official list: %d arena, %d arm" % (len(arena), len(arms)))
-    check(u"Troda\u00ed" in arena and "BRIS - SWERVY" in arena and arms == ["thumbi", "JARVIS", "TORC", "Indiarm"], "official names: %r %r" % (arena, arms))
+    check(arena == ["BRIS", "Wally", "Hornet", u"Troda\u00ed", "Genesis", "HRIGA", "BUA Robotics", "Electro Nexus"] and arms == ["Torc", "IndiArm", "Thumbi Arm", "Jarvis MCAST"],
+          "official names from the site: %r %r" % (arena, arms))
     st = last_state(wr)
     check(len(st["teams"]) == 12 and any(t["name"] == u"Troda\u00ed" for t in st["teams"]), "accented name lost on the way to the tablet")
     words = wr.concepts[-1][2]
-    check("trodai" in words and "bris swervy" in words and "ctrl alt defeat" in words and "electro nexus" in words and "jarvis" in words and "torc" in words and "electronexus" not in words,
+    check("trodai" in words and "bris" in words and "wally" in words and "electro nexus" in words and "jarvis mcast" in words and "indi arm" in words and "ctrl alt defeat" not in words,
           "dialog words: %r" % words)
     check(all(isinstance(x, str) and all(ord(c) < 128 for c in x) for x in words), "dialog words must be plain letters")
     dlg(wr, boxr, "teams")
@@ -729,16 +744,16 @@ def run():
           "accented team: %r" % wr.said[-1])
     dlg(wr, boxr, "team", hostTeam="electro nexus")
     check(wr.said[-1].startswith("Electro Nexus competes in the Arena."), "one team with that name now: %r" % wr.said[-1])
-    dlg(wr, boxr, "team", hostTeam="bris swervy")
-    check(wr.said[-1] == "BRIS SWERVY competes in the Arena. Their next match: Time of Fall, at 15:20.", "punctuation in a name: %r" % wr.said[-1])
+    dlg(wr, boxr, "team", hostTeam="jarvis mcast")
+    check(wr.said[-1] == "Jarvis Em cast competes in the Robot Arm AI Challenge.", "say as for MCAST: %r" % wr.said[-1])
     dlg(wr, boxr, "team", hostTeam="bua")
     check("could not find" in wr.said[-1], "a 3-letter fragment matched a team")
-    dlg(wr, boxr, "team", hostTeam="indiarm")
-    check(wr.said[-1] == "Indiarm competes in the Robot Arm AI Challenge. Their next match: Colour Sort, at 16:45.", "arm team from the official programme: %r" % wr.said[-1])
+    dlg(wr, boxr, "team", hostTeam="indi arm")
+    check(wr.said[-1] == "Indi Arm competes in the Robot Arm AI Challenge.", "arm team said as written in say_as: %r" % wr.said[-1])
     tab(wr, boxr, {"cmd": "staff-login", "pin": "2468"})
     tokr = json.loads(wr.js[-1][len("try{HostUI.staff("):-len(")}catch(e){}")])["token"]
-    tab(wr, boxr, {"cmd": "team-save", "team": {"name": "Indiarm", "cat": "arena"}, "token": tokr})
-    check(len([t for t in boxr.teams if t["name"] == "Indiarm"]) == 2, "the same name in the other competition was refused")
+    tab(wr, boxr, {"cmd": "team-save", "team": {"name": "IndiArm", "cat": "arena"}, "token": tokr})
+    check(len([t for t in boxr.teams if t["name"] == "IndiArm"]) == 2, "the same name in the other competition was refused")
     tab(wr, boxr, {"cmd": "team-save", "team": {"name": "indiarm", "cat": "arm"}, "token": tokr})
     check(len([t for t in boxr.teams if t["name"].lower() == "indiarm"]) == 2 and "already on the list" in wr.js[-1], "duplicate in the same competition accepted")
     tab(wr, boxr, {"cmd": "team-save", "team": {"name": "ElectroNexus", "cat": "arm"}, "token": tokr})     # a look-alike of an Arena team
@@ -748,6 +763,14 @@ def run():
     tab(wr, boxr, {"cmd": "score-save", "teamId": fx["id"], "points": 42, "token": tokr})
     dlg(wr, boxr, "scores")
     check(u"first, Troda\u00ed with 42 points" in (wr.said[-1].decode("utf-8") if isinstance(wr.said[-1], bytes) else wr.said[-1]), "scores with an accented name: %r" % wr.said[-1])
+    # the official agenda: both arenas play at once, Pepper names both
+    wag = World(real); wag.t = utc(2026, 11, 28, 15, 40)          # Saturday 16:40 in Malta
+    boxag, _ = start(wag, store=os.path.join(tmp, "sag")); wag.mem["hostPong"] = "ok1"; tick(wag, boxag, 2)
+    dlg(wag, boxag, "next")
+    check(wag.said[-1].startswith("Now: Time of Fall and Climate Chaos in Arena A and Pick and Place: Colour, Shape and Dynamic Sort in Arena B."), "both arenas now: %r" % wag.said[-1])
+    check("Next. At 10:30: Weight in Line and Hanging Hazard (final) in Arena A." in wag.said[-1], "next after Saturday: %r" % wag.said[-1])
+    check(len(boxag.schedule) == 6 and [it["time"] for it in boxag.schedule if it["day"] == "sat"] == ["14:00", "15:30", "15:30"], "official agenda loaded: %r" % [(it["day"], it["time"]) for it in boxag.schedule])
+    boxag.onInput_onStop()
     wr2 = World(real); wr2.t = wr.t
     boxr2, _ = start(wr2, store=os.path.join(tmp, "sr"))
     check(any(t["name"] == u"Troda\u00ed" for t in boxr2.teams) and len(boxr2.teams) == 14, "accented name not kept across a restart")

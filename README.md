@@ -39,7 +39,7 @@ Pepper greets residents by name, checks in on medicine, leads exercise and breat
 
 <p align="center"><sub>A tour of the host tablet, then the four Arena games and the Robot Arm AI Challenge (simulations, used to explain the rules).</sub></p>
 
-Pepper opens with a two-minute intro: the two competitions, every game with its clip, all 12 teams by name and what is coming next. Then the tablet takes over: the games, teams, programme, provisional scores and a robot quiz of 100 questions, five at a time. Pepper calls the teams ten minutes before each block of matches. Every team is treated the same way. [Read more](robotic-championships)
+Pepper opens with a two-minute intro: the two competitions, every game with its clip, all 12 teams by name and what is coming next. Then the tablet takes over: the games, teams, official programme, a venue map that answers "where is...", provisional scores and a robot quiz of 100 questions, five at a time. Pepper calls the teams ten minutes before each block of matches. Every team is treated the same way. [Read more](robotic-championships)
 
 ---
 

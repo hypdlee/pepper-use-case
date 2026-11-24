@@ -60,13 +60,14 @@ function state(extra) {
   ok(ch === 'binding+memory|binding', 'tablet channels: ' + ch);
   ok(await pg.evaluate(() => { const c = HostState.content, all = JSON.stringify(c) + JSON.stringify(HostState.schedule);
     return !/maze|wrap.and.pack/i.test(all); }), 'no maze and no Wrap and Pack anywhere in the content or the programme');
-  ok((await pg.evaluate(() => HostState.schedule.length)) === 55, 'the official running order (55 items) not read in preview');
-  ok((await pg.evaluate(() => HostState.schedule.filter(x => x.title === 'Time of Fall').length)) === 16 && (await pg.evaluate(() => HostState.schedule[6].a === 'Troda\u00ed' && HostState.schedule[6].b === 'BRIS - SWERVY')), 'Time of Fall matches from the running order');
+  ok((await pg.evaluate(() => HostState.schedule.length)) === 6, 'the official agenda from the site (6 blocks) not read in preview');
+  const agenda = await pg.evaluate(() => HostState.schedule);
+  ok(await pg.evaluate(() => { const x = HostState.schedule; return x[0].title === 'Official Opening Ceremony' && x[0].time === '14:00' && x[1].time === '15:30' && x[1].cat === 'arena' && x[2].time === '15:30' && x[2].cat === 'arm' && x[3].time === '10:30' && x[5].title === 'Awards Night 2026' && x[5].time === '18:00'; }), 'agenda times from the site: 14:00, 15:30, 10:30, Awards Night 18:00');
   ok((await pg.evaluate(() => HostState.teams.filter(t => t.cat === 'arena').length)) === 8 && (await pg.evaluate(() => HostState.teams.filter(t => t.cat === 'arm').length)) === 4, 'official teams from teams.csv (8 + 4)');
   ok((await pg.evaluate(() => HostState.teams.some(t => t.name === 'Troda\u00ed'))), 'accented team name read from teams.csv');
   ok((await txt('#footRules')).indexOf('v0.7') >= 0, 'rulebook version not shown');
   ok(await vis('#countBox'), 'countdown not shown before the event');
-  ok((await pg.$$eval('#nav button', e => e.length === 7 && e.every(b => b.offsetHeight >= 70 && b.offsetWidth >= 150 && b.getBoundingClientRect().bottom <= 800))), 'dock: seven buttons, each at least 150 x 70 and on screen');
+  ok((await pg.$$eval('#nav button', e => e.length === 8 && e.every(b => b.offsetHeight >= 70 && b.offsetWidth >= 140 && b.getBoundingClientRect().bottom <= 800))), 'dock: eight buttons, each at least 140 x 70 and on screen');
   ok((await pg.$$eval('.stat', e => e.length)) === 3, 'stats');
   await pg.click('#nav [data-go="teams"]'); await pg.waitForTimeout(100);
   ok((await pg.$$eval('#teamSeg button', e => e.map(x => x.textContent))).join('|') === 'All teams \u00b7 12|Arena \u00b7 8|Robot Arm AI \u00b7 4', 'team counts on the filter buttons');
@@ -244,14 +245,14 @@ function state(extra) {
   await pg.click('#introBtn');
   ok((await sent()).slice(before).some(m => m.cmd === 'intro'), 'intro button asks Pepper for the intro');
   const scenes = content.intro;
-  ok(scenes.length === 12 && scenes.every(x => x.say && x.head), 'twelve intro scenes with speech and a title');
+  ok(scenes.length === 13 && scenes.every(x => x.say && x.head), 'thirteen intro scenes with speech and a title');
   for (let i = 0; i < scenes.length; i++) {
     const sc = scenes[i];
     await pg.evaluate(s => HostUI.update(s), state({ seq: 100 + i, intro: { i, n: scenes.length, id: sc.id, kind: sc.kind, clip: sc.clip || '', head: sc.head.replace('{n}', '4'), sub: 'Sub' } }));
     await pg.waitForTimeout(60);
     ok(await vis('#v-intro') && !(await vis('#nav')), 'intro screen with the navigation hidden, scene ' + sc.id);
     ok((await txt('#introHead')) === sc.head.replace('{n}', '4'), 'intro title, scene ' + sc.id);
-    ok((await pg.$$eval('#introDots span', e => e.length)) === 12 && (await pg.$$eval('#introDots span.on', e => e.length)) === 1, 'progress dots, scene ' + sc.id);
+    ok((await pg.$$eval('#introDots span', e => e.length)) === 13 && (await pg.$$eval('#introDots span.on', e => e.length)) === 1, 'progress dots, scene ' + sc.id);
     if (sc.clip) { ok((await pg.$eval('#ivid', v => v.getAttribute('data-src'))) === 'clips/' + sc.clip + '.mp4' && !(await vis('#introBig')), 'intro clip, scene ' + sc.id); }
     else {
       ok(await vis('#introBig') && !(await vis('#ivid')), 'intro panel without the video behind it (seen on the robot), scene ' + sc.id);
@@ -319,6 +320,31 @@ function state(extra) {
   await pg.waitForTimeout(5200); ok((await txt('#introHead')) === 'Two competitions', 'local intro moves on: ' + await txt('#introHead'));
   await pg.click('#introSkip'); ok(await vis('#v-home'), 'local intro skip');
   await pg.evaluate(() => { Bridge.canSend = () => true; });
+
+  // the official agenda: both arenas play at once on Saturday afternoon, both are marked NOW
+  await pg.evaluate(s => HostUI.update(s), state({ seq: 9000, now: Date.UTC(2026, 10, 28, 15, 40), schedule: agenda }));
+  await pg.evaluate(() => { HostState.day = 'sat'; HostUI.go('schedule'); }); await pg.waitForTimeout(150);
+  ok((await pg.$$eval('.srow.now', e => e.length)) === 2, 'both arenas marked NOW at 16:40 on Saturday');
+  await pg.evaluate(() => HostUI.go('home')); await pg.waitForTimeout(150);
+  ok((await txt('#liveNow')).indexOf('Time of Fall and Climate CHAOS') >= 0 && (await txt('#liveNext')).indexOf('NOW') === 0 && (await txt('#liveNext')).indexOf('Arena B') >= 0, 'home shows both arenas now: ' + await txt('#liveNext'));
+  // ---- v1.3: venue map from the official site
+  await pg.click('#nav [data-go="map"]'); await pg.waitForTimeout(200);
+  ok(await vis('#v-map') && (await pg.$$eval('#mapList .mapbtn', e => e.length)) === 8, 'map screen with the eight areas from the site');
+  ok((await sent()).some(m => m.cmd === 'view' && m.view === 'map'), 'map screen tells Pepper');
+  ok(!(await vis('#mapSeg')) && !(await vis('#mapimg')), 'no plan switch without the official image');
+  await pg.click('#mapList [data-place="pit"]'); await pg.waitForTimeout(100);
+  ok((await sent()).some(m => m.cmd === 'place' && m.place === 'pit'), 'area tap asks Pepper where it is');
+  ok((await pg.$eval('#z-pit', g => g.getAttribute('class'))).indexOf('hi') >= 0 && (await pg.$eval('#plan', g => g.getAttribute('class'))) === 'plan hl', 'tapped area lights up on the plan');
+  ok((await txt('#mapDesc')).indexOf('Robot Pit') === 0, 'area description shown');
+  await pg.click('#z-food'); await pg.waitForTimeout(100);
+  ok((await sent()).some(m => m.cmd === 'place' && m.place === 'facilities') && (await pg.$eval('#z-wc', g => g.getAttribute('class'))).indexOf('hi') >= 0, 'tapping the plan itself works (canteen lights toilets and canteen)');
+  await pg.evaluate(() => HostUI.go('map', 'stage')); await pg.waitForTimeout(100);
+  ok((await pg.$eval('#z-stage', g => g.getAttribute('class'))).indexOf('hi') >= 0 && (await pg.$eval('#z-back', g => g.getAttribute('class'))).indexOf('hi') >= 0, 'Pepper can open the map on an area (voice: where is the stage)');
+  ok(await pg.evaluate(() => { const r = document.getElementById('plan').getBoundingClientRect(); return r.bottom <= 700 && r.right <= 1280; }), 'plan sits above the dock');
+  // ---- v1.3: Help has getting here and three QR codes that load
+  await pg.click('#nav [data-go="help"]'); await pg.waitForTimeout(500);
+  ok((await txt('#shuttleText')).indexOf('Victoria Hotel') >= 0 && (await txt('#travelText')).indexOf('Montekristo Estate') === 0, 'getting here from the site');
+  ok((await pg.$$eval('#qrRow img', e => e.length === 3 && e.every(i => i.complete && i.naturalWidth > 100))), 'three QR codes load');
 
   // CSV parser matches the controller's rules
   const rows = await pg.evaluate(() => HostState.parseCSV('﻿name,x\r\n"a ""b"", c",1\r\n# c\r\n\r\nd,2'));

@@ -19,7 +19,7 @@ const state = { seq: 1, v: '1.1.0', now: T, voice: true, speaking: false, calls:
   await pg.screenshot({ path: OUT + '/0-home-preview.png' });
   await pg.waitForTimeout(2600); state.teams = await pg.evaluate(() => HostState.teams.map((t, i) => Object.assign({}, t, { id: 't' + i }))); state.schedule = await pg.evaluate(() => HostState.schedule); await pg.evaluate(s => HostUI.update(s), state); await pg.waitForTimeout(300);
   await pg.screenshot({ path: OUT + '/1-home-live.png' });
-  const shots = [['games', null, '2-games-arena'], ['games', 'arm', '3-games-arm'], ['game', 'tof', '4-game-tof'], ['game', 'tower', '5-game-tower'], ['teams', null, '6-teams'], ['schedule', null, '7-schedule'], ['scores', null, '8-scores'], ['help', null, '9-help']];
+  const shots = [['games', null, '2-games-arena'], ['games', 'arm', '3-games-arm'], ['game', 'tof', '4-game-tof'], ['game', 'tower', '5-game-tower'], ['teams', null, '6-teams'], ['schedule', null, '7-schedule'], ['scores', null, '8-scores'], ['help', null, '9-help'], ['map', 'info', '13-map']];
   for (const [v, a, n] of shots) { await pg.evaluate(([v, a]) => HostUI.go(v, a), [v, a]); await pg.waitForTimeout(700); await pg.screenshot({ path: `${OUT}/${n}.png` }); }
   await pg.evaluate(() => HostUI.quizStart()); await pg.waitForTimeout(300); await pg.click('[data-ans="1"]'); await pg.waitForTimeout(200); await pg.screenshot({ path: OUT + '/10-quiz.png' });
   await pg.evaluate(() => HostUI.staff({ ok: true, token: 'x' })); await pg.waitForTimeout(200); await pg.screenshot({ path: OUT + '/11-staff-alerts.png' });

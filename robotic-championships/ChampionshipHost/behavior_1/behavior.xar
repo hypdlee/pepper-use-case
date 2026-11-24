@@ -45,7 +45,7 @@ class MyClass(GeneratedClass):
             self.onSuccess()
         else:
             self.isRunning = False
-            self.onFailure()]]></content></script><Input name="onLoad" type="1" type_size="1" nature="0" inner="1" tooltip="Signal sent when diagram is loaded." id="1" /><Input name="onStart" type="1" type_size="1" nature="2" inner="0" tooltip="Box behavior starts when a signal is received on this input." id="2" /><Output name="onSuccess" type="1" type_size="1" nature="1" inner="0" tooltip="Signal sent when box behavior is finished successfully." id="3" /><Output name="onFailure" type="1" type_size="1" nature="1" inner="0" tooltip="Signal sent when box behavior is finished unsuccessfully." id="4" /></Box><Box name="Host Controller" id="4" localization="8" tooltip="Host Controller v1.2.2. Pepper's voice and memory as the neutral host of the IEEE Robot Championships 2026: answers what the dialog heard, keeps the tablet up to date, holds teams, programme, provisional scores and volunteer calls, and calls teams 10 minutes before their match. Nothing goes to the internet." x="300" y="120"><bitmap>media/images/box/box-python-script.png</bitmap><script language="4"><content><![CDATA[# Host Controller: Pepper as the neutral host of the IEEE Robot Championships 2026 (Choregraphe 2.5, NAOqi 2.5, Python 2.7).
+            self.onFailure()]]></content></script><Input name="onLoad" type="1" type_size="1" nature="0" inner="1" tooltip="Signal sent when diagram is loaded." id="1" /><Input name="onStart" type="1" type_size="1" nature="2" inner="0" tooltip="Box behavior starts when a signal is received on this input." id="2" /><Output name="onSuccess" type="1" type_size="1" nature="1" inner="0" tooltip="Signal sent when box behavior is finished successfully." id="3" /><Output name="onFailure" type="1" type_size="1" nature="1" inner="0" tooltip="Signal sent when box behavior is finished unsuccessfully." id="4" /></Box><Box name="Host Controller" id="4" localization="8" tooltip="Host Controller v1.3.0. Pepper's voice and memory as the neutral host of the IEEE Robot Championships 2026: answers what the dialog heard, keeps the tablet up to date, holds teams, programme, provisional scores and volunteer calls, and calls teams 10 minutes before their match. Nothing goes to the internet." x="300" y="120"><bitmap>media/images/box/box-python-script.png</bitmap><script language="4"><content><![CDATA[# Host Controller: Pepper as the neutral host of the IEEE Robot Championships 2026 (Choregraphe 2.5, NAOqi 2.5, Python 2.7).
 #
 # What it does
 #   - Speaks for Pepper (ALAnimatedSpeech, with gestures) and keeps the tablet up to date (ALTabletService.executeJS).
@@ -57,9 +57,9 @@ class MyClass(GeneratedClass):
 # Nothing here goes to the internet.
 import json, os, io, re, time, random, threading, unicodedata, calendar
 
-VERSION = "1.2.2"
+VERSION = "1.3.0"
 TOKEN_KEY = "Host/ControllerToken"
-KEYS = ["hostCmd", "hostTeam", "hostGame", "hostAns", "hostInfo", "Host/TabletCmd", TOKEN_KEY]
+KEYS = ["hostCmd", "hostTeam", "hostGame", "hostAns", "hostInfo", "hostPlace", "Host/TabletCmd", TOKEN_KEY]
 STATE_KEY, STATE_EVT = "Host/State", "Host/Session"
 STORE_DIR = os.path.expanduser("~/.local/share/championship-host")
 DIALOG_NAME = "host"            # the topic in Host/Host_enu.top, compared in lower case
@@ -641,6 +641,10 @@ class MyClass(GeneratedClass):
     def _sorted(self):
         return sorted(self.schedule, key=start_epoch)
 
+    def _nowAll(self, t):
+        """Everything running at time t: both arenas play at the same time."""
+        return [it for it in self._sorted() if not it.get("done") and start_epoch(it) <= t < start_epoch(it) + it.get("mins", 15) * 60]
+
     def _nowNext(self, t):
         cur, nxt = None, None
         for it in self._sorted():
@@ -661,7 +665,7 @@ class MyClass(GeneratedClass):
         return ("With %s." % " and ".join(names)) if names else ""
 
     def _itemLine(self, it):
-        where = {"arena": " in the Arena", "arm": " at the Robot Arm AI Challenge"}.get(it.get("cat"), "")
+        where = {"arena": " in Arena A", "arm": " in Arena B"}.get(it.get("cat"), "")
         return ("At %s: %s%s. %s" % (it["time"], it["title"], where, self._sides(it))).strip()
 
     # ------------------------------------------------------------------ dialog commands
@@ -714,6 +718,8 @@ class MyClass(GeneratedClass):
             self.say((self.content or {}).get("event", {}).get("about", "This is the IEEE Robot Championships."))
         elif cmd == "info":
             self._infoLine(_u(vals.get("hostInfo", "")).strip())
+        elif cmd == "place":
+            self._place(_u(vals.get("hostPlace", "")).strip(), True)
         elif cmd == "time":
             self.say("It is %s." % malta_hhmm(now))
         elif cmd == "who":
@@ -761,6 +767,8 @@ class MyClass(GeneratedClass):
             return "Let's play the robot quiz! Five questions. Touch Start."
         if view == "help":
             return "If you need help, touch the red button, and a volunteer will come to you."
+        if view == "map":
+            return "Here is the venue map. Touch a place, and I will tell you where it is."
         return ""
 
     def _viewTalk(self, view, arg):
@@ -860,8 +868,10 @@ class MyClass(GeneratedClass):
     def _nextLine(self, now):
         cur, nxt = self._nowNext(now)
         parts = []
-        if cur:
-            parts.append("Now: %s." % cur["title"])
+        live = self._nowAll(now)
+        if live:
+            where = {"arena": " in Arena A", "arm": " in Arena B"}
+            parts.append("Now: %s." % " and ".join("%s%s" % (it["title"], where.get(it.get("cat"), "")) for it in live))
         if nxt:
             parts.append("Next. " + self._itemLine(nxt))
         if not parts:
@@ -889,6 +899,24 @@ class MyClass(GeneratedClass):
             return str(int(f)) if f == int(f) else ("%.1f" % f)
         except Exception:
             return str(p)
+
+    def _place(self, pid, voice):
+        """Where is ...? Show the venue map with the area highlighted and say where it is, in one sentence."""
+        areas = ((self.content or {}).get("venue") or {}).get("areas", [])
+        area = None
+        for a in areas:
+            if a.get("id") == pid:
+                area = a
+        if voice:
+            self._go("map", area["id"] if area else "")
+        if not area:
+            self.say("Here is the venue map. Touch a place, and I will tell you where it is.")
+            return
+        key, now = "place/" + pid, self.clock()
+        if not voice and now - self.viewSaid.get(key, -1e9) < VIEW_GAP_S:
+            return
+        self.viewSaid[key] = now
+        self.say(area["say"])
 
     def _infoLine(self, idx):
         info = (self.content or {}).get("event", {}).get("info", [])
@@ -927,6 +955,8 @@ class MyClass(GeneratedClass):
             g = self._game(_u(msg.get("game", "") or ""))
             if g is not None:
                 self.say(g.get("say", ""))
+        elif cmd == "place":
+            self._place(_u(msg.get("place", "")), False)
         elif cmd == "view":
             if _u(msg.get("view", "")) != "quiz":
                 self.quizOn = None            # the visitor left the quiz
@@ -1225,7 +1255,7 @@ class MyClass(GeneratedClass):
     def _comingUp(self, now):
         open_at = EVENT_DAY_UTC["sat"] + 14 * 3600 - MALTA_UTC_OFFSET_S
         if now < open_at - 6 * 3600:
-            return "The championships open on Saturday the 28th at two in the afternoon, and the Arena starts at twenty past three."
+            return "The championships open on Saturday the 28th at two in the afternoon, and the games start at half past three in both arenas."
         cur, nxt = self._nowNext(now)
         if nxt is not None:
             where = {"arena": " in the Arena", "arm": " at the Robot Arm AI Challenge"}.get(nxt.get("cat"), "")

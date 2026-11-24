@@ -11,6 +11,7 @@ const srv = http.createServer((q, r) => { const p = path.join(ROOT, decodeURICom
   const b = await chromium.launch(); const pg = await b.newPage({ viewport: { width: 1280, height: 800 } });
   await pg.goto(`http://127.0.0.1:${srv.address().port}/index.html`); await pg.waitForTimeout(3500);
   const teams = await pg.evaluate(() => HostState.teams.map((t, i) => Object.assign({}, t, { id: 't' + i })));
+  const agenda = await pg.evaluate(() => HostState.schedule);   // the real programme from schedule.csv
   const T = Date.UTC(2026, 10, 28, 14, 20);
   const scores = teams.map((t, i) => ({ id: 'c' + i, team: t.name, cat: t.cat, points: 200 - i * 7 }));
   const sched = [];
@@ -29,6 +30,12 @@ const srv = http.createServer((q, r) => { const p = path.join(ROOT, decodeURICom
         if (e.children.length === 0 && e.textContent.trim() && e.scrollWidth > e.clientWidth + 1 && cs.overflow !== 'visible') { out.clipped.push(e.className + ': ' + e.textContent.trim().slice(0, 40)); }
         const rr = e.getBoundingClientRect();
         const dock = document.getElementById('nav'), inDock = dock.contains(e), lim = inDock || !dock.offsetHeight ? 801 : dock.getBoundingClientRect().top + 1;
+        // any box (not only text) that pokes out past the right edge: seen on Home when long titles widened a column
+        if (rr.width && rr.right > 1281 && !e.closest('.reel') && getComputedStyle(e).position !== 'fixed') {
+          let q = e.parentElement, clippedByParent = false;
+          while (q) { const s = getComputedStyle(q); if (s.overflowX === 'hidden' || s.overflowX === 'auto') { const qr = q.getBoundingClientRect(); if (qr.right <= 1281) { clippedByParent = true; break; } } q = q.parentElement; }
+          if (!clippedByParent) { out.clipped.push('off the right edge ' + (e.id || e.className) + ' (' + Math.round(rr.right) + ' px)'); }
+        }
         if (e.children.length === 0 && e.textContent.trim() && (rr.right > 1281 || rr.bottom > lim)) {
           let p = e.parentElement, inScroll = false;
           while (p) { const s = getComputedStyle(p); if (s.overflowY === 'auto' || s.overflowY === 'scroll') { inScroll = true; break; } p = p.parentElement; }
@@ -41,17 +48,23 @@ const srv = http.createServer((q, r) => { const p = path.join(ROOT, decodeURICom
     report.push({ name, publicView, clipped: r.clipped, scroll: r.scroll });
   }
   await pg.evaluate(() => HostUI.go('home')); await audit('home', true);
+  // Home with the real agenda: long titles in the NOW / NEXT panel, and both arenas at once
+  for (const [hh, mm, nm] of [[14, 20, 'home-agenda-1520'], [15, 40, 'home-agenda-1640']]) {
+    await pg.evaluate(s => HostUI.update(s), { seq: 500 + hh * 60 + mm, v: '1.3.0', now: Date.UTC(2026, 10, 28, hh, mm), voice: true, speaking: false, calls: true, teams, schedule: agenda, scores, alerts: [] });
+    await pg.evaluate(() => HostUI.go('home')); await audit(nm, true);
+  }
+  await pg.evaluate(s => HostUI.update(s), { seq: 2000, v: '1.0.1', now: T, voice: true, speaking: false, calls: true, teams, schedule: sched, scores, alerts: [] });
   // Pepper's intro: every scene, with the real teams from teams.csv and the longest "next" line
   const scenes = await pg.evaluate(() => HostState.content.intro);
   const nAll = String(teams.length), nAr = String(teams.filter(t => t.cat === 'arena').length), nArm = String(teams.length - teams.filter(t => t.cat === 'arena').length);
   for (let i = 0; i < scenes.length; i++) {
     const sc = scenes[i];
     const sub = sc.kind === 'next' ? 'Next: Tower Construction Duel (final), Sunday 16:45, then Hanging Hazard (final)' : (sc.sub || '').replace(/\{n\}/g, nAll).replace(/\{na\}/g, nAr).replace(/\{nm\}/g, nArm);
-    await pg.evaluate(s => HostUI.update(s), { seq: 10 + i, v: '1.1.0', now: T, voice: true, speaking: true, calls: true, teams, schedule: sched, scores, alerts: [],
+    await pg.evaluate(s => HostUI.update(s), { seq: 3000 + i, v: "1.1.0", now: T, voice: true, speaking: true, calls: true, teams, schedule: sched, scores, alerts: [],
       intro: { i, n: scenes.length, id: sc.id, kind: sc.kind, clip: sc.clip || '', head: sc.head.replace(/\{n\}/g, nAll), sub } });
     await audit('intro-' + (i + 1) + '-' + sc.id, true);
   }
-  await pg.evaluate(s => HostUI.update(s), { seq: 40, v: '1.1.0', now: T, voice: true, speaking: false, calls: true, teams, schedule: sched, scores, alerts: [], intro: null });
+  await pg.evaluate(s => HostUI.update(s), { seq: 3040, v: "1.1.0", now: T, voice: true, speaking: false, calls: true, teams, schedule: sched, scores, alerts: [], intro: null });
   await pg.evaluate(() => HostUI.go('teams')); await audit('teams-all', true);
   await pg.click('[data-f="arena"]'); await audit('teams-arena', true);
   await pg.click('[data-f="arm"]'); await audit('teams-arm', true);
